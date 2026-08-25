@@ -2,15 +2,14 @@
 
 ## Windows 使用方式（推荐）
 
-1. 打开 [Windows 构建页面](https://github.com/olu37776-bit/excel-arrival-tool/actions/workflows/build-windows-exe.yml)。
-2. 进入最新一次成功的构建，在页面底部下载 `ExcelRevenueTool-Windows`。
-3. 解压后双击 `ExcelRevenueTool.exe`。不需要安装 Python，也不需要运行 BAT 或打开终端。
-4. 在窗口中依次选择四个独立的源文件：
+1. [直接下载 ExcelRevenueTool.exe](https://github.com/olu37776-bit/excel-arrival-tool/releases/download/v0.4.1/ExcelRevenueTool.exe)。
+2. 双击 `ExcelRevenueTool.exe`。不需要安装 Python，也不需要运行 BAT 或打开终端。
+3. 在窗口中依次选择四个独立的源文件：
    - 遗留量 Excel
    - 当月订货 Excel
    - 要货明细 Excel
    - 国家运输周期 Excel
-5. 选择结果保存位置，然后点击“开始生成”。
+4. 选择结果保存位置，然后点击“开始生成”。
 
 第一次运行时，“上一次成功结果”留空。以后需要跨期比较或继承人工填写字段时，选择上一次成功生成的结果文件。
 
