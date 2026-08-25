@@ -42,6 +42,7 @@ class IssueLog:
 @dataclass(frozen=True)
 class ParsedRow:
     role: str
+    workbook: str
     sheet: str
     row_number: int
     values: dict[str, Any]
@@ -49,11 +50,30 @@ class ParsedRow:
     invalid_fields: frozenset[str] = frozenset()
 
 
+@dataclass(frozen=True)
+class SourceFiles:
+    legacy: Path
+    monthly_order: Path
+    demand_detail: Path
+    transit: Path
+
+    def as_dict(self) -> dict[str, Path]:
+        return {
+            "legacy": self.legacy,
+            "monthly_order": self.monthly_order,
+            "demand_detail": self.demand_detail,
+            "transit": self.transit,
+        }
+
+
 @dataclass
 class SourceData:
-    workbook: Path
+    workbooks: dict[str, Path]
     rows: dict[str, list[ParsedRow]]
     sheet_names: dict[str, str]
+
+    def workbook_for(self, role: str) -> Path:
+        return self.workbooks[role]
 
 
 @dataclass
@@ -78,6 +98,7 @@ class PipelineResult:
     base_count: int
     rpd_change_count: int
     cpd_change_count: int
+    supply_pull_count: int
     issue_count: int
 
 

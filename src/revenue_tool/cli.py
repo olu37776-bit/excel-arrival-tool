@@ -13,7 +13,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="按需求基线生成到货日期、收入月份和跨月变化工作簿"
     )
-    parser.add_argument("--input", required=True, help="本次业务 Excel 路径")
+    parser.add_argument("--legacy", required=True, help="遗留量 Excel 路径")
+    parser.add_argument(
+        "--monthly-order", required=True, help="当月订货 Excel 路径"
+    )
+    parser.add_argument(
+        "--demand-detail", required=True, help="要货明细 Excel 路径"
+    )
+    parser.add_argument(
+        "--transit", required=True, help="国家运输周期 Excel 路径"
+    )
     parser.add_argument("--output", required=True, help="结果 Excel 路径")
     parser.add_argument(
         "--previous",
@@ -31,7 +40,10 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         result = run_pipeline(
-            input_path=args.input,
+            legacy_path=args.legacy,
+            monthly_order_path=args.monthly_order,
+            demand_detail_path=args.demand_detail,
+            transit_path=args.transit,
             output_path=args.output,
             config_path=args.config,
             previous_path=args.previous,
@@ -43,10 +55,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"基表行数: {result.base_count}")
     print(f"RPD跨月变化: {result.rpd_change_count}")
     print(f"CPD跨月变化: {result.cpd_change_count}")
+    print(f"供应需要提拉诉求: {result.supply_pull_count}")
     print(f"异常记录: {result.issue_count}")
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

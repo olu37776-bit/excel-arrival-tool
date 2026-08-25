@@ -7,7 +7,7 @@
   },
   "sheets": {
     "legacy": {"canonical": "遗留量", "aliases": [], "optional": false, "header_row": null},
-    "monthly_order": {"canonical": "当月订货", "aliases": [], "optional": true, "header_row": null},
+    "monthly_order": {"canonical": "当月订货", "aliases": [], "optional": false, "header_row": null},
     "demand_detail": {"canonical": "要货明细", "aliases": [], "optional": false, "header_row": null},
     "transit": {"canonical": "国家运输周期", "aliases": [], "optional": false, "header_row": null}
   },
@@ -27,7 +27,7 @@
       "country": {"canonical": "国家中文名称", "aliases": [], "type": "text"},
       "project_name": {"canonical": "交付项目中文名称", "aliases": [], "type": "text"},
       "bg": {"canonical": "行销产品维BG中文名称", "aliases": [], "type": "text"},
-      "monthly_new_order": {"canonical": "设备订货（不含VAT）", "aliases": [], "type": "amount"}
+      "monthly_new_order": {"canonical": "设备订货(不含VAT)", "aliases": [], "type": "amount"}
     },
     "demand_detail": {
       "contract_no": {"canonical": "原合同号", "aliases": [], "type": "text"},
@@ -63,6 +63,7 @@
       "base": "基表",
       "rpd_changes": "RPD跨月变化",
       "cpd_changes": "CPD跨月变化",
+      "supply_pull": "供应需要提拉诉求清单粗表",
       "issues": "异常清单"
     },
     "base_columns": [
@@ -85,6 +86,9 @@
       {"id": "asd", "name": "ASD"},
       {"id": "rpd", "name": "RPD"},
       {"id": "multiple_demand", "name": "多次要货"},
+      {"id": "latest_asd", "name": "最晚ASD"},
+      {"id": "latest_rpd", "name": "最晚RPD"},
+      {"id": "shipment_incomplete", "name": "货未发完"},
       {"id": "cpd", "name": "CPD"},
       {"id": "split_supply", "name": "分批供应"},
       {"id": "arrival_date_rpd", "name": "到货日期（按RPD）"},
@@ -119,6 +123,17 @@
         {"id": "change_months", "name": "变化月数"}
       ]
     },
+    "supply_pull_columns": [
+      {"id": "contract_no", "name": "合同号"},
+      {"id": "legacy_amount", "name": "遗留量"},
+      {"id": "monthly_new_order", "name": "当月新订货"},
+      {"id": "region", "name": "地区部"},
+      {"id": "country", "name": "国家"},
+      {"id": "customer_group", "name": "客户群"},
+      {"id": "supply_center", "name": "履行供应中心"},
+      {"id": "revenue_month_rpd", "name": "收入年月（按RPD）"},
+      {"id": "revenue_month_cpd", "name": "收入年月（按CPD）"}
+    ],
     "issue_columns": [
       {"id": "code", "name": "异常代码"},
       {"id": "severity", "name": "严重级别"},

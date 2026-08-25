@@ -20,6 +20,20 @@ class ResilienceTest(unittest.TestCase):
         self.assertIsNone(_parse_nonnegative_integer("NaN"))
         self.assertIsNone(_parse_nonnegative_integer("Infinity"))
 
+    def test_displayed_integer_transit_rounds_half_up(self) -> None:
+        self.assertEqual(30, _parse_nonnegative_integer(29.6, "#,##0"))
+        self.assertEqual(30, _parse_nonnegative_integer(29.5, "#,##0"))
+        self.assertIsNone(_parse_nonnegative_integer(29.6, "General"))
+
+    def test_blank_placeholder_is_a_valid_empty_date(self) -> None:
+        value, valid = _parse_source_cell(
+            "date",
+            SimpleNamespace(value="（空白）", data_type="s"),
+            CALENDAR_WINDOWS_1900,
+        )
+        self.assertIsNone(value)
+        self.assertTrue(valid)
+
     def test_amount_outside_excel_numeric_range_is_invalid(self) -> None:
         value, valid = _parse_source_cell(
             "amount",
@@ -45,7 +59,7 @@ class ResilienceTest(unittest.TestCase):
         workbook = Workbook()
         try:
             cell = workbook.active["A1"]
-            cell.value = "#N/A"
+            cell.value = "#VALUE!"
             self.assertEqual("e", cell.data_type)
 
             value, valid = _parse_source_cell(
@@ -59,7 +73,16 @@ class ResilienceTest(unittest.TestCase):
 
     def test_date_overflow_becomes_nonblocking_issue(self) -> None:
         issues = IssueLog()
-        source = SourceData(Path("source.xlsx"), {}, {})
+        source = SourceData(
+            {
+                "legacy": Path("legacy.xlsx"),
+                "monthly_order": Path("monthly.xlsx"),
+                "demand_detail": Path("demand.xlsx"),
+                "transit": Path("transit.xlsx"),
+            },
+            {},
+            {},
+        )
 
         result = _arrival_date(
             mode="RPD",
@@ -74,6 +97,33 @@ class ResilienceTest(unittest.TestCase):
 
         self.assertIsNone(result)
         self.assertEqual("ARRIVAL_RPD_OVERFLOW", issues.items[0].code)
+
+    def test_asd_route_also_adds_transit_days(self) -> None:
+        issues = IssueLog()
+        source = SourceData(
+            {
+                "legacy": Path("legacy.xlsx"),
+                "monthly_order": Path("monthly.xlsx"),
+                "demand_detail": Path("demand.xlsx"),
+                "transit": Path("transit.xlsx"),
+            },
+            {},
+            {},
+        )
+
+        result = _arrival_date(
+            mode="RPD",
+            ata=None,
+            asd=date(2026, 8, 1),
+            planned=date(2026, 7, 1),
+            transit_days=5,
+            source=source,
+            issues=issues,
+            business_key="C1 | SC1",
+        )
+
+        self.assertEqual(date(2026, 8, 6), result)
+        self.assertEqual([], issues.items)
 
 
 if __name__ == "__main__":

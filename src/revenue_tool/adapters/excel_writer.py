@@ -31,6 +31,7 @@ class ExcelOutputAdapter:
         base_rows: list[BaseRow],
         rpd_changes: list[ComparisonRow],
         cpd_changes: list[ComparisonRow],
+        supply_pull_rows: list[ComparisonRow],
         issues: IssueLog,
         config: ToolConfig,
     ) -> Path:
@@ -49,6 +50,8 @@ class ExcelOutputAdapter:
                 "ata",
                 "asd",
                 "rpd",
+                "latest_asd",
+                "latest_rpd",
                 "cpd",
                 "arrival_date_rpd",
                 "arrival_date_cpd",
@@ -78,6 +81,14 @@ class ExcelOutputAdapter:
         )
         self._write_table_sheet(
             workbook,
+            sheets["supply_pull"],
+            config.output["supply_pull_columns"],
+            [row.values for row in supply_pull_rows],
+            "SupplyPullTable",
+            amount_fields={"legacy_amount", "monthly_new_order"},
+        )
+        self._write_table_sheet(
+            workbook,
             sheets["issues"],
             config.output["issue_columns"],
             [issue.as_dict() for issue in issues.items],
@@ -95,7 +106,7 @@ class ExcelOutputAdapter:
         self, workbook: Workbook, config: ToolConfig
     ) -> None:
         sheet = workbook.create_sheet("_tool_meta")
-        sheet.append(["schema_version", "1"])
+        sheet.append(["schema_version", "2"])
         sheet.append(["base_sheet", config.output["sheets"]["base"]])
         sheet.append([])
         sheet.append(["field_id", "display_name"])

@@ -89,7 +89,7 @@ class RevenueEngine:
                 issues.add(
                     "CONTRACT_WITHOUT_SUPPLY_CENTER",
                     "合同进入全集，但要货明细中没有可用履行供应中心；不生成正常业务行",
-                    workbook=source.workbook.name,
+                    workbook=source.workbook_for("demand_detail").name,
                     business_key=contract,
                     field="supply_center",
                 )
@@ -141,7 +141,17 @@ class RevenueEngine:
                 ata = max(ata_values) if ata_values else None
                 asd = max(asd_values) if asd_values else None
                 rpd = min(rpd_values) if rpd_values else None
+                latest_asd = max(asd_values) if asd_values else None
+                latest_rpd = max(rpd_values) if rpd_values else None
                 cpd = max(cpd_values) if cpd_values else None
+
+                shipment_incomplete = _shipment_incomplete(
+                    latest_asd,
+                    latest_rpd,
+                    source,
+                    issues,
+                    business_key,
+                )
 
                 transit_days = _resolve_transit_days(
                     incoterm=incoterm,
@@ -244,6 +254,9 @@ class RevenueEngine:
                     "asd": asd,
                     "rpd": rpd,
                     "multiple_demand": multiple_demand,
+                    "latest_asd": latest_asd,
+                    "latest_rpd": latest_rpd,
+                    "shipment_incomplete": shipment_incomplete,
                     "cpd": cpd,
                     "split_supply": split_supply,
                     "arrival_date_rpd": arrival_rpd,
@@ -317,7 +330,7 @@ def _log_country_conflicts(
             issues.add(
                 "CONFLICTING_COUNTRY_FOR_CONTRACT",
                 "同一合同在源数据中出现多个不同国家；仍按字段优先级和源表首条继续",
-                workbook=source.workbook.name,
+                workbook=rows[0].workbook,
                 business_key=contract,
                 field="country",
                 raw_value=" | ".join(
@@ -345,7 +358,7 @@ def _log_control_flag_mismatches(
             issues.add(
                 "CONTROL_FLAG_MISMATCH",
                 "同一要货明细记录的备货总控标识与发货总控标识不同步",
-                workbook=source.workbook.name,
+                workbook=row.workbook,
                 sheet=row.sheet,
                 row_number=row.row_number,
                 business_key=_display_key((contract, center)),
@@ -372,7 +385,7 @@ def _log_contract_conflicts(
                 issues.add(
                     "CONFLICTING_CONTRACT_VALUE",
                     "同合同存在多个不同非空值；按源表顺序保留第一条",
-                    workbook=source.workbook.name,
+                    workbook=group[0].workbook,
                     sheet=group[0].sheet,
                     row_number=group[0].row_number,
                     business_key=contract,
@@ -397,7 +410,7 @@ def _group_by_supply_center(
             issues.add(
                 "MISSING_SUPPLY_CENTER",
                 "要货明细履行供应中心为空，该行不能生成业务粒度",
-                workbook=source.workbook.name,
+                workbook=row.workbook,
                 sheet=row.sheet,
                 row_number=row.row_number,
                 business_key=contract,
@@ -428,7 +441,7 @@ def _log_group_conflicts(
             issues.add(
                 "CONFLICTING_GROUP_VALUE",
                 "同合同+履行供应中心存在多个不同非空文本值；当前按原顺序保留第一条",
-                workbook=source.workbook.name,
+                workbook=rows[0].workbook,
                 sheet=rows[0].sheet,
                 row_number=rows[0].row_number,
                 business_key=business_key,
@@ -481,7 +494,7 @@ def _build_transit_index(
             issues.add(
                 "INVALID_TRANSIT_KEY",
                 "国家运输周期行缺少国家或供应中心，无法建立查找键",
-                workbook=source.workbook.name,
+                workbook=row.workbook,
                 sheet=row.sheet,
                 row_number=row.row_number,
                 field="country+supply_center",
@@ -502,7 +515,7 @@ def _build_transit_index(
             issues.add(
                 "CONFLICTING_TRANSIT_DAYS",
                 "同一国家+供应中心存在不同运输周期；按原顺序保留第一条",
-                workbook=source.workbook.name,
+                workbook=group[0].workbook,
                 sheet=group[0].sheet,
                 row_number=group[0].row_number,
                 business_key=f"{key[0]} | {key[1]}",
@@ -534,7 +547,7 @@ def _resolve_transit_days(
         issues.add(
             "TRANSIT_COUNTRY_MISSING",
             "非 FCA/FOB/EXW 行缺少国家，无法匹配运输周期",
-            workbook=source.workbook.name,
+            workbook=source.workbook_for("demand_detail").name,
             business_key=business_key,
             field="country",
         )
@@ -544,7 +557,7 @@ def _resolve_transit_days(
         issues.add(
             "TRANSIT_NOT_FOUND",
             "国家+履行供应中心在国家运输周期表中未找到",
-            workbook=source.workbook.name,
+            workbook=source.workbook_for("demand_detail").name,
             business_key=business_key,
             field="country+supply_center",
             raw_value=f"{country} | {supply_center}",
@@ -555,7 +568,7 @@ def _resolve_transit_days(
         issues.add(
             "TRANSIT_VALUE_UNAVAILABLE",
             "运输周期键已找到，但第一条周期值非法或为空",
-            workbook=source.workbook.name,
+            workbook=source.workbook_for("transit").name,
             business_key=business_key,
             field="transit_days",
             raw_value=f"{country} | {supply_center}",
@@ -576,30 +589,30 @@ def _arrival_date(
 ) -> date | None:
     if ata is not None:
         return ata
-    if asd is not None:
-        return asd
-    if planned is not None and transit_days is not None:
+    basis = asd if asd is not None else planned
+    basis_name = "ASD" if asd is not None else mode
+    if basis is not None and transit_days is not None:
         try:
-            return planned + timedelta(days=transit_days)
+            return basis + timedelta(days=transit_days)
         except OverflowError:
             issues.add(
                 f"ARRIVAL_{mode}_OVERFLOW",
                 f"到货日期（按{mode}）计算超出日期范围，结果留空",
-                workbook=source.workbook.name,
+                workbook=source.workbook_for("demand_detail").name,
                 business_key=business_key,
                 field=f"arrival_date_{mode.lower()}",
-                raw_value=f"{planned.isoformat()} + {transit_days}",
+                raw_value=f"{basis.isoformat()} + {transit_days}",
             )
             return None
     missing = []
-    if planned is None:
-        missing.append(mode)
+    if basis is None:
+        missing.append(basis_name)
     if transit_days is None:
         missing.append("海运周期")
     issues.add(
         f"ARRIVAL_{mode}_UNAVAILABLE",
         f"到货日期（按{mode}）缺少必要输入: {', '.join(missing)}",
-        workbook=source.workbook.name,
+        workbook=source.workbook_for("demand_detail").name,
         business_key=business_key,
         field=f"arrival_date_{mode.lower()}",
     )
@@ -612,6 +625,30 @@ def _valid_dates(rows: list[ParsedRow], field: str) -> list[date]:
         for row in rows
         if isinstance(row.values.get(field), date)
     ]
+
+
+def _shipment_incomplete(
+    latest_asd: date | None,
+    latest_rpd: date | None,
+    source: SourceData,
+    issues: IssueLog,
+    business_key: str,
+) -> str | None:
+    if latest_asd is not None and latest_rpd is not None:
+        return "Y" if latest_rpd > latest_asd else "N"
+    missing = []
+    if latest_asd is None:
+        missing.append("最晚ASD")
+    if latest_rpd is None:
+        missing.append("最晚RPD")
+    issues.add(
+        "SHIPMENT_STATUS_UNAVAILABLE",
+        f"货未发完无法判断，缺少有效字段: {', '.join(missing)}",
+        workbook=source.workbook_for("demand_detail").name,
+        business_key=business_key,
+        field="shipment_incomplete",
+    )
+    return None
 
 
 def _revenue_segment(
@@ -659,4 +696,7 @@ def _display_value(value: Any) -> str:
 
 
 def _source_value(row: ParsedRow, value: Any) -> str:
-    return f"{row.sheet}!{row.row_number}={_display_value(value)}"
+    return (
+        f"{row.workbook}/{row.sheet}!{row.row_number}="
+        f"{_display_value(value)}"
+    )

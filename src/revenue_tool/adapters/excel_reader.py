@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import math
 from pathlib import Path
 import re
@@ -17,6 +17,7 @@ from revenue_tool.domain.models import (
     ParsedRow,
     PreviousData,
     SourceData,
+    SourceFiles,
     WorkbookReadError,
 )
 from revenue_tool.services.field_matching import resolve_name
@@ -29,17 +30,19 @@ from revenue_tool.services.normalization import (
 
 class ExcelInputAdapter:
     def read_source(
-        self, path: str | Path, config: ToolConfig, issues: IssueLog
+        self,
+        source_files: SourceFiles,
+        config: ToolConfig,
+        issues: IssueLog,
     ) -> SourceData:
-        workbook_path = Path(path)
-        workbook = _open_workbook(workbook_path)
-        result: dict[str, list[ParsedRow]] = {
-            role: [] for role in config.sheets
-        }
+        paths = source_files.as_dict()
+        result: dict[str, list[ParsedRow]] = {role: [] for role in paths}
         sheet_names: dict[str, str] = {}
-        try:
-            available = list(workbook.sheetnames)
-            for role, sheet_spec in config.sheets.items():
+        for role, workbook_path in paths.items():
+            workbook = _open_workbook(workbook_path)
+            try:
+                available = list(workbook.sheetnames)
+                sheet_spec = config.sheets[role]
                 match = resolve_name(
                     sheet_spec["canonical"],
                     sheet_spec.get("aliases", []),
@@ -56,7 +59,7 @@ class ExcelInputAdapter:
                             field=role,
                             raw_value=" | ".join(names),
                         )
-                    elif not sheet_spec.get("optional", False):
+                    else:
                         issues.add(
                             "MISSING_SHEET",
                             f"缺少业务 Sheet: {sheet_spec['canonical']}",
@@ -74,9 +77,9 @@ class ExcelInputAdapter:
                     config,
                     issues,
                 )
-        finally:
-            workbook.close()
-        return SourceData(workbook_path, result, sheet_names)
+            finally:
+                workbook.close()
+        return SourceData(paths, result, sheet_names)
 
     def read_previous(
         self, path: str | Path, config: ToolConfig, issues: IssueLog
@@ -347,6 +350,7 @@ class ExcelInputAdapter:
             result.append(
                 ParsedRow(
                     role=role,
+                    workbook=workbook_path.name,
                     sheet=sheet.title,
                     row_number=row_number,
                     values=values,
@@ -449,10 +453,15 @@ def _parse_source_cell(
         value = _parse_decimal(raw)
         return value, value is not None
     if field_type == "date":
+        if normalize_text(raw) == "(空白)":
+            return None, True
         value = _parse_date(raw, epoch)
         return value, value is not None
     if field_type == "nonnegative_integer":
-        value = _parse_nonnegative_integer(raw)
+        value = _parse_nonnegative_integer(
+            raw,
+            cell.number_format if cell is not None else None,
+        )
         return value, value is not None
     return normalize_text(raw), True
 
@@ -497,15 +506,28 @@ def _parse_decimal(value: Any) -> Decimal | None:
         return None
 
 
-def _parse_nonnegative_integer(value: Any) -> int | None:
+def _parse_nonnegative_integer(
+    value: Any, number_format: str | None = None
+) -> int | None:
     decimal = _parse_decimal(value)
-    if (
-        decimal is None
-        or decimal < 0
-        or decimal != decimal.to_integral_value()
-    ):
+    if decimal is None or decimal < 0:
         return None
+    if decimal != decimal.to_integral_value():
+        if not _displays_as_integer(number_format):
+            return None
+        decimal = decimal.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
     return int(decimal)
+
+
+def _displays_as_integer(number_format: str | None) -> bool:
+    section = str(number_format or "").split(";", maxsplit=1)[0]
+    section = re.sub(r"\[[^\]]*\]", "", section)
+    section = re.sub(r'"[^"]*"', "", section)
+    section = re.sub(r"_.", "", section)
+    section = re.sub(r"\*.", "", section)
+    section = section.replace("\\", "")
+    section = "".join(section.split())
+    return section == "#,##0"
 
 
 def _parse_date(value: Any, epoch: datetime) -> date | None:
@@ -551,6 +573,8 @@ def _parse_previous_value(field: str, value: Any, epoch: datetime) -> Any:
         "ata",
         "asd",
         "rpd",
+        "latest_asd",
+        "latest_rpd",
         "cpd",
         "arrival_date_rpd",
         "arrival_date_cpd",

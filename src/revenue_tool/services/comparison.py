@@ -108,6 +108,61 @@ def compare_revenue_months(
     return result
 
 
+def build_supply_pull_rows(
+    current: list[BaseRow],
+    workbook_name: str,
+    issues: IssueLog,
+) -> list[ComparisonRow]:
+    result: list[ComparisonRow] = []
+    for row in current:
+        key = business_key_identity(
+            row.values.get("contract_no"),
+            row.values.get("supply_center"),
+        )
+        rpd_month = _normalize_month(
+            row.values.get("revenue_month_rpd"),
+            "revenue_month_rpd",
+            workbook_name,
+            key,
+            "本期",
+            issues,
+        )
+        cpd_month = _normalize_month(
+            row.values.get("revenue_month_cpd"),
+            "revenue_month_cpd",
+            workbook_name,
+            key,
+            "本期",
+            issues,
+        )
+        if (
+            rpd_month is None
+            or cpd_month is None
+            or abs(_month_index(rpd_month) - _month_index(cpd_month)) < 1
+        ):
+            continue
+        values = {
+            field: row.values.get(field)
+            for field in (
+                "contract_no",
+                "legacy_amount",
+                "monthly_new_order",
+                "region",
+                "country",
+                "customer_group",
+                "supply_center",
+            )
+        }
+        values.update(
+            {
+                "revenue_month_rpd": rpd_month,
+                "revenue_month_cpd": cpd_month,
+            }
+        )
+        result.append(ComparisonRow(values))
+    return result
+
+
 def _normalize_month(
     value: Any,
     field: str,
