@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "excel-arrival-tool"
+version = "0.2.0"
+description = "Configuration-driven Excel arrival date and revenue month tool"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["openpyxl>=3.1,<4"]
+
+[project.scripts]
+revenue-tool = "revenue_tool.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+

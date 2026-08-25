@@ -1,0 +1,134 @@
+{
+  "workbook": {
+    "header_scan_rows": 20,
+    "minimum_header_matches": 2,
+    "contains_direction": "header_contains_expected",
+    "duplicate_scope": "normalized_physical_row"
+  },
+  "sheets": {
+    "legacy": {"canonical": "遗留量", "aliases": [], "optional": false, "header_row": null},
+    "monthly_order": {"canonical": "当月订货", "aliases": [], "optional": true, "header_row": null},
+    "demand_detail": {"canonical": "要货明细", "aliases": [], "optional": false, "header_row": null},
+    "transit": {"canonical": "国家运输周期", "aliases": [], "optional": false, "header_row": null}
+  },
+  "fields": {
+    "legacy": {
+      "contract_no": {"canonical": "华为合同号", "aliases": [], "type": "text"},
+      "region": {"canonical": "地区部中文名称", "aliases": [], "type": "text"},
+      "country": {"canonical": "国家中文名称", "aliases": [], "type": "text"},
+      "customer_group": {"canonical": "客户群中文名称", "aliases": [], "type": "text"},
+      "project_name": {"canonical": "交付项目中文名称", "aliases": [], "type": "text"},
+      "bg": {"canonical": "行销产品维BG中文名称", "aliases": [], "type": "text"},
+      "legacy_amount": {"canonical": "设备订未收-新", "aliases": [], "type": "amount"}
+    },
+    "monthly_order": {
+      "contract_no": {"canonical": "华为合同号", "aliases": [], "type": "text"},
+      "region": {"canonical": "地区部中文名称", "aliases": [], "type": "text"},
+      "country": {"canonical": "国家中文名称", "aliases": [], "type": "text"},
+      "project_name": {"canonical": "交付项目中文名称", "aliases": [], "type": "text"},
+      "bg": {"canonical": "行销产品维BG中文名称", "aliases": [], "type": "text"},
+      "monthly_new_order": {"canonical": "设备订货（不含VAT）", "aliases": [], "type": "amount"}
+    },
+    "demand_detail": {
+      "contract_no": {"canonical": "原合同号", "aliases": [], "type": "text"},
+      "region": {"canonical": "地区部", "aliases": [], "type": "text"},
+      "country": {"canonical": "国家中文名称", "aliases": [], "type": "text"},
+      "customer_group": {"canonical": "签约客户群", "aliases": [], "type": "text"},
+      "project_name": {"canonical": "交付项目中文名称", "aliases": [], "type": "text"},
+      "demand_status": {"canonical": "需求状态", "aliases": [], "type": "text"},
+      "supply_center": {"canonical": "供应中心简称", "aliases": [], "type": "text"},
+      "incoterm": {"canonical": "贸易术语", "aliases": [], "type": "text"},
+      "stock_control_flag": {"canonical": "备货总控标识", "aliases": [], "type": "flag"},
+      "shipment_control_flag": {"canonical": "发货总控标识", "aliases": [], "type": "flag"},
+      "ata": {"canonical": "天_ATA", "aliases": [], "type": "date"},
+      "asd": {"canonical": "ASD日期", "aliases": [], "type": "date"},
+      "rpd": {"canonical": "RPD日期", "aliases": [], "type": "date"},
+      "cpd": {"canonical": "CPD日期", "aliases": [], "type": "date"},
+      "bg": {"canonical": "BG_CN", "aliases": [], "type": "text"}
+    },
+    "transit": {
+      "country": {"canonical": "国家", "aliases": [], "type": "text"},
+      "supply_center": {"canonical": "供应中心", "aliases": [], "type": "text"},
+      "transit_days": {"canonical": "运输周期", "aliases": [], "type": "nonnegative_integer"}
+    }
+  },
+  "rules": {
+    "fixed_transit_days": {"FCA": 5, "FOB": 5, "EXW": 5},
+    "carryover_countries": ["阿拉伯联合酋长国", "巴基斯坦", "巴西", "菲律宾", "马来西亚", "沙特阿拉伯", "印度尼西亚"],
+    "stock_flag_delimiter": "|",
+    "group_text_conflict_strategy": "first_with_issue"
+  },
+  "output": {
+    "sheets": {
+      "base": "基表",
+      "rpd_changes": "RPD跨月变化",
+      "cpd_changes": "CPD跨月变化",
+      "issues": "异常清单"
+    },
+    "base_columns": [
+      {"id": "contract_no", "name": "合同号"},
+      {"id": "legacy_amount", "name": "遗留量"},
+      {"id": "monthly_new_order", "name": "当月新订货"},
+      {"id": "bg", "name": "BG"},
+      {"id": "region", "name": "地区部"},
+      {"id": "country", "name": "国家"},
+      {"id": "carryover_type", "name": "结转类型"},
+      {"id": "customer_group", "name": "客户群"},
+      {"id": "project_name", "name": "项目名称"},
+      {"id": "incoterm", "name": "贸易术语"},
+      {"id": "supply_center", "name": "履行供应中心"},
+      {"id": "multiple_supply_centers", "name": "多个供应中心发货"},
+      {"id": "stock_unlocked", "name": "是否解锁备货"},
+      {"id": "split_shipment", "name": "分批发货"},
+      {"id": "transit_days", "name": "海运周期"},
+      {"id": "ata", "name": "ATA"},
+      {"id": "asd", "name": "ASD"},
+      {"id": "rpd", "name": "RPD"},
+      {"id": "multiple_demand", "name": "多次要货"},
+      {"id": "cpd", "name": "CPD"},
+      {"id": "split_supply", "name": "分批供应"},
+      {"id": "arrival_date_rpd", "name": "到货日期（按RPD）"},
+      {"id": "arrival_date_cpd", "name": "到货日期（按CPD）"},
+      {"id": "revenue_month_rpd", "name": "收入年月（按RPD）"},
+      {"id": "revenue_month_cpd", "name": "收入年月（按CPD）"},
+      {"id": "revenue_segment", "name": "收入分段类别"},
+      {"id": "manual_adjust_flag", "name": "是否手工调整收入月份"},
+      {"id": "manual_revenue_month", "name": "手工调整收入月份"},
+      {"id": "adjustment_note", "name": "调整备注"}
+    ],
+    "change_common_columns": [
+      {"id": "contract_no", "name": "合同号"},
+      {"id": "legacy_amount", "name": "遗留量"},
+      {"id": "monthly_new_order", "name": "当月新订货"},
+      {"id": "region", "name": "地区部"},
+      {"id": "country", "name": "国家"},
+      {"id": "customer_group", "name": "客户群"},
+      {"id": "supply_center", "name": "履行供应中心"}
+    ],
+    "change_tail_columns": {
+      "rpd": [
+        {"id": "previous_month", "name": "上期收入年月（按RPD）"},
+        {"id": "current_month", "name": "本期收入年月（按RPD）"},
+        {"id": "direction", "name": "变化方向"},
+        {"id": "change_months", "name": "变化月数"}
+      ],
+      "cpd": [
+        {"id": "previous_month", "name": "上期收入年月（按CPD）"},
+        {"id": "current_month", "name": "本期收入年月（按CPD）"},
+        {"id": "direction", "name": "变化方向"},
+        {"id": "change_months", "name": "变化月数"}
+      ]
+    },
+    "issue_columns": [
+      {"id": "code", "name": "异常代码"},
+      {"id": "severity", "name": "严重级别"},
+      {"id": "workbook", "name": "文件"},
+      {"id": "sheet", "name": "Sheet"},
+      {"id": "row_number", "name": "行号"},
+      {"id": "business_key", "name": "业务键"},
+      {"id": "field", "name": "字段"},
+      {"id": "raw_value", "name": "原始值"},
+      {"id": "message", "name": "原因"}
+    ]
+  }
+}
