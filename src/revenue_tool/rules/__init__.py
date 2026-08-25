@@ -1,2 +1,0 @@
-"""Replaceable business rules."""
-
