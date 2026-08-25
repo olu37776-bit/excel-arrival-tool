@@ -1,0 +1,33 @@
+{
+  "grouping": {
+    "required_same_fields": [
+      "po_number",
+      "contract_number",
+      "shipping_point",
+      "plan_date",
+      "plan_quantity",
+      "trade_type",
+      "shipment_id"
+    ],
+    "quantity_aggregation": "max",
+    "revenue_amount_aggregation": "max"
+  },
+  "prd": {
+    "date_aggregation": "min",
+    "original_po_quantity_aggregation": "max"
+  },
+  "transit": {
+    "unknown_trade_type": "error",
+    "default_days": 0,
+    "trade_type_adjustments": {
+      "SPECIAL_TRADE_TYPE": {
+        "extra_days": 0
+      }
+    }
+  },
+  "comparison": {
+    "delay_threshold_months": 1,
+    "only_delayed": true
+  }
+}
+

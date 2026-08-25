@@ -1,0 +1,29 @@
+{
+  "sheets": {
+    "prd": "PRD",
+    "shipment": "Shipment",
+    "transit_days": "Transit Days"
+  },
+  "prd": {
+    "po_number": "PO Number",
+    "prd": "PRD",
+    "original_po_quantity": "Original PO Quantity",
+    "contract_number": "Contract Number",
+    "shipping_point": "Shipping Point"
+  },
+  "shipment": {
+    "po_number": "PO Number",
+    "plan_date": "Plan Month",
+    "plan_quantity": "Plan Quantity",
+    "contract_number": "Contract Number",
+    "shipping_point": "Shipping Point",
+    "trade_type": "Trade Type",
+    "shipment_id": "Shipment ID",
+    "revenue_amount": "Revenue Amount"
+  },
+  "transit_days": {
+    "trade_type": "Trade Type",
+    "transit_days": "Transit Days"
+  }
+}
+
