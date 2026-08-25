@@ -1,78 +1,82 @@
-# Excel 收入统计工具（第一版 POC）
+# Excel 工具使用说明
 
-这是一个收入统计 Excel 工具的可运行 POC。当前代码用于验证解耦结构、Excel 读写、规则编排和跨月对比；它的职责是**收入统计与变化识别**，不是装运规划或排程。
+## 一、下载
 
-> 当前版本尚未用真实/脱敏源表完成字段契约验收，不能作为正式业务版直接使用。`Plan Month + Transit Days = Revenue Month`、默认 sheet/列名及部分归并键都是暂定输入契约，需以真实源表和最终业务规则替换。
+推荐直接下载最新版压缩包：
 
-## POC 已实现
+https://github.com/olu37776-bit/excel-arrival-tool/archive/refs/heads/main.zip
 
-- 读取 `PRD`、`Shipment`、`Transit Days` 三个 sheet。
-- 按当前暂定配置去重；合同或发货点不同的记录始终分开。
-- 同一 PO 范围内，`PRD` 取最早值，`Original PO Quantity` 取最大值。
-- 按 `Trade Type` 查运输天数；特殊贸易类型的额外天数或覆盖天数独立配置。
-- 计算 `Arrival Date` 和 `Revenue Month`，并按收入月份汇总数量和可选收入金额。
-- 可读取上一次结果，只在 `Comparison` 中列出收入月份向后延迟至少 1 个月的记录。
-- 输出 `Revenue Summary`、`Revenue Detail`、`Comparison`、`Run Info` 四个 sheet。
+下载完成后，先把 ZIP 完整解压到一个固定文件夹，不要直接在压缩包内运行。
 
-`Revenue Amount` 是可选字段。输入没有金额时，第一版仍可按数量统计收入月份；后续确认正式金额字段后，只改字段映射或金额规则，不改 Excel 读写主流程。
+也可以使用 Git：
 
-## 正式业务版仍需完成
+```powershell
+git clone https://github.com/olu37776-bit/excel-arrival-tool.git
+```
 
-- 用真实或脱敏源表冻结：源文件数量、sheet 名、表头行、字段、类型、别名、稳定关联键。
-- 按最终口径重写归并：同合同和同发货点是前提，PRD 取最小，其余已确认字段取最大；被聚合字段不能同时放进归并键。
-- 写入真实的特殊贸易类型和海运周期规则；当前配置只有机制和占位示例。
-- 确认收入月份基于 PRD、计划出货、预计到货还是其他日期；当前计算公式只是 POC 假设。
-- 冻结跨次对比的稳定 Shipment 身份键，处理重复键、新增、消失和规则版本变化。
-- 使用真实样例补端到端验收，并根据公司电脑环境决定是否打包离线 EXE。
+## 二、首次安装
 
-## 解耦结构
+电脑需要先安装 Python 3.10 或更高版本。安装 Python 时请勾选 `Add Python to PATH`。
+
+进入解压后的工具文件夹，双击：
 
 ```text
-config/                  字段映射与可调整业务参数
-src/revenue_tool/domain  纯业务数据结构和错误
-src/revenue_tool/rules   归并、PRD、贸易类型运输周期规则
-src/revenue_tool/services 收入计算、月度汇总、历史对比
-src/revenue_tool/adapters Excel 输入与输出
-src/revenue_tool/application 用例编排
+setup_windows.bat
 ```
 
-字段名或 sheet 名变化时修改 `config/field_mappings.json`。特殊贸易类型变化时修改 `config/business_rules.json` 的 `trade_type_adjustments`。核心计算不依赖 Excel 列名。
+看到“安装完成”后即可关闭窗口。首次安装需要联网下载依赖。
 
-## Windows 使用
+以后更新了工具版本，需要重新执行一次 `setup_windows.bat`。
 
-需要安装 Python 3.10 或更高版本。
+## 三、运行
 
-1. 下载并解压仓库源码。
-2. 双击 `setup_windows.bat`，只需执行一次。
-3. 双击 `run_tool.bat`，依次输入本次源 Excel、输出文件和可选的上次结果路径。
+双击：
 
-也可以使用命令行：
+```text
+run_tool.bat
+```
+
+按提示依次粘贴以下完整路径：
+
+1. 遗留量 Excel 文件
+2. 当月订货 Excel 文件
+3. 要货明细 Excel 文件
+4. 国家运输周期 Excel 文件
+5. 输出 Excel 文件，例如 `D:\收入统计\result.xlsx`
+6. 上一次成功结果文件
+
+四个源文件可以放在任意文件夹，不需要复制到工具目录，但必须选择四个不同的 Excel 文件。
+
+第一次运行时，第 6 项直接按回车留空。后续运行需要跨期比较或继承人工填写字段时，第 6 项选择上一次成功生成的结果文件。
+
+可以在 Windows 文件资源管理器中对文件使用“复制为路径”，然后直接粘贴；脚本会自动处理路径两侧的双引号。
+
+运行成功后，窗口会显示结果文件路径和各 Sheet 的记录数量。
+
+## 四、常见问题
+
+- 提示“请先运行 setup_windows.bat”：说明尚未安装，或工具文件夹移动后需要重新安装。
+- 提示“工作簿不存在”：检查粘贴的是完整文件路径，并确认文件没有被移动或重命名。
+- 输出路径必须包含文件名和 `.xlsx` 后缀，不能只填写文件夹。
+- 输出文件不能覆盖四个源文件，也不能覆盖作为上期输入的结果文件。
+- Excel 文件正在打开时可能无法覆盖原结果；请先关闭该文件再运行。
+
+## 五、命令行方式
+
+通常直接使用 `run_tool.bat` 即可。需要命令行运行时：
 
 ```powershell
-py -3 -m venv .venv
-.venv\Scripts\python -m pip install .
-.venv\Scripts\python -m revenue_tool template --output input-template.xlsx --config config
-.venv\Scripts\python -m revenue_tool run --input input.xlsx --output result.xlsx --config config
-.venv\Scripts\python -m revenue_tool run --input input.xlsx --output result.xlsx --previous last-result.xlsx --config config
+.\.venv\Scripts\python.exe -m revenue_tool `
+  --legacy "D:\数据\遗留量.xlsx" `
+  --monthly-order "D:\数据\当月订货.xlsx" `
+  --demand-detail "D:\数据\要货明细.xlsx" `
+  --transit "D:\数据\国家运输周期.xlsx" `
+  --output "D:\结果\result.xlsx" `
+  --config ".\config\default.json"
 ```
 
-## 输入契约
-
-默认字段如下，实际列名可在配置中修改：
-
-| Sheet | 必填字段 | 可选字段 |
-|---|---|---|
-| PRD | PO Number、PRD、Original PO Quantity | Contract Number、Shipping Point |
-| Shipment | PO Number、Plan Month、Plan Quantity、Contract Number、Shipping Point、Trade Type | Shipment ID、Revenue Amount |
-| Transit Days | Trade Type、Transit Days | 无 |
-
-为了可靠对比多次运行，建议提供稳定的 `Shipment ID`。没有时工具会使用 PO、合同、发货点、贸易类型和计划数量生成稳定业务键。
-
-## 验证
+需要读取上一次结果时，再增加：
 
 ```powershell
-$env:PYTHONPATH="src"
-python -m unittest discover -s tests -v
+--previous "D:\结果\last-result.xlsx"
 ```
-
-测试覆盖：相同记录去重、不同合同/发货点不合并、PRD 取最早、数量取最大、特殊贸易周期、按月收入归集，以及延迟一个月标记。
