@@ -8,9 +8,20 @@ from revenue_tool.application.pipeline import run_pipeline
 from revenue_tool.domain.models import WorkbookReadError
 
 
+def default_config_path() -> Path:
+    """Return the bundled config path for source and frozen builds."""
+    if getattr(sys, "frozen", False):
+        return Path(getattr(sys, "_MEIPASS")) / "config" / "default.json"
+    return Path(__file__).resolve().parents[2] / "config" / "default.json"
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Excel tool graphical launcher")
-    parser.add_argument("--config", required=True, help="Configuration JSON path")
+    parser.add_argument(
+        "--config",
+        default=str(default_config_path()),
+        help="Configuration JSON path (defaults to the bundled configuration)",
+    )
     return parser
 
 

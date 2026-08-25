@@ -1,82 +1,38 @@
-# Excel 工具使用说明
+# Excel 收入统计工具
 
-## 一、下载
+## Windows 使用方式（推荐）
 
-推荐直接下载最新版压缩包：
+1. 打开 [Windows 构建页面](https://github.com/olu37776-bit/excel-arrival-tool/actions/workflows/build-windows-exe.yml)。
+2. 进入最新一次成功的构建，在页面底部下载 `ExcelRevenueTool-Windows`。
+3. 解压后双击 `ExcelRevenueTool.exe`。不需要安装 Python，也不需要运行 BAT 或打开终端。
+4. 在窗口中依次选择四个独立的源文件：
+   - 遗留量 Excel
+   - 当月订货 Excel
+   - 要货明细 Excel
+   - 国家运输周期 Excel
+5. 选择结果保存位置，然后点击“开始生成”。
 
-https://github.com/olu37776-bit/excel-arrival-tool/archive/refs/heads/main.zip
+第一次运行时，“上一次成功结果”留空。以后需要跨期比较或继承人工填写字段时，选择上一次成功生成的结果文件。
 
-下载完成后，先把 ZIP 完整解压到一个固定文件夹，不要直接在压缩包内运行。
+如果 Windows SmartScreen 提示未识别应用，这是因为程序尚未购买代码签名证书；可点击“更多信息”后选择“仍要运行”。
 
-也可以使用 Git：
+## Python 方式（备用）
+
+电脑已安装 Python 3.10 或更高版本时，可以解压[源码](https://github.com/olu37776-bit/excel-arrival-tool/archive/refs/heads/main.zip)，然后在工具目录执行：
 
 ```powershell
-git clone https://github.com/olu37776-bit/excel-arrival-tool.git
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install .
+.\.venv\Scripts\python.exe -m revenue_tool.gui --config .\config\default.json
 ```
 
-## 二、首次安装
+图形窗口中的四个源文件可以位于任意文件夹，不需要放进工具目录。
 
-电脑需要先安装 Python 3.10 或更高版本。安装 Python 时请勾选 `Add Python to PATH`。
+## 常见问题
 
-进入解压后的工具文件夹，双击：
-
-```text
-setup_windows.bat
-```
-
-安装窗口会依次显示 Python 检查、环境创建和依赖安装进度。看到 `SETUP COMPLETED` 后即可关闭窗口。首次安装需要联网下载依赖。
-
-以后更新了工具版本，需要重新执行一次 `setup_windows.bat`。
-
-## 三、运行
-
-双击：
-
-```text
-run_tool.bat
-```
-
-运行后会打开文件选择窗口，不需要在黑色命令窗口里输入路径。依次选择：
-
-1. 遗留量 Excel 文件
-2. 当月订货 Excel 文件
-3. 要货明细 Excel 文件
-4. 国家运输周期 Excel 文件
-5. 结果保存位置
-6. 上一次成功结果文件（可选）
-
-四个源文件可以放在任意文件夹，不需要复制到工具目录，但必须选择四个不同的 Excel 文件。
-
-第一次运行时不选择第 6 项。后续运行需要跨期比较或继承人工填写字段时，第 6 项选择上一次成功生成的结果文件。
-
-选择完成后点击“开始生成”。成功后窗口会显示结果文件路径和各 Sheet 的记录数量。
-
-## 四、常见问题
-
-- 提示本地环境不存在：说明尚未安装，或工具文件夹移动后需要重新执行 `setup_windows.bat`。
+- 双击 EXE 后首次显示较慢：单文件程序需要先解压运行组件，请等待几秒。
 - 提示“工作簿不存在”：重新选择文件，并确认文件没有被移动或重命名。
-- 输出路径必须包含文件名和 `.xlsx` 后缀，不能只填写文件夹。
-- 输出文件不能覆盖四个源文件，也不能覆盖作为上期输入的结果文件。
-- Excel 文件正在打开时可能无法覆盖原结果；请先关闭该文件再运行。
-- 双击脚本仍被 Windows 阻止时：右键下载的 ZIP，选择“属性”，勾选“解除锁定”，再重新解压。
-- 需要查看完整错误时：在工具文件夹空白处右键“在终端中打开”，运行 `.\setup_windows.bat` 或 `.\run_tool.bat`。
-
-## 五、命令行方式
-
-通常直接使用 `run_tool.bat` 即可。需要命令行运行时：
-
-```powershell
-.\.venv\Scripts\python.exe -m revenue_tool `
-  --legacy "D:\数据\遗留量.xlsx" `
-  --monthly-order "D:\数据\当月订货.xlsx" `
-  --demand-detail "D:\数据\要货明细.xlsx" `
-  --transit "D:\数据\国家运输周期.xlsx" `
-  --output "D:\结果\result.xlsx" `
-  --config ".\config\default.json"
-```
-
-需要读取上一次结果时，再增加：
-
-```powershell
---previous "D:\结果\last-result.xlsx"
-```
+- 输出路径必须包含文件名和 `.xlsx` 后缀。
+- 输出文件不能覆盖源文件或作为输入的上一次结果。
+- Excel 文件正在打开时可能无法覆盖原结果，请先关闭该文件。
+- 公司安全策略直接拦截 EXE：需要由公司 IT 放行，或改用上面的 Python 方式。
