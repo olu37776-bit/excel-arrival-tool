@@ -46,15 +46,6 @@ class RevenueEngine:
             source,
             issues,
         )
-        _log_country_conflicts(
-            legacy_rows,
-            monthly_rows,
-            demand_rows,
-            source,
-            issues,
-        )
-        _log_control_flag_mismatches(demand_rows, source, issues)
-
         contracts = {
             row.values["contract_no"]
             for row in legacy_rows + monthly_rows + demand_rows
@@ -106,7 +97,6 @@ class RevenueEngine:
                     issues,
                     business_key,
                 )
-                group_first = group[0]
                 demand_contract = demand_first_by_contract.get(contract)
                 legacy = legacy_first.get(contract)
                 monthly = monthly_first.get(contract)
@@ -132,7 +122,7 @@ class RevenueEngine:
                     _value(monthly, "bg"),
                     _value(demand_contract, "bg"),
                 )
-                incoterm = _value(group_first, "incoterm")
+                incoterm = _first_nonblank_value(group, "incoterm")
 
                 ata_values = _valid_dates(group, "ata")
                 asd_values = _valid_dates(group, "asd")
@@ -310,61 +300,6 @@ def _first_by_contract(
         if contract and str(contract) not in result:
             result[str(contract)] = row
     return result
-
-
-def _log_country_conflicts(
-    legacy_rows: list[ParsedRow],
-    monthly_rows: list[ParsedRow],
-    demand_rows: list[ParsedRow],
-    source: SourceData,
-    issues: IssueLog,
-) -> None:
-    grouped: dict[str, list[ParsedRow]] = defaultdict(list)
-    for row in legacy_rows + monthly_rows + demand_rows:
-        contract = row.values.get("contract_no")
-        if contract:
-            grouped[str(contract)].append(row)
-    for contract, rows in grouped.items():
-        entries = _distinct_nonblank_entries(rows, "country")
-        if len(entries) > 1:
-            issues.add(
-                "CONFLICTING_COUNTRY_FOR_CONTRACT",
-                "同一合同在源数据中出现多个不同国家；仍按字段优先级和源表首条继续",
-                workbook=rows[0].workbook,
-                business_key=contract,
-                field="country",
-                raw_value=" | ".join(
-                    _source_value(row, value)
-                    for value, row in entries
-                ),
-            )
-
-
-def _log_control_flag_mismatches(
-    rows: list[ParsedRow],
-    source: SourceData,
-    issues: IssueLog,
-) -> None:
-    for row in rows:
-        stock = row.values.get("stock_control_flag")
-        shipment = row.values.get("shipment_control_flag")
-        if (
-            stock in {"Y", "N"}
-            and shipment in {"Y", "N"}
-            and stock != shipment
-        ):
-            contract = str(row.values.get("contract_no") or "")
-            center = str(row.values.get("supply_center") or "")
-            issues.add(
-                "CONTROL_FLAG_MISMATCH",
-                "同一要货明细记录的备货总控标识与发货总控标识不同步",
-                workbook=row.workbook,
-                sheet=row.sheet,
-                row_number=row.row_number,
-                business_key=_display_key((contract, center)),
-                field="stock_control_flag+shipment_control_flag",
-                raw_value=f"{stock} | {shipment}",
-            )
 
 
 def _log_contract_conflicts(
@@ -679,6 +614,14 @@ def _fallback(*values: Any) -> Any:
 
 def _value(row: ParsedRow | None, field: str) -> Any:
     return row.values.get(field) if row is not None else None
+
+
+def _first_nonblank_value(rows: list[ParsedRow], field: str) -> Any:
+    for row in rows:
+        value = row.values.get(field)
+        if nonblank(value):
+            return value
+    return None
 
 
 def _month(value: date | None) -> str | None:

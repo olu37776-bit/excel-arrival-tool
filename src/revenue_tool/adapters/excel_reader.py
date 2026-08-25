@@ -326,6 +326,19 @@ class ExcelInputAdapter:
                     epoch,
                 )
                 values[field] = value
+                if (
+                    field_spec["type"] == "text"
+                    and _is_blank_placeholder(raw)
+                ):
+                    issues.add(
+                        "TEXT_PLACEHOLDER_NORMALIZED_TO_BLANK",
+                        "文本型空白占位符已归一为空值，后续字段回退链可正常触发",
+                        workbook=workbook_path.name,
+                        sheet=sheet.title,
+                        row_number=row_number,
+                        field=field,
+                        raw_value=raw,
+                    )
                 if not valid:
                     invalid.add(field)
                     issues.add(
@@ -445,6 +458,8 @@ def _parse_source_cell(
     if raw is None or (isinstance(raw, str) and not raw.strip()):
         return None, True
     if field_type == "text":
+        if _is_blank_placeholder(raw):
+            return None, True
         return _text_from_cell(cell), True
     if field_type == "flag":
         value = normalize_text(raw).upper()
@@ -453,7 +468,7 @@ def _parse_source_cell(
         value = _parse_decimal(raw)
         return value, value is not None
     if field_type == "date":
-        if normalize_text(raw) == "(空白)":
+        if _is_blank_placeholder(raw):
             return None, True
         value = _parse_date(raw, epoch)
         return value, value is not None
@@ -464,6 +479,10 @@ def _parse_source_cell(
         )
         return value, value is not None
     return normalize_text(raw), True
+
+
+def _is_blank_placeholder(value: Any) -> bool:
+    return isinstance(value, str) and normalize_text(value) == "(空白)"
 
 
 def _text_from_cell(cell) -> str:

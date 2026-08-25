@@ -55,6 +55,7 @@
   "rules": {
     "fixed_transit_days": {"FCA": 5, "FOB": 5, "EXW": 5},
     "carryover_countries": ["阿拉伯联合酋长国", "巴基斯坦", "巴西", "菲律宾", "马来西亚", "沙特阿拉伯", "印度尼西亚"],
+    "amount_residual_warning_threshold": "0.005",
     "stock_flag_delimiter": "|",
     "group_text_conflict_strategy": "first_with_issue"
   },

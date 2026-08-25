@@ -39,6 +39,19 @@ class ConfigTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "输出 Sheet"):
                 load_config(path)
 
+    def test_nonpositive_amount_residual_threshold_is_rejected(self) -> None:
+        data = json.loads(CONFIG.read_text(encoding="utf-8"))
+        data["rules"]["amount_residual_warning_threshold"] = "0"
+
+        with TemporaryDirectory() as temporary:
+            path = Path(temporary) / "invalid.json"
+            path.write_text(
+                json.dumps(data, ensure_ascii=False), encoding="utf-8"
+            )
+
+            with self.assertRaisesRegex(ValueError, "必须为正有限数"):
+                load_config(path)
+
 
 if __name__ == "__main__":
     unittest.main()

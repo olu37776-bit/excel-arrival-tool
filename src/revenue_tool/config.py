@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 import json
 from pathlib import Path
 import unicodedata
@@ -132,11 +133,8 @@ def _validate(raw: dict[str, Any]) -> None:
         ].strip():
             raise ValueError(f"Sheet 角色 {role} canonical 不能为空")
         _validate_aliases(spec.get("aliases", []), f"Sheet 角色 {role}")
-        expected_optional = role == "monthly_order"
-        if spec.get("optional") is not expected_optional:
-            raise ValueError(
-                "只有 monthly_order 可配置为可选 Sheet"
-            )
+        if spec.get("optional") is not False:
+            raise ValueError("四个源文件角色均为必需，optional 必须为 false")
         header_row = spec.get("header_row")
         if header_row is not None and (
             not isinstance(header_row, int)
@@ -166,6 +164,9 @@ def _validate(raw: dict[str, Any]) -> None:
         "asd",
         "rpd",
         "multiple_demand",
+        "latest_asd",
+        "latest_rpd",
+        "shipment_incomplete",
         "cpd",
         "split_supply",
         "arrival_date_rpd",
@@ -178,7 +179,7 @@ def _validate(raw: dict[str, Any]) -> None:
         "adjustment_note",
     ]
     if not _valid_columns(columns, expected_base_ids):
-        raise ValueError("基表 29 个稳定字段 ID、顺序和显示名必须符合契约")
+        raise ValueError("基表 32 个稳定字段 ID、顺序和显示名必须符合契约")
     expected_change_common = [
         "contract_no",
         "legacy_amount",
@@ -191,6 +192,15 @@ def _validate(raw: dict[str, Any]) -> None:
     change_common = raw["output"].get("change_common_columns", [])
     if not _valid_columns(change_common, expected_change_common):
         raise ValueError("变化清单公共字段 ID 或顺序不符合契约")
+    expected_supply_pull = expected_change_common + [
+        "revenue_month_rpd",
+        "revenue_month_cpd",
+    ]
+    if not _valid_columns(
+        raw["output"].get("supply_pull_columns", []),
+        expected_supply_pull,
+    ):
+        raise ValueError("供应需要提拉诉求清单字段 ID 或顺序不符合契约")
     change_tails = raw["output"].get("change_tail_columns")
     if not isinstance(change_tails, dict) or set(change_tails) != {
         "rpd",
@@ -238,7 +248,13 @@ def _validate(raw: dict[str, Any]) -> None:
     )
     if (
         set(output_sheets)
-        != {"base", "rpd_changes", "cpd_changes", "issues"}
+        != {
+            "base",
+            "rpd_changes",
+            "cpd_changes",
+            "supply_pull",
+            "issues",
+        }
         or not output_names_are_valid
         or len({_name_identity(name) for name in output_sheet_names})
         != len(output_sheet_names)
@@ -246,7 +262,7 @@ def _validate(raw: dict[str, Any]) -> None:
         in {_name_identity(name) for name in output_sheet_names}
         or any(not _valid_sheet_name(name) for name in output_sheet_names)
     ):
-        raise ValueError("四个输出 Sheet 显示名必须非空、唯一且不能占用 _tool_meta")
+        raise ValueError("五个输出 Sheet 显示名必须非空、唯一且不能占用 _tool_meta")
     if raw["workbook"].get("contains_direction") not in {
         "header_contains_expected",
         "either",
@@ -289,6 +305,18 @@ def _validate(raw: dict[str, Any]) -> None:
         for country in carryover
     ):
         raise ValueError("carryover_countries 必须为非空字符串数组")
+    try:
+        amount_threshold = Decimal(
+            str(raw["rules"].get("amount_residual_warning_threshold"))
+        )
+    except InvalidOperation as exc:
+        raise ValueError(
+            "amount_residual_warning_threshold 必须为正有限数"
+        ) from exc
+    if not amount_threshold.is_finite() or amount_threshold <= 0:
+        raise ValueError(
+            "amount_residual_warning_threshold 必须为正有限数"
+        )
     delimiter = raw["rules"].get("stock_flag_delimiter")
     if not isinstance(delimiter, str) or not delimiter:
         raise ValueError("stock_flag_delimiter 必须为非空字符串")

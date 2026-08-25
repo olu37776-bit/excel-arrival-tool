@@ -34,6 +34,15 @@ class ResilienceTest(unittest.TestCase):
         self.assertIsNone(value)
         self.assertTrue(valid)
 
+    def test_blank_placeholder_is_a_valid_empty_text(self) -> None:
+        value, valid = _parse_source_cell(
+            "text",
+            SimpleNamespace(value="（空白）", data_type="s"),
+            CALENDAR_WINDOWS_1900,
+        )
+        self.assertIsNone(value)
+        self.assertTrue(valid)
+
     def test_amount_outside_excel_numeric_range_is_invalid(self) -> None:
         value, valid = _parse_source_cell(
             "amount",

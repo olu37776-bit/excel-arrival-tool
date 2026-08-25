@@ -16,6 +16,7 @@ from revenue_tool.services.comparison import (
     build_supply_pull_rows,
     compare_revenue_months,
 )
+from revenue_tool.services.data_quality import DataQualityAnalyzer
 
 
 def run_pipeline(
@@ -51,6 +52,7 @@ def run_pipeline(
     issues = IssueLog()
     reader = ExcelInputAdapter()
     source = reader.read_source(source_files, config, issues)
+    DataQualityAnalyzer().analyze(source, config, issues)
     previous = (
         reader.read_previous(previous_path, config, issues)
         if previous_path

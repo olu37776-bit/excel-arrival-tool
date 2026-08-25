@@ -76,6 +76,8 @@ class PipelineTest(unittest.TestCase):
                 )
 
                 c003 = rows[("C003", "SC-C")]
+                self.assertEqual("客户3D", c003["客户群"])
+                self.assertEqual("CIF", c003["贸易术语"])
                 self.assertEqual("N", c003["货未发完"])
                 self.assertEqual(date(2026, 4, 15), _as_date(c003["最晚ASD"]))
                 self.assertEqual(date(2026, 3, 1), _as_date(c003["最晚RPD"]))
@@ -120,6 +122,20 @@ class PipelineTest(unittest.TestCase):
                 self.assertIn("ARRIVAL_CPD_UNAVAILABLE", codes)
                 self.assertIn("CONTROL_FLAG_MISMATCH", codes)
                 self.assertIn("SHIPMENT_STATUS_UNAVAILABLE", codes)
+                self.assertIn("TEXT_PLACEHOLDER_NORMALIZED_TO_BLANK", codes)
+                self.assertIn("SUSPECT_AMOUNT_FLOAT_RESIDUE", codes)
+                self.assertIn("MISSING_INCOTERM", codes)
+                self.assertNotIn("CONTROL_FLAG_COUNT_MISMATCH", codes)
+                control_mismatches = [
+                    row for row in issue_rows if row[0] == "CONTROL_FLAG_MISMATCH"
+                ]
+                self.assertEqual(2, len(control_mismatches))
+                self.assertEqual([6, 11], [row[4] for row in control_mismatches])
+                missing_incoterm = next(
+                    row for row in issue_rows if row[0] == "MISSING_INCOTERM"
+                )
+                self.assertEqual("first-demand.xlsx", missing_incoterm[2])
+                self.assertEqual(7, missing_incoterm[4])
                 transit_conflict = next(
                     row for row in issue_rows if row[0] == "CONFLICTING_TRANSIT_DAYS"
                 )
@@ -392,8 +408,8 @@ def _write_sources(
         ["C001", "地区L", "阿拉伯联合酋长国", "客户L", "项目L", "BG-L", 100],
         ["C001", "地区L", "阿拉伯联合酋长国", "客户L", "项目L", "BG-L", 100],
         ["C001", "地区L", "巴西", "客户L", "项目L", "BG-L", 999],
-        ["C002", "地区2", "中国", "客户2", "项目2", "BG-2", 200],
-        ["C003", "地区3", "日本", "客户3", "项目3", "BG-3", 300],
+        ["C002", "地区2", "中国", "客户2", "项目2", "BG-2", 2e-13],
+        ["C003", "地区3", "日本", "（空白）", "项目3", "BG-3", 300],
     ]:
         legacy.append(row)
     legacy_book.save(legacy_path)
@@ -436,8 +452,13 @@ def _write_sources(
         demand.append(sc_a_2)
         demand.append([
             "C001", "地区D", "阿拉伯联合酋长国", "客户D", "项目D", "有效",
-            "SC-B", "fob", "Y", "Y", date(2026, 3, 10), "（空白）",
+            "SC-B", "fob", "Y", "N", date(2026, 3, 10), "（空白）",
             date(2026, 2, 1), date(2026, 2, 10), "BG-D",
+        ])
+        demand.append([
+            "C003", "地区3D", "日本", "客户3D", "项目3D", "有效", "SC-C",
+            None, "Y", "Y", None, date(2026, 4, 15), date(2026, 3, 1),
+            date(2026, 3, 5), "BG-3D",
         ])
         demand.append([
             "C003", "地区3D", "日本", "客户3D", "项目3D", "有效", "SC-C",
