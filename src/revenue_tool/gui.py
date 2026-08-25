@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 
 from revenue_tool.application.pipeline import run_pipeline
+from revenue_tool.config import load_config
 from revenue_tool.domain.models import WorkbookReadError
 
 
@@ -22,11 +23,18 @@ def build_parser() -> argparse.ArgumentParser:
         default=str(default_config_path()),
         help="Configuration JSON path (defaults to the bundled configuration)",
     )
+    parser.add_argument("--smoke-test", action="store_true", help=argparse.SUPPRESS)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.smoke_test:
+        import tkinter  # noqa: F401 - verifies the frozen GUI runtime
+
+        load_config(args.config)
+        return 0
+
     try:
         import tkinter as tk
         from tkinter import filedialog, messagebox, ttk

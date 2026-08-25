@@ -37,6 +37,14 @@ jobs:
           --add-data "config/default.json;config"
           src/revenue_tool/gui.py
 
+      - name: Test built executable
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath "dist\ExcelRevenueTool.exe" -ArgumentList "--smoke-test" -Wait -PassThru
+          if ($process.ExitCode -ne 0) {
+            throw "Windows executable smoke test failed with exit code $($process.ExitCode)"
+          }
+
       - name: Create checksum
         shell: pwsh
         run: |
