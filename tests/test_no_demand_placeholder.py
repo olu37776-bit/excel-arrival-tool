@@ -8,6 +8,7 @@ import unittest
 
 from openpyxl import load_workbook
 
+from revenue_tool.adapters.excel_reader import ExcelInputAdapter
 from revenue_tool.config import load_config
 from revenue_tool.domain.models import (
     BaseRow,
@@ -235,6 +236,99 @@ class NoDemandPlaceholderTest(unittest.TestCase):
             finally:
                 workbook.close()
 
+    def test_new_result_persists_explicit_row_kind_in_hidden_metadata(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "explicit", variant="first")
+            output = directory / "result.xlsx"
+            _run(sources, output)
+
+            workbook = load_workbook(output)
+            try:
+                base = workbook["基表"]
+                headers = {cell.value: cell.column for cell in base[1]}
+                for row_number in range(2, base.max_row + 1):
+                    if base.cell(row_number, headers["合同号"]).value == "C002":
+                        base.cell(
+                            row_number,
+                            headers["收入分段类别"],
+                            "被人工改动",
+                        )
+                        break
+                workbook.save(output)
+            finally:
+                workbook.close()
+
+            issues = IssueLog()
+            previous = ExcelInputAdapter().read_previous(
+                output, load_config(CONFIG), issues
+            )
+
+            row = previous.rows[business_key_identity("C002", None)]
+            self.assertEqual(CONTRACT_ONLY_NO_DEMAND, row.row_kind)
+            self.assertNotIn(
+                "PREVIOUS_ROW_KIND_UNAVAILABLE",
+                {issue.code for issue in issues.items},
+            )
+
+    def test_schema_v2_result_infers_no_demand_from_visible_fields(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "legacy", variant="first")
+            output = directory / "result.xlsx"
+            _run(sources, output)
+
+            workbook = load_workbook(output)
+            try:
+                metadata = workbook["_tool_meta"]
+                metadata["B1"] = "2"
+                metadata.delete_rows(37, metadata.max_row - 36)
+                workbook.save(output)
+            finally:
+                workbook.close()
+
+            previous = ExcelInputAdapter().read_previous(
+                output, load_config(CONFIG), IssueLog()
+            )
+
+            self.assertEqual(
+                CONTRACT_ONLY_NO_DEMAND,
+                previous.rows[business_key_identity("C002", None)].row_kind,
+            )
+
+    def test_blank_month_demand_to_no_demand_is_written_to_both_change_sheets(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            first_sources = _write_sources(directory, "first", variant="first")
+            second_sources = _write_sources(directory, "second", variant="second")
+            previous = directory / "previous.xlsx"
+            output = directory / "current.xlsx"
+            _run(first_sources, previous)
+            _clear_result_months(previous, "C003", "SC-C")
+
+            result = _run(second_sources, output, previous=previous)
+
+            self.assertGreaterEqual(result.rpd_change_count, 1)
+            self.assertGreaterEqual(result.cpd_change_count, 1)
+            workbook = load_workbook(output, data_only=True)
+            try:
+                for mode, sheet_name in (
+                    ("RPD", "RPD跨月变化"),
+                    ("CPD", "CPD跨月变化"),
+                ):
+                    row = _base_rows(workbook[sheet_name])[("C003", "SC-C")]
+                    self.assertEqual("变为不要货", row["变化方向"])
+                    self.assertIsNone(row[f"上期收入年月（按{mode}）"])
+                    self.assertIsNone(row[f"本期收入年月（按{mode}）"])
+            finally:
+                workbook.close()
+
 
 def _row(role: str, overrides: dict[str, object]) -> ParsedRow:
     config = load_config(CONFIG)
@@ -305,6 +399,29 @@ def _append_demand_contract(path: Path, contract: str, center: str) -> None:
                 "BG-2D",
             ]
         )
+        workbook.save(path)
+    finally:
+        workbook.close()
+
+
+def _clear_result_months(path: Path, contract: str, center: str) -> None:
+    workbook = load_workbook(path)
+    try:
+        sheet = workbook["基表"]
+        headers = {cell.value: cell.column for cell in sheet[1]}
+        for row_number in range(2, sheet.max_row + 1):
+            if (
+                sheet.cell(row_number, headers["合同号"]).value == contract
+                and sheet.cell(row_number, headers["履行供应中心"]).value
+                == center
+            ):
+                sheet.cell(
+                    row_number, headers["收入年月（按RPD）"]
+                ).value = None
+                sheet.cell(
+                    row_number, headers["收入年月（按CPD）"]
+                ).value = None
+                break
         workbook.save(path)
     finally:
         workbook.close()

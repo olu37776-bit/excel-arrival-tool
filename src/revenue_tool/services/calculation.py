@@ -24,6 +24,7 @@ from revenue_tool.services.normalization import (
     normalize_text,
     ZERO_AMOUNT,
 )
+from revenue_tool.services.stock_unlock import aggregate_stock_unlock
 
 
 @dataclass(frozen=True)
@@ -67,8 +68,6 @@ class RevenueEngine:
             normalize_country_identity(value)
             for value in config.rules["carryover_countries"]
         }
-        delimiter = str(config.rules["stock_flag_delimiter"])
-
         result: list[BaseRow] = []
         for contract in sorted(contracts, key=normalize_lookup):
             demand_contract = demand_first_by_contract.get(contract)
@@ -165,11 +164,6 @@ class RevenueEngine:
                     business_key=business_key,
                 )
 
-                stock_values = [
-                    str(row.values["stock_control_flag"])
-                    for row in group
-                    if nonblank(row.values.get("stock_control_flag"))
-                ]
                 multiple_demand = (
                     "Y" if len(set(rpd_values)) > 1 else "N"
                 )
@@ -190,10 +184,9 @@ class RevenueEngine:
                     "incoterm": incoterm,
                     "supply_center": center,
                     "multiple_supply_centers": multiple_centers,
-                    "stock_unlocked": (
-                        delimiter.join(stock_values)
-                        if stock_values
-                        else None
+                    "stock_unlocked": aggregate_stock_unlock(
+                        row.values.get("stock_control_flag")
+                        for row in group
                     ),
                     "split_shipment": "Y" if len(group) > 1 else "N",
                     "transit_days": transit_days,

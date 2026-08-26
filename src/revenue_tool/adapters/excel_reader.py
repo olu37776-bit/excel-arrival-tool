@@ -120,7 +120,11 @@ class ExcelInputAdapter:
         workbook_path = Path(path)
         workbook = _open_workbook(workbook_path)
         try:
-            expected_sheet, previous_names = _read_previous_metadata(
+            (
+                expected_sheet,
+                previous_names,
+                previous_row_kinds,
+            ) = _read_previous_metadata(
                 workbook,
                 config,
                 workbook_path,
@@ -221,25 +225,46 @@ class ExcelInputAdapter:
                     str(values.get("contract_no") or ""),
                     str(values.get("supply_center") or ""),
                 )
-                is_no_demand_placeholder = (
-                    bool(display_key[0])
-                    and not display_key[1]
-                    and normalize_text(values.get("revenue_segment"))
-                    == "不要货"
+                key = business_key_identity(*display_key)
+                if previous_row_kinds is None:
+                    row_kind = (
+                        CONTRACT_ONLY_NO_DEMAND
+                        if bool(display_key[0])
+                        and not display_key[1]
+                        and normalize_text(values.get("revenue_segment"))
+                        == "不要货"
+                        else DEMAND_CENTER
+                    )
+                else:
+                    row_kind = previous_row_kinds.get(key)
+                    if row_kind is None:
+                        issues.add(
+                            "PREVIOUS_ROW_KIND_UNAVAILABLE",
+                            "上期结果缺少该业务键的显式行状态，已排除该行",
+                            workbook=workbook_path.name,
+                            sheet="_tool_meta",
+                            row_number=row_number,
+                            business_key=" | ".join(display_key),
+                            field="row_kind",
+                        )
+                        continue
+                valid_key = bool(display_key[0]) and (
+                    (
+                        row_kind == CONTRACT_ONLY_NO_DEMAND
+                        and not display_key[1]
+                    )
+                    or (row_kind == DEMAND_CENTER and bool(display_key[1]))
                 )
-                if not display_key[0] or (
-                    not display_key[1] and not is_no_demand_placeholder
-                ):
+                if not valid_key:
                     issues.add(
                         "PREVIOUS_INVALID_BUSINESS_KEY",
-                        "上期基表业务键不完整，无法继承或比较",
+                        "上期基表业务键与显式行状态不一致，无法继承或比较",
                         workbook=workbook_path.name,
                         sheet=sheet.title,
                         row_number=row_number,
                         business_key=" | ".join(display_key),
                     )
                     continue
-                key = business_key_identity(*display_key)
                 if key in rows:
                     issues.add(
                         "PREVIOUS_DUPLICATE_BUSINESS_KEY",
@@ -250,14 +275,7 @@ class ExcelInputAdapter:
                         business_key=_display_key(display_key),
                     )
                     continue
-                rows[key] = BaseRow(
-                    values,
-                    row_kind=(
-                        CONTRACT_ONLY_NO_DEMAND
-                        if is_no_demand_placeholder
-                        else DEMAND_CENTER
-                    ),
-                )
+                rows[key] = BaseRow(values, row_kind=row_kind)
             return PreviousData(rows, usable=True)
         finally:
             workbook.close()
@@ -635,11 +653,15 @@ def _read_previous_metadata(
     config: ToolConfig,
     workbook_path: Path,
     issues: IssueLog,
-) -> tuple[str, dict[str, str]]:
+) -> tuple[
+    str,
+    dict[str, str],
+    dict[tuple[str, str], str] | None,
+]:
     default_sheet = config.output["sheets"]["base"]
     default_names = config.base_names_by_id
     if "_tool_meta" not in workbook.sheetnames:
-        return default_sheet, default_names
+        return default_sheet, default_names, None
     sheet = workbook["_tool_meta"]
     try:
         if (
@@ -648,16 +670,60 @@ def _read_previous_metadata(
             or normalize_text(sheet["A4"].value) != "field_id"
         ):
             raise ValueError("metadata header mismatch")
+        schema_version = normalize_text(sheet["B1"].value)
+        if schema_version not in {"2", "3"}:
+            raise ValueError("unsupported metadata schema")
         base_sheet = normalize_text(sheet["B2"].value)
         names: dict[str, str] = {}
         for row_number in range(5, sheet.max_row + 1):
             field = normalize_text(sheet.cell(row_number, 1).value)
             name = normalize_text(sheet.cell(row_number, 2).value)
-            if field and name:
-                names[field] = name
+            if not field:
+                break
+            if field not in config.base_names_by_id:
+                raise ValueError("unknown field metadata")
+            if not name:
+                raise ValueError("field metadata name missing")
+            names[field] = name
         if not base_sheet or not names:
             raise ValueError("metadata content is incomplete")
-        return base_sheet, names
+        if schema_version == "2":
+            return base_sheet, names, None
+
+        row_kind_header = None
+        for row_number in range(5, sheet.max_row + 1):
+            if (
+                normalize_text(sheet.cell(row_number, 1).value)
+                == "row_kind_contract_no"
+                and normalize_text(sheet.cell(row_number, 2).value)
+                == "row_kind_supply_center"
+                and normalize_text(sheet.cell(row_number, 3).value)
+                == "row_kind"
+            ):
+                row_kind_header = row_number
+                break
+        if row_kind_header is None:
+            raise ValueError("row kind metadata missing")
+        row_kinds: dict[tuple[str, str], str] = {}
+        for row_number in range(row_kind_header + 1, sheet.max_row + 1):
+            contract_no = normalize_text(sheet.cell(row_number, 1).value)
+            supply_center = normalize_text(sheet.cell(row_number, 2).value)
+            row_kind = normalize_text(sheet.cell(row_number, 3).value)
+            if not contract_no and not supply_center and not row_kind:
+                continue
+            if row_kind not in {DEMAND_CENTER, CONTRACT_ONLY_NO_DEMAND}:
+                raise ValueError("invalid row kind")
+            if not contract_no or (
+                row_kind == DEMAND_CENTER and not supply_center
+            ) or (
+                row_kind == CONTRACT_ONLY_NO_DEMAND and supply_center
+            ):
+                raise ValueError("row kind business key mismatch")
+            key = business_key_identity(contract_no, supply_center)
+            if key in row_kinds:
+                raise ValueError("duplicate row kind business key")
+            row_kinds[key] = row_kind
+        return base_sheet, names, row_kinds
     except Exception:
         issues.add(
             "PREVIOUS_METADATA_INVALID",
@@ -665,4 +731,4 @@ def _read_previous_metadata(
             workbook=workbook_path.name,
             sheet="_tool_meta",
         )
-        return default_sheet, default_names
+        return default_sheet, default_names, None
