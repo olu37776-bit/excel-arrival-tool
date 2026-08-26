@@ -53,11 +53,11 @@ class ParsedRow:
 @dataclass(frozen=True)
 class SourceFiles:
     legacy: Path
-    monthly_order: Path
+    monthly_order: Path | None
     demand_detail: Path
     transit: Path
 
-    def as_dict(self) -> dict[str, Path]:
+    def as_dict(self) -> dict[str, Path | None]:
         return {
             "legacy": self.legacy,
             "monthly_order": self.monthly_order,

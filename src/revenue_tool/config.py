@@ -132,8 +132,11 @@ def _validate(raw: dict[str, Any]) -> None:
         ].strip():
             raise ValueError(f"Sheet 角色 {role} canonical 不能为空")
         _validate_aliases(spec.get("aliases", []), f"Sheet 角色 {role}")
-        if spec.get("optional") is not False:
-            raise ValueError("四个源文件角色均为必需，optional 必须为 false")
+        expected_optional = role == "monthly_order"
+        if spec.get("optional") is not expected_optional:
+            raise ValueError(
+                "仅 monthly_order 可选；其余三个源文件角色必须为必选"
+            )
         required_fields = spec.get("required_fields")
         if (
             not isinstance(required_fields, list)

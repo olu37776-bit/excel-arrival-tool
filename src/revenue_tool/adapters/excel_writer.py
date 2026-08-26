@@ -8,7 +8,6 @@ from typing import Any
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from revenue_tool.config import ToolConfig
 from revenue_tool.domain.models import (
@@ -141,7 +140,7 @@ class ExcelOutputAdapter:
         sheet_name: str,
         columns: list[dict[str, str]],
         rows: list[dict[str, Any]],
-        table_name: str,
+        _table_name: str,
         *,
         date_fields: set[str] | None = None,
         amount_fields: set[str] | None = None,
@@ -197,18 +196,7 @@ class ExcelOutputAdapter:
         last_column = get_column_letter(len(columns))
         last_row = max(1, sheet.max_row)
         reference = f"A1:{last_column}{last_row}"
-        if rows:
-            table = Table(displayName=table_name, ref=reference)
-            table.tableStyleInfo = TableStyleInfo(
-                name="TableStyleMedium2",
-                showFirstColumn=False,
-                showLastColumn=False,
-                showRowStripes=True,
-                showColumnStripes=False,
-            )
-            sheet.add_table(table)
-        else:
-            sheet.auto_filter.ref = reference
+        sheet.auto_filter.ref = reference
 
         for index, column in enumerate(columns, start=1):
             header_length = len(column["name"])

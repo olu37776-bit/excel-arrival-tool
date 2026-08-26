@@ -42,7 +42,10 @@ class PipelineTest(unittest.TestCase):
                 base = workbook["基表"]
                 self.assertEqual(EXPECTED_BASE_HEADERS, [c.value for c in base[1]])
                 self.assertEqual("A2", base.freeze_panes)
-                self.assertTrue(base.tables)
+                for sheet_name in workbook.sheetnames[:5]:
+                    business_sheet = workbook[sheet_name]
+                    self.assertFalse(business_sheet.tables)
+                    self.assertIsNotNone(business_sheet.auto_filter.ref)
 
                 rows = _base_rows(base)
                 sc_a = rows[("C001", "SC-A")]
@@ -219,6 +222,40 @@ class PipelineTest(unittest.TestCase):
             finally:
                 workbook.close()
 
+    def test_monthly_source_may_be_absent_without_issue(self) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "optional", variant="first")
+            output = directory / "result.xlsx"
+
+            result = run_pipeline(
+                sources[0],
+                None,
+                sources[2],
+                sources[3],
+                output,
+                CONFIG,
+            )
+
+            self.assertEqual(6, result.base_count)
+            workbook = load_workbook(output, data_only=True)
+            try:
+                rows = _base_rows(workbook["基表"])
+                self.assertTrue(
+                    all(row["当月新订货"] == 0 for row in rows.values())
+                )
+                self.assertEqual("BG-4", rows[("C004", "SC-D")]["BG"])
+                issue_rows = list(
+                    workbook["异常清单"].iter_rows(
+                        min_row=2, values_only=True
+                    )
+                )
+                self.assertFalse(
+                    any(row[2] == sources[1].name for row in issue_rows)
+                )
+            finally:
+                workbook.close()
+
     def test_all_source_files_support_auto_named_business_sheets(self) -> None:
         with TemporaryDirectory() as temporary:
             directory = Path(temporary)
@@ -306,6 +343,40 @@ class PipelineTest(unittest.TestCase):
                     for row in workbook["异常清单"].iter_rows(min_row=2)
                 ]
                 self.assertIn("INVALID_AMOUNT", codes)
+            finally:
+                workbook.close()
+
+    def test_invalid_transit_value_has_one_traceable_business_issue(self) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "transit", variant="first")
+            _set_transit_value(sources[3], "日本", "SC-C", "bad")
+            output = directory / "result.xlsx"
+
+            _run(sources, output)
+
+            workbook = load_workbook(output, data_only=True)
+            try:
+                headers = [cell.value for cell in workbook["异常清单"][1]]
+                matching = []
+                for values in workbook["异常清单"].iter_rows(
+                    min_row=2, values_only=True
+                ):
+                    item = dict(zip(headers, values))
+                    if (
+                        item["业务键"] == "C003 | SC-C"
+                        and item["异常代码"]
+                        in {"INVALID_TRANSIT_DAYS", "TRANSIT_VALUE_UNAVAILABLE"}
+                    ):
+                        matching.append(item)
+                self.assertEqual(1, len(matching))
+                self.assertEqual(
+                    "INVALID_TRANSIT_DAYS", matching[0]["异常代码"]
+                )
+                self.assertIn("transit_days=bad", matching[0]["原始值"])
+                row = _base_rows(workbook["基表"])[("C003", "SC-C")]
+                self.assertIsNone(row["海运周期"])
+                self.assertIsNone(row["到货日期（按RPD）"])
             finally:
                 workbook.close()
 
@@ -473,7 +544,7 @@ class PipelineTest(unittest.TestCase):
 
             self.assertFalse(output.exists())
 
-    def test_missing_required_source_file_blocks_run(self) -> None:
+    def test_provided_missing_monthly_source_blocks_run(self) -> None:
         with TemporaryDirectory() as temporary:
             directory = Path(temporary)
             sources = list(_write_sources(directory, "first", variant="first"))
@@ -725,6 +796,26 @@ def _move_business_sheet_to_sheet2(path: Path) -> None:
         intro = workbook.create_sheet("Sheet1", 0)
         intro.append(["文件说明"])
         workbook.create_sheet("Sheet3").append(["无关内容"])
+        workbook.save(path)
+    finally:
+        workbook.close()
+
+
+def _set_transit_value(
+    path: Path, country: str, center: str, value
+) -> None:
+    workbook = load_workbook(path)
+    try:
+        sheet = workbook["国家运输周期"]
+        headers = {cell.value: cell.column for cell in sheet[2]}
+        for row_number in range(3, sheet.max_row + 1):
+            if (
+                sheet.cell(row_number, headers["国家"]).value == country
+                and sheet.cell(row_number, headers["供应中心"]).value
+                == center
+            ):
+                sheet.cell(row_number, headers["运输周期"], value)
+                break
         workbook.save(path)
     finally:
         workbook.close()

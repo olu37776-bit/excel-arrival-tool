@@ -6,6 +6,7 @@ from typing import Any
 from revenue_tool.domain.models import IssueLog, ParsedRow, SourceData
 from revenue_tool.services.normalization import (
     nonblank,
+    normalize_country_identity,
     normalize_lookup,
     normalize_text,
 )
@@ -79,7 +80,11 @@ def _distinct_entries(
         value = row.values.get(field)
         if not nonblank(value):
             continue
-        identity = normalize_lookup(value)
+        identity = (
+            normalize_country_identity(value)
+            if field == "country"
+            else normalize_lookup(value)
+        )
         if identity in identities:
             continue
         identities.add(identity)

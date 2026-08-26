@@ -15,7 +15,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--legacy", required=True, help="遗留量 Excel 路径")
     parser.add_argument(
-        "--monthly-order", required=True, help="当月订货 Excel 路径"
+        "--monthly-order", help="可选：当月订货 Excel 路径"
     )
     parser.add_argument(
         "--demand-detail", required=True, help="要货明细 Excel 路径"

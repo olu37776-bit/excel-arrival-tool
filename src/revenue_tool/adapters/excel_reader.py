@@ -43,6 +43,8 @@ class ExcelInputAdapter:
         result: dict[str, list[ParsedRow]] = {role: [] for role in paths}
         sheet_names: dict[str, str] = {}
         for role, workbook_path in paths.items():
+            if workbook_path is None:
+                continue
             workbook = _open_workbook(workbook_path)
             try:
                 resolution = resolve_role_sheet(workbook, role, config)
@@ -334,15 +336,16 @@ class ExcelInputAdapter:
                 values[field] = value
                 if not valid:
                     invalid.add(field)
-                    issues.add(
-                        _error_code_for_type(field_spec["type"]),
-                        _invalid_value_message(field_spec["type"]),
-                        workbook=workbook_path.name,
-                        sheet=sheet.title,
-                        row_number=row_number,
-                        field=field,
-                        raw_value=raw,
-                    )
+                    if not (role == "transit" and field == "transit_days"):
+                        issues.add(
+                            _error_code_for_type(field_spec["type"]),
+                            _invalid_value_message(field_spec["type"]),
+                            workbook=workbook_path.name,
+                            sheet=sheet.title,
+                            row_number=row_number,
+                            field=field,
+                            raw_value=raw,
+                        )
             result.append(
                 ParsedRow(
                     role=role,

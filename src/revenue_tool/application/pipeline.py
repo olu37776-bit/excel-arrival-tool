@@ -21,7 +21,7 @@ from revenue_tool.services.data_quality import DataQualityAnalyzer
 
 def run_pipeline(
     legacy_path: str | Path,
-    monthly_order_path: str | Path,
+    monthly_order_path: str | Path | None,
     demand_detail_path: str | Path,
     transit_path: str | Path,
     output_path: str | Path,
@@ -30,16 +30,19 @@ def run_pipeline(
 ) -> PipelineResult:
     source_files = SourceFiles(
         legacy=Path(legacy_path),
-        monthly_order=Path(monthly_order_path),
+        monthly_order=(
+            Path(monthly_order_path) if monthly_order_path else None
+        ),
         demand_detail=Path(demand_detail_path),
         transit=Path(transit_path),
     )
     source_resolved = {
         role: path.resolve()
         for role, path in source_files.as_dict().items()
+        if path is not None
     }
     if len(set(source_resolved.values())) != len(source_resolved):
-        raise ValueError("四个源文件必须互相独立，不能重复选择同一文件")
+        raise ValueError("已选择的源文件必须互相独立，不能重复选择同一文件")
     output_resolved = Path(output_path).resolve()
     if output_resolved in source_resolved.values():
         raise ValueError("输出文件不能覆盖任何一个本次源文件")

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
@@ -16,10 +17,18 @@ from revenue_tool.domain.models import (
 from revenue_tool.services.normalization import (
     business_key_identity,
     nonblank,
+    normalize_country_identity,
     normalize_lookup,
     normalize_text,
     ZERO_AMOUNT,
 )
+
+
+@dataclass(frozen=True)
+class TransitLookupEntry:
+    row: ParsedRow
+    value: int | None
+    status: str
 
 
 class RevenueEngine:
@@ -53,7 +62,7 @@ class RevenueEngine:
             for key, value in config.rules["fixed_transit_days"].items()
         }
         carryover_countries = {
-            normalize_lookup(value)
+            normalize_country_identity(value)
             for value in config.rules["carryover_countries"]
         }
         delimiter = str(config.rules["stock_flag_delimiter"])
@@ -205,7 +214,7 @@ class RevenueEngine:
                     "country": country,
                     "carryover_type": (
                         "交付类"
-                        if normalize_lookup(legacy_country)
+                        if normalize_country_identity(legacy_country)
                         in carryover_countries
                         else None
                     ),
@@ -334,7 +343,7 @@ def _build_transit_index(
     rows: list[ParsedRow],
     source: SourceData,
     issues: IssueLog,
-) -> dict[tuple[str, str], int | None]:
+) -> dict[tuple[str, str], TransitLookupEntry]:
     grouped: dict[tuple[str, str], list[ParsedRow]] = defaultdict(list)
     for row in rows:
         country = row.values.get("country")
@@ -354,10 +363,10 @@ def _build_transit_index(
             )
             continue
         grouped[
-            (normalize_lookup(country), normalize_lookup(center))
+            (normalize_country_identity(country), normalize_lookup(center))
         ].append(row)
 
-    result: dict[tuple[str, str], int | None] = {}
+    result: dict[tuple[str, str], TransitLookupEntry] = {}
     for key, group in grouped.items():
         entries = _distinct_nonblank_entries(group, "transit_days")
         if len(entries) > 1:
@@ -374,7 +383,15 @@ def _build_transit_index(
                     for value, row in entries
                 ),
             )
-        result[key] = group[0].values.get("transit_days")
+        first = group[0]
+        value = first.values.get("transit_days")
+        if "transit_days" in first.invalid_fields:
+            status = "invalid"
+        elif value is None:
+            status = "unavailable"
+        else:
+            status = "valid"
+        result[key] = TransitLookupEntry(first, value, status)
     return result
 
 
@@ -384,7 +401,7 @@ def _resolve_transit_days(
     country: Any,
     supply_center: str,
     fixed_transit: dict[str, int],
-    transit_index: dict[tuple[str, str], int | None],
+    transit_index: dict[tuple[str, str], TransitLookupEntry],
     source: SourceData,
     issues: IssueLog,
     business_key: str,
@@ -395,34 +412,62 @@ def _resolve_transit_days(
     if not nonblank(country):
         issues.add(
             "TRANSIT_COUNTRY_MISSING",
-            "非 FCA/FOB/EXW 行缺少国家，无法匹配运输周期",
+            "缺少国家，无法匹配国家运输周期表",
             workbook=source.workbook_for("demand_detail").name,
+            sheet=source.sheet_names.get("demand_detail", ""),
             business_key=business_key,
             field="country",
+            raw_value=f"country={country}; supply_center={supply_center}",
         )
         return None
-    key = (normalize_lookup(country), normalize_lookup(supply_center))
+    key = (
+        normalize_country_identity(country),
+        normalize_lookup(supply_center),
+    )
     if key not in transit_index:
         issues.add(
             "TRANSIT_NOT_FOUND",
-            "国家+履行供应中心在国家运输周期表中未找到",
-            workbook=source.workbook_for("demand_detail").name,
+            f"国家运输周期表无对应组合：{country} + {supply_center}",
+            workbook=source.workbook_for("transit").name,
+            sheet=source.sheet_names.get("transit", ""),
             business_key=business_key,
             field="country+supply_center",
-            raw_value=f"{country} | {supply_center}",
+            raw_value=f"country={country}; supply_center={supply_center}",
         )
         return None
-    value = transit_index[key]
-    if value is None:
+    entry = transit_index[key]
+    raw_value = entry.row.raw_values.get("transit_days")
+    if entry.status == "invalid":
         issues.add(
-            "TRANSIT_VALUE_UNAVAILABLE",
-            "运输周期键已找到，但第一条周期值非法或为空",
-            workbook=source.workbook_for("transit").name,
+            "INVALID_TRANSIT_DAYS",
+            "运输周期为非空值但无法解析为合法非负整数自然日",
+            workbook=entry.row.workbook,
+            sheet=entry.row.sheet,
+            row_number=entry.row.row_number,
             business_key=business_key,
             field="transit_days",
-            raw_value=f"{country} | {supply_center}",
+            raw_value=(
+                f"country={country}; supply_center={supply_center}; "
+                f"transit_days={raw_value}"
+            ),
         )
-    return value
+        return None
+    if entry.status == "unavailable":
+        issues.add(
+            "TRANSIT_VALUE_UNAVAILABLE",
+            "已找到国家+供应中心组合，但运输周期无可用值",
+            workbook=entry.row.workbook,
+            sheet=entry.row.sheet,
+            row_number=entry.row.row_number,
+            business_key=business_key,
+            field="transit_days",
+            raw_value=(
+                f"country={country}; supply_center={supply_center}; "
+                f"transit_days={raw_value}"
+            ),
+        )
+        return None
+    return entry.value
 
 
 def _arrival_date(

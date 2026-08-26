@@ -7,7 +7,7 @@
   },
   "sheets": {
     "legacy": {"canonical": "遗留量", "aliases": [], "optional": false, "header_row": null, "required_fields": ["contract_no", "legacy_amount"]},
-    "monthly_order": {"canonical": "当月订货", "aliases": [], "optional": false, "header_row": null, "required_fields": ["contract_no", "monthly_new_order"]},
+    "monthly_order": {"canonical": "当月订货", "aliases": [], "optional": true, "header_row": null, "required_fields": ["contract_no", "monthly_new_order"]},
     "demand_detail": {"canonical": "要货明细", "aliases": [], "optional": false, "header_row": null, "required_fields": ["contract_no", "supply_center"]},
     "transit": {"canonical": "国家运输周期", "aliases": [], "optional": false, "header_row": null, "required_fields": ["country", "supply_center", "transit_days"]}
   },

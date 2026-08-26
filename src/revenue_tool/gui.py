@@ -88,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
 
     fields = [
         ("遗留量 Excel", "legacy", False),
-        ("当月订货 Excel", "monthly_order", False),
+        ("当月订货 Excel（可选）", "monthly_order", False),
         ("要货明细 Excel", "demand_detail", False),
         ("国家运输周期 Excel", "transit", False),
         ("结果保存位置", "output", True),
@@ -120,7 +120,6 @@ def main(argv: list[str] | None = None) -> int:
     def execute() -> None:
         required = {
             "遗留量 Excel": variables["legacy"].get().strip(),
-            "当月订货 Excel": variables["monthly_order"].get().strip(),
             "要货明细 Excel": variables["demand_detail"].get().strip(),
             "国家运输周期 Excel": variables["transit"].get().strip(),
             "结果保存位置": variables["output"].get().strip(),
@@ -137,7 +136,9 @@ def main(argv: list[str] | None = None) -> int:
             previous = variables["previous"].get().strip() or None
             result = run_pipeline(
                 legacy_path=variables["legacy"].get().strip(),
-                monthly_order_path=variables["monthly_order"].get().strip(),
+                monthly_order_path=(
+                    variables["monthly_order"].get().strip() or None
+                ),
                 demand_detail_path=variables["demand_detail"].get().strip(),
                 transit_path=variables["transit"].get().strip(),
                 output_path=variables["output"].get().strip(),

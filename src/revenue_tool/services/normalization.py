@@ -24,6 +24,19 @@ def normalize_lookup(value: Any) -> str:
     return normalize_text(value).casefold()
 
 
+def normalize_country_identity(value: Any) -> str:
+    """Return a strict country identity without guessing similar names."""
+    if value is None:
+        return ""
+    text = unicodedata.normalize("NFKC", str(value))
+    return "".join(
+        character
+        for character in text
+        if not character.isspace()
+        and unicodedata.category(character) != "Cf"
+    ).casefold()
+
+
 def is_business_blank(value: Any, *, data_type: str | None = None) -> bool:
     """Return whether a source value is a documented business null."""
     if value is None:
