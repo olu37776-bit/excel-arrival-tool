@@ -14,6 +14,8 @@ from revenue_tool.adapters.sheet_locator import resolve_role_sheet
 from revenue_tool.config import ToolConfig
 from revenue_tool.domain.models import (
     BaseRow,
+    CONTRACT_ONLY_NO_DEMAND,
+    DEMAND_CENTER,
     IssueLog,
     ParsedRow,
     PreviousData,
@@ -25,6 +27,7 @@ from revenue_tool.services.field_matching import resolve_name
 from revenue_tool.services.normalization import (
     business_key_identity,
     is_business_blank,
+    nonblank,
     normalize_amount,
     normalize_signature_value,
     normalize_text,
@@ -44,7 +47,9 @@ class ExcelInputAdapter:
         sheet_names: dict[str, str] = {}
         for role, workbook_path in paths.items():
             if workbook_path is None:
-                continue
+                if config.sheets[role]["optional"]:
+                    continue
+                raise WorkbookReadError(f"必选源文件未提供: {role}")
             workbook = _open_workbook(workbook_path)
             try:
                 resolution = resolve_role_sheet(workbook, role, config)
@@ -99,7 +104,15 @@ class ExcelInputAdapter:
                 )
             finally:
                 workbook.close()
-        return SourceData(paths, result, sheet_names)
+        return SourceData(
+            {
+                role: path
+                for role, path in paths.items()
+                if path is not None
+            },
+            result,
+            sheet_names,
+        )
 
     def read_previous(
         self, path: str | Path, config: ToolConfig, issues: IssueLog
@@ -208,7 +221,15 @@ class ExcelInputAdapter:
                     str(values.get("contract_no") or ""),
                     str(values.get("supply_center") or ""),
                 )
-                if not all(display_key):
+                is_no_demand_placeholder = (
+                    bool(display_key[0])
+                    and not display_key[1]
+                    and normalize_text(values.get("revenue_segment"))
+                    == "不要货"
+                )
+                if not display_key[0] or (
+                    not display_key[1] and not is_no_demand_placeholder
+                ):
                     issues.add(
                         "PREVIOUS_INVALID_BUSINESS_KEY",
                         "上期基表业务键不完整，无法继承或比较",
@@ -229,7 +250,14 @@ class ExcelInputAdapter:
                         business_key=_display_key(display_key),
                     )
                     continue
-                rows[key] = BaseRow(values)
+                rows[key] = BaseRow(
+                    values,
+                    row_kind=(
+                        CONTRACT_ONLY_NO_DEMAND
+                        if is_no_demand_placeholder
+                        else DEMAND_CENTER
+                    ),
+                )
             return PreviousData(rows, usable=True)
         finally:
             workbook.close()

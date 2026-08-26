@@ -9,6 +9,8 @@ from typing import Any
 from revenue_tool.config import ToolConfig
 from revenue_tool.domain.models import (
     BaseRow,
+    CONTRACT_ONLY_NO_DEMAND,
+    DEMAND_CENTER,
     IssueLog,
     ParsedRow,
     PreviousData,
@@ -69,14 +71,24 @@ class RevenueEngine:
 
         result: list[BaseRow] = []
         for contract in sorted(contracts, key=normalize_lookup):
+            demand_contract = demand_first_by_contract.get(contract)
+            legacy = legacy_first.get(contract)
+            monthly = monthly_first.get(contract)
+            contract_values = _build_contract_values(
+                contract=contract,
+                legacy=legacy,
+                monthly=monthly,
+                demand_contract=demand_contract,
+                carryover_countries=carryover_countries,
+            )
             contract_demand = demand_by_contract.get(contract, [])
             if not contract_demand:
-                issues.add(
-                    "CONTRACT_NOT_FOUND_IN_DEMAND_DETAIL",
-                    "要货明细未找到该合同号",
-                    workbook=source.workbook_for("demand_detail").name,
-                    business_key=contract,
-                    field="contract_no",
+                identity_key = business_key_identity(contract, None)
+                result.append(
+                    _build_no_demand_row(
+                        contract_values,
+                        _manual_values(previous, identity_key),
+                    )
                 )
                 continue
             center_rows = _group_by_supply_center(
@@ -92,36 +104,9 @@ class RevenueEngine:
                 display_key = (contract, center)
                 identity_key = business_key_identity(*display_key)
                 business_key = _display_key(display_key)
-                demand_contract = demand_first_by_contract.get(contract)
-                legacy = legacy_first.get(contract)
-                monthly = monthly_first.get(contract)
-
-                legacy_amount = _amount_value(legacy, "legacy_amount")
-                monthly_new_order = _amount_value(
-                    monthly, "monthly_new_order"
-                )
-
-                region = _fallback(
-                    _value(legacy, "region"),
-                    _value(demand_contract, "region"),
-                )
-                country = _fallback(
-                    _value(legacy, "country"),
-                    _value(demand_contract, "country"),
-                )
-                customer_group = _fallback(
-                    _value(legacy, "customer_group"),
-                    _value(demand_contract, "customer_group"),
-                )
-                project_name = _fallback(
-                    _value(legacy, "project_name"),
-                    _value(demand_contract, "project_name"),
-                )
-                bg = _fallback(
-                    _value(legacy, "bg"),
-                    _value(monthly, "bg"),
-                    _value(demand_contract, "bg"),
-                )
+                legacy_amount = contract_values["legacy_amount"]
+                monthly_new_order = contract_values["monthly_new_order"]
+                country = contract_values["country"]
                 incoterm = _first_nonblank_value(group, "incoterm")
 
                 ata_values = _valid_dates(group, "ata")
@@ -138,6 +123,13 @@ class RevenueEngine:
                 shipment_incomplete = _shipment_incomplete(
                     latest_asd, latest_rpd
                 )
+                transit_required = _transit_is_required(
+                    shipment_incomplete=shipment_incomplete,
+                    ata=ata,
+                    asd=asd,
+                    rpd=latest_rpd,
+                    cpd=cpd,
+                )
 
                 transit_days = _resolve_transit_days(
                     incoterm=incoterm,
@@ -148,6 +140,7 @@ class RevenueEngine:
                     source=source,
                     issues=issues,
                     business_key=business_key,
+                    required=transit_required,
                 )
                 arrival_rpd = _arrival_date(
                     mode="RPD",
@@ -182,6 +175,7 @@ class RevenueEngine:
                 )
                 split_supply = "Y" if len(set(cpd_values)) > 1 else "N"
                 revenue_segment = _revenue_segment(
+                    DEMAND_CENTER,
                     multiple_demand,
                     ata,
                     asd,
@@ -191,35 +185,8 @@ class RevenueEngine:
                     monthly_new_order,
                 )
 
-                previous_row = previous.rows.get(identity_key)
-                manual_values = {
-                    field: (
-                        previous_row.values.get(field)
-                        if previous_row is not None
-                        else None
-                    )
-                    for field in (
-                        "manual_adjust_flag",
-                        "manual_revenue_month",
-                        "adjustment_note",
-                    )
-                }
-                legacy_country = _value(legacy, "country")
                 values: dict[str, Any] = {
-                    "contract_no": contract,
-                    "legacy_amount": legacy_amount,
-                    "monthly_new_order": monthly_new_order,
-                    "bg": bg,
-                    "region": region,
-                    "country": country,
-                    "carryover_type": (
-                        "交付类"
-                        if normalize_country_identity(legacy_country)
-                        in carryover_countries
-                        else None
-                    ),
-                    "customer_group": customer_group,
-                    "project_name": project_name,
+                    **contract_values,
                     "incoterm": incoterm,
                     "supply_center": center,
                     "multiple_supply_centers": multiple_centers,
@@ -244,7 +211,7 @@ class RevenueEngine:
                     "revenue_month_rpd": _month(arrival_rpd),
                     "revenue_month_cpd": _month(arrival_cpd),
                     "revenue_segment": revenue_segment,
-                    **manual_values,
+                    **_manual_values(previous, identity_key),
                 }
                 result.append(BaseRow(values))
         return sorted(
@@ -254,6 +221,112 @@ class RevenueEngine:
                 normalize_lookup(row.values["supply_center"]),
             ),
         )
+
+
+def _build_contract_values(
+    *,
+    contract: str,
+    legacy: ParsedRow | None,
+    monthly: ParsedRow | None,
+    demand_contract: ParsedRow | None,
+    carryover_countries: set[str],
+) -> dict[str, Any]:
+    legacy_country = _value(legacy, "country")
+    return {
+        "contract_no": contract,
+        "legacy_amount": _amount_value(legacy, "legacy_amount"),
+        "monthly_new_order": _amount_value(
+            monthly, "monthly_new_order"
+        ),
+        "bg": _fallback(
+            _value(legacy, "bg"),
+            _value(monthly, "bg"),
+            _value(demand_contract, "bg"),
+        ),
+        "region": _fallback(
+            _value(legacy, "region"),
+            _value(demand_contract, "region"),
+        ),
+        "country": _fallback(
+            legacy_country,
+            _value(demand_contract, "country"),
+        ),
+        "carryover_type": (
+            "交付类"
+            if normalize_country_identity(legacy_country)
+            in carryover_countries
+            else None
+        ),
+        "customer_group": _fallback(
+            _value(legacy, "customer_group"),
+            _value(demand_contract, "customer_group"),
+        ),
+        "project_name": _fallback(
+            _value(legacy, "project_name"),
+            _value(demand_contract, "project_name"),
+        ),
+    }
+
+
+def _manual_values(
+    previous: PreviousData,
+    identity_key: tuple[str, str],
+) -> dict[str, Any]:
+    previous_row = previous.rows.get(identity_key)
+    return {
+        field: (
+            previous_row.values.get(field)
+            if previous_row is not None
+            else None
+        )
+        for field in (
+            "manual_adjust_flag",
+            "manual_revenue_month",
+            "adjustment_note",
+        )
+    }
+
+
+def _build_no_demand_row(
+    contract_values: dict[str, Any],
+    manual_values: dict[str, Any],
+) -> BaseRow:
+    return BaseRow(
+        {
+            **contract_values,
+            "incoterm": None,
+            "supply_center": None,
+            "multiple_supply_centers": "N",
+            "stock_unlocked": None,
+            "split_shipment": "N",
+            "transit_days": None,
+            "ata": None,
+            "asd": None,
+            "rpd": None,
+            "multiple_demand": "N",
+            "latest_asd": None,
+            "latest_rpd": None,
+            "shipment_incomplete": None,
+            "cpd": None,
+            "split_supply": "N",
+            "arrival_date_rpd": None,
+            "arrival_date_cpd": None,
+            "revenue_month_rpd": None,
+            "revenue_month_cpd": None,
+            "revenue_segment": _revenue_segment(
+                CONTRACT_ONLY_NO_DEMAND,
+                "N",
+                None,
+                None,
+                None,
+                None,
+                contract_values["legacy_amount"],
+                contract_values["monthly_new_order"],
+            ),
+            **manual_values,
+        },
+        row_kind=CONTRACT_ONLY_NO_DEMAND,
+    )
 
 
 def _valid_contract_rows(rows: list[ParsedRow]) -> list[ParsedRow]:
@@ -405,11 +478,14 @@ def _resolve_transit_days(
     source: SourceData,
     issues: IssueLog,
     business_key: str,
+    required: bool = True,
 ) -> int | None:
     term = normalize_text(incoterm).upper()
     if term in fixed_transit:
         return fixed_transit[term]
     if not nonblank(country):
+        if not required:
+            return None
         issues.add(
             "TRANSIT_COUNTRY_MISSING",
             "缺少国家，无法匹配国家运输周期表",
@@ -425,6 +501,8 @@ def _resolve_transit_days(
         normalize_lookup(supply_center),
     )
     if key not in transit_index:
+        if not required:
+            return None
         issues.add(
             "TRANSIT_NOT_FOUND",
             f"国家运输周期表无对应组合：{country} + {supply_center}",
@@ -438,6 +516,8 @@ def _resolve_transit_days(
     entry = transit_index[key]
     raw_value = entry.row.raw_values.get("transit_days")
     if entry.status == "invalid":
+        if not required:
+            return None
         issues.add(
             "INVALID_TRANSIT_DAYS",
             "运输周期为非空值但无法解析为合法非负整数自然日",
@@ -453,6 +533,8 @@ def _resolve_transit_days(
         )
         return None
     if entry.status == "unavailable":
+        if not required:
+            return None
         issues.add(
             "TRANSIT_VALUE_UNAVAILABLE",
             "已找到国家+供应中心组合，但运输周期无可用值",
@@ -468,6 +550,19 @@ def _resolve_transit_days(
         )
         return None
     return entry.value
+
+
+def _transit_is_required(
+    *,
+    shipment_incomplete: str | None,
+    ata: date | None,
+    asd: date | None,
+    rpd: date | None,
+    cpd: date | None,
+) -> bool:
+    if shipment_incomplete == "Y":
+        return rpd is not None or cpd is not None
+    return ata is None and asd is not None
 
 
 def _arrival_date(
@@ -524,6 +619,7 @@ def _shipment_incomplete(
 
 
 def _revenue_segment(
+    row_kind: str,
     multiple_demand: str,
     ata: date | None,
     asd: date | None,
@@ -532,6 +628,8 @@ def _revenue_segment(
     legacy_amount: Decimal,
     monthly_new_order: Decimal,
 ) -> str:
+    if row_kind == CONTRACT_ONLY_NO_DEMAND:
+        return "不要货"
     if multiple_demand == "Y":
         return "需判断"
     if ata is not None or asd is not None:

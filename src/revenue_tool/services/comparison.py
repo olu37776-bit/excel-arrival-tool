@@ -7,6 +7,7 @@ from typing import Any
 from revenue_tool.domain.models import (
     BaseRow,
     ComparisonRow,
+    CONTRACT_ONLY_NO_DEMAND,
     IssueLog,
     PreviousData,
 )
@@ -36,6 +37,7 @@ def compare_revenue_months(
             row.values.get("supply_center"),
         ): row
         for row in current
+        if row.row_kind != CONTRACT_ONLY_NO_DEMAND
     }
     result: list[ComparisonRow] = []
     for key in sorted(
@@ -115,6 +117,8 @@ def build_supply_pull_rows(
 ) -> list[ComparisonRow]:
     result: list[ComparisonRow] = []
     for row in current:
+        if row.row_kind == CONTRACT_ONLY_NO_DEMAND:
+            continue
         key = business_key_identity(
             row.values.get("contract_no"),
             row.values.get("supply_center"),
