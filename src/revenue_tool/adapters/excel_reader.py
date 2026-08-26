@@ -10,6 +10,7 @@ from typing import Any
 from openpyxl import load_workbook
 from openpyxl.utils.datetime import from_excel
 
+from revenue_tool.adapters.sheet_locator import resolve_role_sheet
 from revenue_tool.config import ToolConfig
 from revenue_tool.domain.models import (
     BaseRow,
@@ -44,33 +45,46 @@ class ExcelInputAdapter:
         for role, workbook_path in paths.items():
             workbook = _open_workbook(workbook_path)
             try:
-                available = list(workbook.sheetnames)
-                sheet_spec = config.sheets[role]
-                match = resolve_name(
-                    sheet_spec["canonical"],
-                    sheet_spec.get("aliases", []),
-                    available,
-                    config.workbook["contains_direction"],
-                )
-                if match.index is None:
-                    if match.mode == "ambiguous":
-                        names = [available[index] for index in match.candidates]
-                        issues.add(
-                            "AMBIGUOUS_SHEET",
-                            f"业务 Sheet {sheet_spec['canonical']} 命中多个候选: {names}",
-                            workbook=workbook_path.name,
-                            field=role,
-                            raw_value=" | ".join(names),
-                        )
-                    else:
-                        issues.add(
-                            "MISSING_SHEET",
-                            f"缺少业务 Sheet: {sheet_spec['canonical']}",
-                            workbook=workbook_path.name,
-                            field=role,
-                        )
+                resolution = resolve_role_sheet(workbook, role, config)
+                if resolution.mode == "ambiguous":
+                    matches = [
+                        f"{item.sheet_name}@header={item.header_row}"
+                        for item in resolution.matches
+                    ]
+                    issues.add(
+                        "AMBIGUOUS_SHEET_ROLE",
+                        f"角色 {role} 同时命中多个业务 Sheet，未自动选择",
+                        workbook=workbook_path.name,
+                        field=role,
+                        raw_value=" | ".join(matches),
+                    )
                     continue
-                worksheet = workbook[available[match.index]]
+                if resolution.mode == "not_found":
+                    actual_sheets = " | ".join(workbook.sheetnames)
+                    missing_fields = _missing_required_fields_summary(
+                        resolution.fingerprints,
+                        role,
+                        config,
+                    )
+                    issues.add(
+                        "SHEET_ROLE_NOT_FOUND",
+                        (
+                            "未找到满足字段契约的业务 Sheet；"
+                            f"角色={role}；实际 Sheet={actual_sheets}；"
+                            f"缺失关键字段={missing_fields}"
+                        ),
+                        workbook=workbook_path.name,
+                        field=role,
+                        raw_value=(
+                            f"role={role}; sheets={actual_sheets}; "
+                            f"missing_required={missing_fields}"
+                        ),
+                    )
+                    continue
+                selected = resolution.selected
+                if selected is None or selected.header_row is None:
+                    raise AssertionError("唯一 Sheet 解析结果必须包含表头行")
+                worksheet = workbook[selected.sheet_name]
                 sheet_names[role] = worksheet.title
                 result[role] = self._read_role_sheet(
                     workbook_path,
@@ -79,6 +93,7 @@ class ExcelInputAdapter:
                     role,
                     config,
                     issues,
+                    header_row=selected.header_row,
                 )
             finally:
                 workbook.close()
@@ -225,21 +240,9 @@ class ExcelInputAdapter:
         role: str,
         config: ToolConfig,
         issues: IssueLog,
+        *,
+        header_row: int,
     ) -> list[ParsedRow]:
-        sheet_spec = config.sheets[role]
-        header_row = sheet_spec.get("header_row")
-        if header_row is None:
-            header_row = self._detect_source_header(sheet, role, config)
-        if not isinstance(header_row, int) or not (1 <= header_row <= sheet.max_row):
-            issues.add(
-                "HEADER_NOT_FOUND",
-                "未找到满足配置条件的表头行",
-                workbook=workbook_path.name,
-                sheet=sheet.title,
-                field=role,
-            )
-            return []
-
         headers = [normalize_text(cell.value) for cell in sheet[header_row]]
         indexes: dict[str, int | None] = {}
         matched_by_index: dict[int, list[str]] = {}
@@ -353,34 +356,6 @@ class ExcelInputAdapter:
             )
         return result
 
-    def _detect_source_header(
-        self, sheet, role: str, config: ToolConfig
-    ) -> int | None:
-        max_row = min(
-            int(config.workbook["header_scan_rows"]),
-            sheet.max_row,
-        )
-        minimum = min(
-            int(config.workbook["minimum_header_matches"]),
-            len(config.fields[role]),
-        )
-        best: tuple[int, int] | None = None
-        for row_number in range(1, max_row + 1):
-            headers = [normalize_text(cell.value) for cell in sheet[row_number]]
-            count = 0
-            for field_spec in config.fields[role].values():
-                match = resolve_name(
-                    field_spec["canonical"],
-                    field_spec.get("aliases", []),
-                    headers,
-                    config.workbook["contains_direction"],
-                )
-                if match.index is not None:
-                    count += 1
-            if count >= minimum and (best is None or count > best[0]):
-                best = (count, row_number)
-        return best[1] if best else None
-
     def _detect_output_header(
         self,
         sheet,
@@ -419,6 +394,27 @@ def _open_workbook(path: Path):
         return load_workbook(path, data_only=True, read_only=False)
     except Exception as exc:
         raise WorkbookReadError(f"工作簿无法读取: {path}: {exc}") from exc
+
+
+def _missing_required_fields_summary(
+    fingerprints,
+    role: str,
+    config: ToolConfig,
+) -> str:
+    parts: list[str] = []
+    for fingerprint in fingerprints:
+        missing = [
+            (
+                f"{field}"
+                f"({config.fields[role][field]['canonical']})"
+            )
+            for field in fingerprint.missing_required_fields
+        ]
+        parts.append(
+            f"{fingerprint.sheet_name}:"
+            + (", ".join(missing) if missing else "无")
+        )
+    return " | ".join(parts) if parts else "无可扫描 Sheet"
 
 
 def _row_is_blank(cells) -> bool:

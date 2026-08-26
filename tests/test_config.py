@@ -52,6 +52,22 @@ class ConfigTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "必须为非空字符串"):
                 load_config(path)
 
+    def test_sheet_required_fields_must_reference_role_fields(self) -> None:
+        data = json.loads(CONFIG.read_text(encoding="utf-8"))
+        data["sheets"]["monthly_order"]["required_fields"] = [
+            "contract_no",
+            "unknown_field",
+        ]
+
+        with TemporaryDirectory() as temporary:
+            path = Path(temporary) / "invalid.json"
+            path.write_text(
+                json.dumps(data, ensure_ascii=False), encoding="utf-8"
+            )
+
+            with self.assertRaisesRegex(ValueError, "required_fields"):
+                load_config(path)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -2,7 +2,7 @@
 
 ## Windows 使用方式（推荐）
 
-1. [直接下载 ExcelRevenueTool.exe](https://github.com/olu37776-bit/excel-arrival-tool/releases/download/v0.5.0/ExcelRevenueTool.exe)。
+1. [直接下载 ExcelRevenueTool.exe](https://github.com/olu37776-bit/excel-arrival-tool/releases/download/v0.5.1/ExcelRevenueTool.exe)。
 2. 双击 `ExcelRevenueTool.exe`。不需要安装 Python，也不需要运行 BAT 或打开终端。
 3. 在窗口中依次选择四个独立的源文件：
    - 遗留量 Excel

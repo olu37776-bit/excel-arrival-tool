@@ -219,6 +219,31 @@ class PipelineTest(unittest.TestCase):
             finally:
                 workbook.close()
 
+    def test_all_source_files_support_auto_named_business_sheets(self) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "auto", variant="first")
+            for path in sources:
+                _move_business_sheet_to_sheet2(path)
+            output = directory / "result.xlsx"
+
+            result = _run(sources, output)
+
+            self.assertEqual(6, result.base_count)
+            workbook = load_workbook(output, data_only=True)
+            try:
+                rows = _base_rows(workbook["基表"])
+                self.assertEqual(100, rows[("C001", "SC-A")]["遗留量"])
+                self.assertEqual(50, rows[("C001", "SC-A")]["当月新订货"])
+                codes = {
+                    row[0].value
+                    for row in workbook["异常清单"].iter_rows(min_row=2)
+                }
+                self.assertNotIn("SHEET_ROLE_NOT_FOUND", codes)
+                self.assertNotIn("AMBIGUOUS_SHEET_ROLE", codes)
+            finally:
+                workbook.close()
+
     def test_value_placeholders_are_empty_without_issues(self) -> None:
         with TemporaryDirectory() as temporary:
             directory = Path(temporary)
@@ -687,6 +712,19 @@ def _set_matching_cell(
             if sheet.cell(row_number, headers[contract_header]).value == contract:
                 sheet.cell(row_number, headers[field_header], value)
                 break
+        workbook.save(path)
+    finally:
+        workbook.close()
+
+
+def _move_business_sheet_to_sheet2(path: Path) -> None:
+    workbook = load_workbook(path)
+    try:
+        business = workbook.active
+        business.title = "Sheet2"
+        intro = workbook.create_sheet("Sheet1", 0)
+        intro.append(["文件说明"])
+        workbook.create_sheet("Sheet3").append(["无关内容"])
         workbook.save(path)
     finally:
         workbook.close()
