@@ -315,11 +315,6 @@ def _validate(raw: dict[str, Any]) -> None:
         for country in carryover
     ):
         raise ValueError("carryover_countries 必须为非空字符串数组")
-    delimiter = raw["rules"].get("stock_flag_delimiter")
-    if not isinstance(delimiter, str) or not delimiter:
-        raise ValueError("stock_flag_delimiter 必须为非空字符串")
-
-
 def _validate_aliases(aliases: Any, context: str) -> None:
     if not isinstance(aliases, list) or any(
         not isinstance(alias, str) or not alias.strip()

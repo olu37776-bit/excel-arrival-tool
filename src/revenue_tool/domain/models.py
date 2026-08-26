@@ -7,6 +7,8 @@ from typing import Any
 
 DEMAND_CENTER = "DEMAND_CENTER"
 CONTRACT_ONLY_NO_DEMAND = "CONTRACT_ONLY_NO_DEMAND"
+HAS_DEMAND = "HAS_DEMAND"
+NO_DEMAND = "NO_DEMAND"
 
 
 @dataclass(frozen=True)

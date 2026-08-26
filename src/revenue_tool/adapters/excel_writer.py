@@ -94,7 +94,7 @@ class ExcelOutputAdapter:
             [issue.as_dict() for issue in issues.items],
             "IssuesTable",
         )
-        self._write_metadata_sheet(workbook, config)
+        self._write_metadata_sheet(workbook, config, base_rows)
 
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -103,15 +103,34 @@ class ExcelOutputAdapter:
         return path
 
     def _write_metadata_sheet(
-        self, workbook: Workbook, config: ToolConfig
+        self,
+        workbook: Workbook,
+        config: ToolConfig,
+        base_rows: list[BaseRow],
     ) -> None:
         sheet = workbook.create_sheet("_tool_meta")
-        sheet.append(["schema_version", "2"])
+        sheet.append(["schema_version", "3"])
         sheet.append(["base_sheet", config.output["sheets"]["base"]])
         sheet.append([])
         sheet.append(["field_id", "display_name"])
         for column in config.base_columns:
             sheet.append([column["id"], column["name"]])
+        sheet.append([])
+        sheet.append(
+            [
+                "row_kind_contract_no",
+                "row_kind_supply_center",
+                "row_kind",
+            ]
+        )
+        for row in base_rows:
+            sheet.append(
+                [
+                    row.values.get("contract_no"),
+                    row.values.get("supply_center"),
+                    row.row_kind,
+                ]
+            )
         sheet.sheet_state = "hidden"
 
     def _write_change_sheet(

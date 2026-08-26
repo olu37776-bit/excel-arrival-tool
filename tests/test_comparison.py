@@ -2,7 +2,13 @@ from datetime import date
 from decimal import Decimal
 import unittest
 
-from revenue_tool.domain.models import BaseRow, IssueLog, PreviousData
+from revenue_tool.domain.models import (
+    BaseRow,
+    CONTRACT_ONLY_NO_DEMAND,
+    DEMAND_CENTER,
+    IssueLog,
+    PreviousData,
+)
 from revenue_tool.services.comparison import (
     build_supply_pull_rows,
     compare_revenue_months,
@@ -59,6 +65,95 @@ class ComparisonTest(unittest.TestCase):
         self.assertEqual("2026-01", result[0].values["revenue_month_rpd"])
         self.assertEqual("2026-02", result[0].values["revenue_month_cpd"])
 
+    def test_demand_to_no_demand_emits_each_previous_center_even_when_blank(self) -> None:
+        previous = PreviousData(
+            {
+                business_key_identity("C1", "SC-A"): self._row(
+                    "C1", "SC-A", None
+                ),
+                business_key_identity("C1", "SC-B"): self._row(
+                    "C1", "SC-B", "2026-02"
+                ),
+            }
+        )
+        current = [self._placeholder("C1", legacy=Decimal("99.00"))]
+
+        result = compare_revenue_months(
+            current, previous, "rpd", "current.xlsx", IssueLog()
+        )
+
+        self.assertEqual(
+            ["SC-A", "SC-B"],
+            [r.values["supply_center"] for r in result],
+        )
+        self.assertTrue(
+            all(r.values["direction"] == "变为不要货" for r in result)
+        )
+        self.assertIsNone(result[0].values["previous_month"])
+        self.assertIsNone(result[0].values["current_month"])
+        self.assertEqual(Decimal("99.00"), result[0].values["legacy_amount"])
+
+    def test_no_demand_to_demand_emits_each_current_center_even_when_blank(self) -> None:
+        previous = PreviousData(
+            {
+                business_key_identity("C1", None): self._placeholder("C1")
+            }
+        )
+        current = [
+            self._row("C1", "SC-A", None),
+            self._row("C1", "SC-B", "2026-03"),
+        ]
+
+        result = compare_revenue_months(
+            current, previous, "rpd", "current.xlsx", IssueLog()
+        )
+
+        self.assertEqual(
+            ["SC-A", "SC-B"],
+            [r.values["supply_center"] for r in result],
+        )
+        self.assertTrue(
+            all(r.values["direction"] == "恢复要货" for r in result)
+        )
+        self.assertIsNone(result[0].values["previous_month"])
+        self.assertIsNone(result[0].values["current_month"])
+
+    def test_two_no_demand_periods_do_not_emit_changes_or_supply_pull(self) -> None:
+        placeholder = self._placeholder("C1")
+        previous = PreviousData(
+            {business_key_identity("C1", None): placeholder}
+        )
+
+        self.assertEqual(
+            [],
+            compare_revenue_months(
+                [placeholder], previous, "rpd", "current.xlsx", IssueLog()
+            ),
+        )
+        self.assertEqual(
+            [], build_supply_pull_rows([placeholder], "current.xlsx", IssueLog())
+        )
+
+    def test_conflicting_contract_state_reports_once_across_both_modes(self) -> None:
+        rows = [self._row("C1", "SC-A", "2026-01"), self._placeholder("C1")]
+        issues = IssueLog()
+
+        rpd = compare_revenue_months(
+            rows, PreviousData({}), "rpd", "current.xlsx", issues
+        )
+        cpd = compare_revenue_months(
+            rows, PreviousData({}), "cpd", "current.xlsx", issues
+        )
+
+        self.assertEqual([], rpd)
+        self.assertEqual([], cpd)
+        matching = [
+            issue
+            for issue in issues.items
+            if issue.code == "CONTRACT_DEMAND_STATE_CONFLICT"
+        ]
+        self.assertEqual(1, len(matching))
+
     @staticmethod
     def _row(
         contract: str,
@@ -78,7 +173,28 @@ class ComparisonTest(unittest.TestCase):
                 "country": "Country",
                 "customer_group": "G",
                 "ata": date(2026, 1, 1),
-            }
+            },
+            row_kind=DEMAND_CENTER,
+        )
+
+    @staticmethod
+    def _placeholder(
+        contract: str, *, legacy: Decimal = Decimal("0.00")
+    ) -> BaseRow:
+        return BaseRow(
+            {
+                "contract_no": contract,
+                "supply_center": None,
+                "revenue_month_rpd": None,
+                "revenue_month_cpd": None,
+                "revenue_segment": "不要货",
+                "legacy_amount": legacy,
+                "monthly_new_order": Decimal("0.00"),
+                "region": "R-current",
+                "country": None,
+                "customer_group": "G-current",
+            },
+            row_kind=CONTRACT_ONLY_NO_DEMAND,
         )
 
 

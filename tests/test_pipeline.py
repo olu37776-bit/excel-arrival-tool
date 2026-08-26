@@ -39,6 +39,7 @@ class PipelineTest(unittest.TestCase):
                     workbook.sheetnames,
                 )
                 self.assertEqual("hidden", workbook["_tool_meta"].sheet_state)
+                self.assertEqual("3", workbook["_tool_meta"]["B1"].value)
                 base = workbook["基表"]
                 self.assertEqual(EXPECTED_BASE_HEADERS, [c.value for c in base[1]])
                 self.assertEqual("A2", base.freeze_panes)
@@ -54,7 +55,7 @@ class PipelineTest(unittest.TestCase):
                 self.assertEqual("BG-L", sc_a["BG"])
                 self.assertEqual("交付类", sc_a["结转类型"])
                 self.assertEqual("Y", sc_a["多个供应中心发货"])
-                self.assertEqual("Y|N", sc_a["是否解锁备货"])
+                self.assertEqual("部分解锁", sc_a["是否解锁备货"])
                 self.assertEqual("Y", sc_a["分批发货"])
                 self.assertEqual(30, sc_a["海运周期"])
                 self.assertEqual(date(2026, 1, 5), _as_date(sc_a["RPD"]))
@@ -190,13 +191,19 @@ class PipelineTest(unittest.TestCase):
                 rpd = _rows_by_key(workbook["RPD跨月变化"])
                 self.assertEqual("延后", rpd[("C001", "SC-A")]["变化方向"])
                 self.assertEqual(1, rpd[("C001", "SC-A")]["变化月数"])
-                self.assertEqual("取消", rpd[("C003", "SC-C")]["变化方向"])
+                self.assertEqual(
+                    "变为不要货",
+                    rpd[("C003", "SC-C")]["变化方向"],
+                )
                 self.assertEqual("新增", rpd[("C005", "SC-E")]["变化方向"])
 
                 cpd = _rows_by_key(workbook["CPD跨月变化"])
                 self.assertEqual("提前", cpd[("C001", "SC-A")]["变化方向"])
                 self.assertEqual(1, cpd[("C001", "SC-A")]["变化月数"])
-                self.assertEqual("取消", cpd[("C003", "SC-C")]["变化方向"])
+                self.assertEqual(
+                    "变为不要货",
+                    cpd[("C003", "SC-C")]["变化方向"],
+                )
                 self.assertEqual("新增", cpd[("C005", "SC-E")]["变化方向"])
             finally:
                 workbook.close()
@@ -319,6 +326,40 @@ class PipelineTest(unittest.TestCase):
                 }
                 self.assertNotIn("INVALID_AMOUNT", codes)
                 self.assertNotIn("INVALID_DATE", codes)
+            finally:
+                workbook.close()
+
+    def test_invalid_stock_flag_is_reported_and_excluded_from_three_state(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "stock-invalid", variant="first")
+            _set_matching_cell(
+                sources[2],
+                "要货明细",
+                "原合同号",
+                "C003",
+                "备货总控标识",
+                "X",
+            )
+            output = directory / "result.xlsx"
+
+            _run(sources, output)
+
+            workbook = load_workbook(output, data_only=True)
+            try:
+                c003 = _base_rows(workbook["基表"])[("C003", "SC-C")]
+                self.assertEqual("未解锁", c003["是否解锁备货"])
+                matching = [
+                    row
+                    for row in workbook["异常清单"].iter_rows(
+                        min_row=2, values_only=True
+                    )
+                    if row[0] == "INVALID_ENUM_VALUE"
+                    and row[6] == "stock_control_flag"
+                ]
+                self.assertEqual(1, len(matching))
             finally:
                 workbook.close()
 
