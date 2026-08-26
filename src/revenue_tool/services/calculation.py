@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Any, Iterable
+from typing import Any
 
 from revenue_tool.config import ToolConfig
 from revenue_tool.domain.models import (
@@ -18,6 +18,7 @@ from revenue_tool.services.normalization import (
     nonblank,
     normalize_lookup,
     normalize_text,
+    ZERO_AMOUNT,
 )
 
 
@@ -33,19 +34,9 @@ class RevenueEngine:
         monthly_rows = _valid_contract_rows(source.rows["monthly_order"])
         demand_rows = _valid_contract_rows(source.rows["demand_detail"])
 
-        legacy_first = _first_contract_rows(
-            legacy_rows, source, issues
-        )
-        monthly_first = _first_contract_rows(
-            monthly_rows, source, issues
-        )
+        legacy_first = _first_contract_rows(legacy_rows)
+        monthly_first = _first_contract_rows(monthly_rows)
         demand_first_by_contract = _first_by_contract(demand_rows)
-        _log_contract_conflicts(
-            demand_rows,
-            ("region", "customer_group", "project_name", "bg"),
-            source,
-            issues,
-        )
         contracts = {
             row.values["contract_no"]
             for row in legacy_rows + monthly_rows + demand_rows
@@ -70,6 +61,15 @@ class RevenueEngine:
         result: list[BaseRow] = []
         for contract in sorted(contracts, key=normalize_lookup):
             contract_demand = demand_by_contract.get(contract, [])
+            if not contract_demand:
+                issues.add(
+                    "CONTRACT_NOT_FOUND_IN_DEMAND_DETAIL",
+                    "要货明细未找到该合同号",
+                    workbook=source.workbook_for("demand_detail").name,
+                    business_key=contract,
+                    field="contract_no",
+                )
+                continue
             center_rows = _group_by_supply_center(
                 contract,
                 contract_demand,
@@ -77,29 +77,20 @@ class RevenueEngine:
                 issues,
             )
             if not center_rows:
-                issues.add(
-                    "CONTRACT_WITHOUT_SUPPLY_CENTER",
-                    "合同进入全集，但要货明细中没有可用履行供应中心；不生成正常业务行",
-                    workbook=source.workbook_for("demand_detail").name,
-                    business_key=contract,
-                    field="supply_center",
-                )
                 continue
             multiple_centers = "Y" if len(center_rows) > 1 else "N"
             for center, group in center_rows:
                 display_key = (contract, center)
                 identity_key = business_key_identity(*display_key)
                 business_key = _display_key(display_key)
-                _log_group_conflicts(
-                    group,
-                    ("incoterm",),
-                    source,
-                    issues,
-                    business_key,
-                )
                 demand_contract = demand_first_by_contract.get(contract)
                 legacy = legacy_first.get(contract)
                 monthly = monthly_first.get(contract)
+
+                legacy_amount = _amount_value(legacy, "legacy_amount")
+                monthly_new_order = _amount_value(
+                    monthly, "monthly_new_order"
+                )
 
                 region = _fallback(
                     _value(legacy, "region"),
@@ -136,11 +127,7 @@ class RevenueEngine:
                 cpd = max(cpd_values) if cpd_values else None
 
                 shipment_incomplete = _shipment_incomplete(
-                    latest_asd,
-                    latest_rpd,
-                    source,
-                    issues,
-                    business_key,
+                    latest_asd, latest_rpd
                 )
 
                 transit_days = _resolve_transit_days(
@@ -155,9 +142,10 @@ class RevenueEngine:
                 )
                 arrival_rpd = _arrival_date(
                     mode="RPD",
+                    shipment_incomplete=shipment_incomplete,
                     ata=ata,
                     asd=asd,
-                    planned=rpd,
+                    planned=latest_rpd,
                     transit_days=transit_days,
                     source=source,
                     issues=issues,
@@ -165,6 +153,7 @@ class RevenueEngine:
                 )
                 arrival_cpd = _arrival_date(
                     mode="CPD",
+                    shipment_incomplete=shipment_incomplete,
                     ata=ata,
                     asd=asd,
                     planned=cpd,
@@ -179,13 +168,6 @@ class RevenueEngine:
                     for row in group
                     if nonblank(row.values.get("stock_control_flag"))
                 ]
-                invalid_date_present = any(
-                    bool(
-                        {"ata", "asd", "rpd", "cpd"}
-                        & set(row.invalid_fields)
-                    )
-                    for row in group
-                )
                 multiple_demand = (
                     "Y" if len(set(rpd_values)) > 1 else "N"
                 )
@@ -196,7 +178,8 @@ class RevenueEngine:
                     asd,
                     rpd,
                     cpd,
-                    invalid_date_present,
+                    legacy_amount,
+                    monthly_new_order,
                 )
 
                 previous_row = previous.rows.get(identity_key)
@@ -215,10 +198,8 @@ class RevenueEngine:
                 legacy_country = _value(legacy, "country")
                 values: dict[str, Any] = {
                     "contract_no": contract,
-                    "legacy_amount": _value(legacy, "legacy_amount"),
-                    "monthly_new_order": _value(
-                        monthly, "monthly_new_order"
-                    ),
+                    "legacy_amount": legacy_amount,
+                    "monthly_new_order": monthly_new_order,
                     "bg": bg,
                     "region": region,
                     "country": country,
@@ -272,22 +253,10 @@ def _valid_contract_rows(rows: list[ParsedRow]) -> list[ParsedRow]:
 
 def _first_contract_rows(
     rows: list[ParsedRow],
-    source: SourceData,
-    issues: IssueLog,
 ) -> dict[str, ParsedRow]:
     grouped: dict[str, list[ParsedRow]] = defaultdict(list)
     for row in rows:
         grouped[str(row.values["contract_no"])].append(row)
-    if not rows:
-        return {}
-    conflict_fields = tuple(
-        field
-        for field in rows[0].values
-        if field != "contract_no"
-    )
-    _log_contract_conflicts(
-        rows, conflict_fields, source, issues
-    )
     return {contract: values[0] for contract, values in grouped.items()}
 
 
@@ -300,36 +269,6 @@ def _first_by_contract(
         if contract and str(contract) not in result:
             result[str(contract)] = row
     return result
-
-
-def _log_contract_conflicts(
-    rows: list[ParsedRow],
-    fields: Iterable[str],
-    source: SourceData,
-    issues: IssueLog,
-) -> None:
-    grouped: dict[str, list[ParsedRow]] = defaultdict(list)
-    for row in rows:
-        contract = row.values.get("contract_no")
-        if contract:
-            grouped[str(contract)].append(row)
-    for contract, group in grouped.items():
-        for field in fields:
-            entries = _distinct_nonblank_entries(group, field)
-            if len(entries) > 1:
-                issues.add(
-                    "CONFLICTING_CONTRACT_VALUE",
-                    "同合同存在多个不同非空值；按源表顺序保留第一条",
-                    workbook=group[0].workbook,
-                    sheet=group[0].sheet,
-                    row_number=group[0].row_number,
-                    business_key=contract,
-                    field=field,
-                    raw_value=" | ".join(
-                        _source_value(row, value)
-                        for value, row in entries
-                    ),
-                )
 
 
 def _group_by_supply_center(
@@ -361,31 +300,6 @@ def _group_by_supply_center(
         grouped.values(),
         key=lambda item: normalize_lookup(item[0]),
     )
-
-
-def _log_group_conflicts(
-    rows: list[ParsedRow],
-    fields: Iterable[str],
-    source: SourceData,
-    issues: IssueLog,
-    business_key: str,
-) -> None:
-    for field in fields:
-        entries = _distinct_nonblank_entries(rows, field)
-        if len(entries) > 1:
-            issues.add(
-                "CONFLICTING_GROUP_VALUE",
-                "同合同+履行供应中心存在多个不同非空文本值；当前按原顺序保留第一条",
-                workbook=rows[0].workbook,
-                sheet=rows[0].sheet,
-                row_number=rows[0].row_number,
-                business_key=business_key,
-                field=field,
-                raw_value=" | ".join(
-                    _source_value(row, value)
-                    for value, row in entries
-                ),
-            )
 
 
 def _distinct_nonblank_entries(
@@ -514,6 +428,7 @@ def _resolve_transit_days(
 def _arrival_date(
     *,
     mode: str,
+    shipment_incomplete: str | None,
     ata: date | None,
     asd: date | None,
     planned: date | None,
@@ -522,36 +437,26 @@ def _arrival_date(
     issues: IssueLog,
     business_key: str,
 ) -> date | None:
-    if ata is not None:
-        return ata
-    basis = asd if asd is not None else planned
-    basis_name = "ASD" if asd is not None else mode
-    if basis is not None and transit_days is not None:
-        try:
-            return basis + timedelta(days=transit_days)
-        except OverflowError:
-            issues.add(
-                f"ARRIVAL_{mode}_OVERFLOW",
-                f"到货日期（按{mode}）计算超出日期范围，结果留空",
-                workbook=source.workbook_for("demand_detail").name,
-                business_key=business_key,
-                field=f"arrival_date_{mode.lower()}",
-                raw_value=f"{basis.isoformat()} + {transit_days}",
-            )
-            return None
-    missing = []
-    if basis is None:
-        missing.append(basis_name)
-    if transit_days is None:
-        missing.append("海运周期")
-    issues.add(
-        f"ARRIVAL_{mode}_UNAVAILABLE",
-        f"到货日期（按{mode}）缺少必要输入: {', '.join(missing)}",
-        workbook=source.workbook_for("demand_detail").name,
-        business_key=business_key,
-        field=f"arrival_date_{mode.lower()}",
-    )
-    return None
+    if shipment_incomplete != "Y":
+        if ata is not None:
+            return ata
+        basis = asd
+    else:
+        basis = planned
+    if basis is None or transit_days is None:
+        return None
+    try:
+        return basis + timedelta(days=transit_days)
+    except OverflowError:
+        issues.add(
+            f"ARRIVAL_{mode}_OVERFLOW",
+            f"到货日期（按{mode}）计算超出日期范围，结果留空",
+            workbook=source.workbook_for("demand_detail").name,
+            business_key=business_key,
+            field=f"arrival_date_{mode.lower()}",
+            raw_value=f"{basis.isoformat()} + {transit_days}",
+        )
+        return None
 
 
 def _valid_dates(rows: list[ParsedRow], field: str) -> list[date]:
@@ -565,25 +470,12 @@ def _valid_dates(rows: list[ParsedRow], field: str) -> list[date]:
 def _shipment_incomplete(
     latest_asd: date | None,
     latest_rpd: date | None,
-    source: SourceData,
-    issues: IssueLog,
-    business_key: str,
 ) -> str | None:
-    if latest_asd is not None and latest_rpd is not None:
-        return "Y" if latest_rpd > latest_asd else "N"
-    missing = []
-    if latest_asd is None:
-        missing.append("最晚ASD")
     if latest_rpd is None:
-        missing.append("最晚RPD")
-    issues.add(
-        "SHIPMENT_STATUS_UNAVAILABLE",
-        f"货未发完无法判断，缺少有效字段: {', '.join(missing)}",
-        workbook=source.workbook_for("demand_detail").name,
-        business_key=business_key,
-        field="shipment_incomplete",
-    )
-    return None
+        return None
+    if latest_asd is None:
+        return "Y"
+    return "Y" if latest_rpd > latest_asd else "N"
 
 
 def _revenue_segment(
@@ -592,16 +484,17 @@ def _revenue_segment(
     asd: date | None,
     rpd: date | None,
     cpd: date | None,
-    invalid_date_present: bool,
+    legacy_amount: Decimal,
+    monthly_new_order: Decimal,
 ) -> str:
     if multiple_demand == "Y":
         return "需判断"
     if ata is not None or asd is not None:
         return "发未收"
     if rpd is not None or cpd is not None:
+        if legacy_amount == ZERO_AMOUNT and monthly_new_order == ZERO_AMOUNT:
+            return "未录入订货"
         return "订未发"
-    if invalid_date_present:
-        return "需判断"
     return "不要货"
 
 
@@ -614,6 +507,11 @@ def _fallback(*values: Any) -> Any:
 
 def _value(row: ParsedRow | None, field: str) -> Any:
     return row.values.get(field) if row is not None else None
+
+
+def _amount_value(row: ParsedRow | None, field: str) -> Decimal:
+    value = _value(row, field)
+    return value if isinstance(value, Decimal) else ZERO_AMOUNT
 
 
 def _first_nonblank_value(rows: list[ParsedRow], field: str) -> Any:

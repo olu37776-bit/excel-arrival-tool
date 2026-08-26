@@ -23,8 +23,11 @@ from revenue_tool.domain.models import (
 from revenue_tool.services.field_matching import resolve_name
 from revenue_tool.services.normalization import (
     business_key_identity,
+    is_business_blank,
+    normalize_amount,
     normalize_signature_value,
     normalize_text,
+    ZERO_AMOUNT,
 )
 
 
@@ -326,40 +329,17 @@ class ExcelInputAdapter:
                     epoch,
                 )
                 values[field] = value
-                if (
-                    field_spec["type"] == "text"
-                    and _is_blank_placeholder(raw)
-                ):
-                    issues.add(
-                        "TEXT_PLACEHOLDER_NORMALIZED_TO_BLANK",
-                        "文本型空白占位符已归一为空值，后续字段回退链可正常触发",
-                        workbook=workbook_path.name,
-                        sheet=sheet.title,
-                        row_number=row_number,
-                        field=field,
-                        raw_value=raw,
-                    )
                 if not valid:
                     invalid.add(field)
                     issues.add(
                         _error_code_for_type(field_spec["type"]),
-                        f"字段值无法按 {field_spec['type']} 解析，已排除该值",
+                        _invalid_value_message(field_spec["type"]),
                         workbook=workbook_path.name,
                         sheet=sheet.title,
                         row_number=row_number,
                         field=field,
                         raw_value=raw,
                     )
-            if "contract_no" in values and not values["contract_no"]:
-                issues.add(
-                    "MISSING_CONTRACT_NO",
-                    "合同号为空，该行无法进入合同集合",
-                    workbook=workbook_path.name,
-                    sheet=sheet.title,
-                    row_number=row_number,
-                    field="contract_no",
-                    raw_value=raw_values.get("contract_no"),
-                )
             result.append(
                 ParsedRow(
                     role=role,
@@ -443,8 +423,10 @@ def _open_workbook(path: Path):
 
 def _row_is_blank(cells) -> bool:
     return all(
-        cell.value is None
-        or (isinstance(cell.value, str) and not cell.value.strip())
+        is_business_blank(
+            cell.value,
+            data_type=getattr(cell, "data_type", None),
+        )
         for cell in cells
     )
 
@@ -453,23 +435,20 @@ def _parse_source_cell(
     field_type: str, cell, epoch: datetime
 ) -> tuple[Any, bool]:
     raw = cell.value if cell is not None else None
-    if cell is not None and getattr(cell, "data_type", None) == "e":
-        return None, False
-    if raw is None or (isinstance(raw, str) and not raw.strip()):
-        return None, True
+    data_type = getattr(cell, "data_type", None) if cell is not None else None
+    if is_business_blank(raw, data_type=data_type):
+        return (ZERO_AMOUNT, True) if field_type == "amount" else (None, True)
+    if data_type == "e":
+        return (ZERO_AMOUNT, False) if field_type == "amount" else (None, False)
     if field_type == "text":
-        if _is_blank_placeholder(raw):
-            return None, True
         return _text_from_cell(cell), True
     if field_type == "flag":
         value = normalize_text(raw).upper()
         return (value, True) if value in {"Y", "N"} else (None, False)
     if field_type == "amount":
-        value = _parse_decimal(raw)
-        return value, value is not None
+        value = normalize_amount(raw)
+        return (value, True) if value is not None else (ZERO_AMOUNT, False)
     if field_type == "date":
-        if _is_blank_placeholder(raw):
-            return None, True
         value = _parse_date(raw, epoch)
         return value, value is not None
     if field_type == "nonnegative_integer":
@@ -479,10 +458,6 @@ def _parse_source_cell(
         )
         return value, value is not None
     return normalize_text(raw), True
-
-
-def _is_blank_placeholder(value: Any) -> bool:
-    return isinstance(value, str) and normalize_text(value) == "(空白)"
 
 
 def _text_from_cell(cell) -> str:
@@ -582,12 +557,13 @@ def _parse_date(value: Any, epoch: datetime) -> date | None:
 
 
 def _parse_previous_value(field: str, value: Any, epoch: datetime) -> Any:
-    if value is None:
+    if field in {"legacy_amount", "monthly_new_order"}:
+        amount = normalize_amount(value)
+        return amount if amount is not None else ZERO_AMOUNT
+    if is_business_blank(value):
         return None
     if field in {"contract_no", "supply_center"}:
         return normalize_text(value)
-    if field in {"legacy_amount", "monthly_new_order"}:
-        return _parse_decimal(value)
     if field in {
         "ata",
         "asd",
@@ -612,9 +588,15 @@ def _error_code_for_type(field_type: str) -> str:
     return {
         "amount": "INVALID_AMOUNT",
         "date": "INVALID_DATE",
-        "flag": "INVALID_FLAG",
+        "flag": "INVALID_ENUM_VALUE",
         "nonnegative_integer": "INVALID_TRANSIT_DAYS",
     }.get(field_type, "INVALID_VALUE")
+
+
+def _invalid_value_message(field_type: str) -> str:
+    if field_type == "amount":
+        return "非空金额无法解析，已记录异常并按数值0继续"
+    return f"字段值无法按 {field_type} 解析，已排除该值"
 
 
 def _display_key(key: tuple[str, str]) -> str:

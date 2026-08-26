@@ -52,7 +52,7 @@ def run_pipeline(
     issues = IssueLog()
     reader = ExcelInputAdapter()
     source = reader.read_source(source_files, config, issues)
-    DataQualityAnalyzer().analyze(source, config, issues)
+    DataQualityAnalyzer().analyze(source, issues)
     previous = (
         reader.read_previous(previous_path, config, issues)
         if previous_path

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal, InvalidOperation
 import json
 from pathlib import Path
 import unicodedata
@@ -272,13 +271,6 @@ def _validate(raw: dict[str, Any]) -> None:
         raise ValueError(
             "当前 duplicate_scope 只支持 normalized_physical_row"
         )
-    if (
-        raw["rules"].get("group_text_conflict_strategy")
-        != "first_with_issue"
-    ):
-        raise ValueError(
-            "当前 group_text_conflict_strategy 只支持 first_with_issue"
-        )
     for field in ("header_scan_rows", "minimum_header_matches"):
         value = raw["workbook"].get(field)
         if (
@@ -305,18 +297,6 @@ def _validate(raw: dict[str, Any]) -> None:
         for country in carryover
     ):
         raise ValueError("carryover_countries 必须为非空字符串数组")
-    try:
-        amount_threshold = Decimal(
-            str(raw["rules"].get("amount_residual_warning_threshold"))
-        )
-    except InvalidOperation as exc:
-        raise ValueError(
-            "amount_residual_warning_threshold 必须为正有限数"
-        ) from exc
-    if not amount_threshold.is_finite() or amount_threshold <= 0:
-        raise ValueError(
-            "amount_residual_warning_threshold 必须为正有限数"
-        )
     delimiter = raw["rules"].get("stock_flag_delimiter")
     if not isinstance(delimiter, str) or not delimiter:
         raise ValueError("stock_flag_delimiter 必须为非空字符串")

@@ -2,17 +2,12 @@ from datetime import date
 from pathlib import Path
 import unittest
 
-from revenue_tool.config import load_config
 from revenue_tool.domain.models import IssueLog, ParsedRow, SourceData
 from revenue_tool.services.data_quality import DataQualityAnalyzer
 
 
-ROOT = Path(__file__).resolve().parents[1]
-CONFIG = ROOT / "config" / "default.json"
-
-
 class DataQualityTest(unittest.TestCase):
-    def test_parseable_text_date_is_reported_as_storage_type_risk(self) -> None:
+    def test_parseable_text_date_and_blank_text_are_not_issues(self) -> None:
         demand = ParsedRow(
             role="demand_detail",
             workbook="demand.xlsx",
@@ -50,11 +45,9 @@ class DataQualityTest(unittest.TestCase):
         )
         issues = IssueLog()
 
-        DataQualityAnalyzer().analyze(source, load_config(CONFIG), issues)
+        DataQualityAnalyzer().analyze(source, issues)
 
-        self.assertEqual(1, len(issues.items))
-        self.assertEqual("DATE_STORAGE_TYPE_UNEXPECTED", issues.items[0].code)
-        self.assertEqual(3, issues.items[0].row_number)
+        self.assertEqual([], issues.items)
 
 
 if __name__ == "__main__":

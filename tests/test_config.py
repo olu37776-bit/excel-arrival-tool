@@ -39,9 +39,9 @@ class ConfigTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "输出 Sheet"):
                 load_config(path)
 
-    def test_nonpositive_amount_residual_threshold_is_rejected(self) -> None:
+    def test_empty_stock_flag_delimiter_is_rejected(self) -> None:
         data = json.loads(CONFIG.read_text(encoding="utf-8"))
-        data["rules"]["amount_residual_warning_threshold"] = "0"
+        data["rules"]["stock_flag_delimiter"] = ""
 
         with TemporaryDirectory() as temporary:
             path = Path(temporary) / "invalid.json"
@@ -49,7 +49,7 @@ class ConfigTest(unittest.TestCase):
                 json.dumps(data, ensure_ascii=False), encoding="utf-8"
             )
 
-            with self.assertRaisesRegex(ValueError, "必须为正有限数"):
+            with self.assertRaisesRegex(ValueError, "必须为非空字符串"):
                 load_config(path)
 
 

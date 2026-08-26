@@ -57,11 +57,11 @@ class PipelineTest(unittest.TestCase):
                 self.assertEqual(date(2026, 1, 5), _as_date(sc_a["RPD"]))
                 self.assertEqual(date(2026, 1, 10), _as_date(sc_a["最晚RPD"]))
                 self.assertIsNone(sc_a["最晚ASD"])
-                self.assertIsNone(sc_a["货未发完"])
+                self.assertEqual("Y", sc_a["货未发完"])
                 self.assertEqual("Y", sc_a["多次要货"])
                 self.assertEqual("Y", sc_a["分批供应"])
                 self.assertEqual(
-                    date(2026, 2, 4), _as_date(sc_a["到货日期（按RPD）"])
+                    date(2026, 2, 9), _as_date(sc_a["到货日期（按RPD）"])
                 )
                 self.assertEqual(
                     date(2026, 3, 3), _as_date(sc_a["到货日期（按CPD）"])
@@ -72,7 +72,7 @@ class PipelineTest(unittest.TestCase):
                 sc_b = rows[("C001", "SC-B")]
                 self.assertEqual(5, sc_b["海运周期"])
                 self.assertEqual(
-                    date(2026, 3, 10), _as_date(sc_b["到货日期（按RPD）"])
+                    date(2026, 2, 6), _as_date(sc_b["到货日期（按RPD）"])
                 )
 
                 c003 = rows[("C003", "SC-C")]
@@ -92,6 +92,11 @@ class PipelineTest(unittest.TestCase):
                 self.assertEqual("Y", c007_x["货未发完"])
                 self.assertEqual("地区7A", c007_x["地区部"])
                 self.assertEqual("中国", c007_x["国家"])
+
+                c007_y = rows[("C007", "SC-Y")]
+                self.assertEqual(0, c007_y["遗留量"])
+                self.assertEqual(0, c007_y["当月新订货"])
+                self.assertEqual("未录入订货", c007_y["收入分段类别"])
 
                 c004 = rows[("C004", "SC-D")]
                 self.assertEqual(70, c004["当月新订货"])
@@ -115,27 +120,28 @@ class PipelineTest(unittest.TestCase):
                 )
                 codes = {row[0] for row in issue_rows}
                 self.assertIn("DUPLICATE_ROW_IGNORED", codes)
-                self.assertIn("CONFLICTING_CONTRACT_VALUE", codes)
                 self.assertIn("CONFLICTING_TRANSIT_DAYS", codes)
                 self.assertIn("CONFLICTING_COUNTRY_FOR_CONTRACT", codes)
-                self.assertIn("CONTRACT_WITHOUT_SUPPLY_CENTER", codes)
-                self.assertIn("ARRIVAL_CPD_UNAVAILABLE", codes)
+                self.assertIn("CONTRACT_NOT_FOUND_IN_DEMAND_DETAIL", codes)
                 self.assertIn("CONTROL_FLAG_MISMATCH", codes)
-                self.assertIn("SHIPMENT_STATUS_UNAVAILABLE", codes)
-                self.assertIn("TEXT_PLACEHOLDER_NORMALIZED_TO_BLANK", codes)
-                self.assertIn("SUSPECT_AMOUNT_FLOAT_RESIDUE", codes)
-                self.assertIn("MISSING_INCOTERM", codes)
-                self.assertNotIn("CONTROL_FLAG_COUNT_MISMATCH", codes)
+                self.assertNotIn("CONFLICTING_CONTRACT_VALUE", codes)
+                self.assertNotIn("CONFLICTING_GROUP_VALUE", codes)
+                self.assertNotIn("ARRIVAL_CPD_UNAVAILABLE", codes)
+                self.assertNotIn("SHIPMENT_STATUS_UNAVAILABLE", codes)
+                self.assertNotIn("TEXT_PLACEHOLDER_NORMALIZED_TO_BLANK", codes)
+                self.assertNotIn("SUSPECT_AMOUNT_FLOAT_RESIDUE", codes)
+                self.assertNotIn("MISSING_INCOTERM", codes)
                 control_mismatches = [
                     row for row in issue_rows if row[0] == "CONTROL_FLAG_MISMATCH"
                 ]
                 self.assertEqual(2, len(control_mismatches))
                 self.assertEqual([6, 11], [row[4] for row in control_mismatches])
-                missing_incoterm = next(
-                    row for row in issue_rows if row[0] == "MISSING_INCOTERM"
+                contract_missing = next(
+                    row
+                    for row in issue_rows
+                    if row[0] == "CONTRACT_NOT_FOUND_IN_DEMAND_DETAIL"
                 )
-                self.assertEqual("first-demand.xlsx", missing_incoterm[2])
-                self.assertEqual(7, missing_incoterm[4])
+                self.assertEqual("要货明细未找到该合同号", contract_missing[8])
                 transit_conflict = next(
                     row for row in issue_rows if row[0] == "CONFLICTING_TRANSIT_DAYS"
                 )
@@ -204,12 +210,105 @@ class PipelineTest(unittest.TestCase):
             workbook = load_workbook(output, data_only=True)
             try:
                 rows = _base_rows(workbook["基表"])
-                self.assertIsNone(rows[("C001", "SC-A")]["当月新订货"])
+                self.assertEqual(0, rows[("C001", "SC-A")]["当月新订货"])
                 codes = {
                     row[0].value
                     for row in workbook["异常清单"].iter_rows(min_row=2)
                 }
                 self.assertNotIn("MISSING_SHEET", codes)
+            finally:
+                workbook.close()
+
+    def test_value_placeholders_are_empty_without_issues(self) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "value", variant="first")
+            _set_matching_cell(
+                sources[0],
+                "遗留量",
+                "华为合同号",
+                "C003",
+                "设备订未收-新",
+                "#VALUE!",
+            )
+            _set_matching_cell(
+                sources[2],
+                "要货明细",
+                "原合同号",
+                "C003",
+                "天_ATA",
+                "#VALUE!",
+            )
+            output = directory / "result.xlsx"
+
+            _run(sources, output)
+
+            workbook = load_workbook(output, data_only=True)
+            try:
+                c003 = _base_rows(workbook["基表"])[("C003", "SC-C")]
+                self.assertEqual(0, c003["遗留量"])
+                codes = {
+                    row[0].value
+                    for row in workbook["异常清单"].iter_rows(min_row=2)
+                }
+                self.assertNotIn("INVALID_AMOUNT", codes)
+                self.assertNotIn("INVALID_DATE", codes)
+            finally:
+                workbook.close()
+
+    def test_invalid_amount_reports_issue_and_degrades_to_zero(self) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "invalid", variant="first")
+            _set_matching_cell(
+                sources[0],
+                "遗留量",
+                "华为合同号",
+                "C003",
+                "设备订未收-新",
+                "not-an-amount",
+            )
+            output = directory / "result.xlsx"
+
+            _run(sources, output)
+
+            workbook = load_workbook(output, data_only=True)
+            try:
+                c003 = _base_rows(workbook["基表"])[("C003", "SC-C")]
+                self.assertEqual(0, c003["遗留量"])
+                codes = [
+                    row[0].value
+                    for row in workbook["异常清单"].iter_rows(min_row=2)
+                ]
+                self.assertIn("INVALID_AMOUNT", codes)
+            finally:
+                workbook.close()
+
+    def test_group_text_uses_first_value_without_conflict_issue(self) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "text", variant="first")
+            _set_matching_cell(
+                sources[2],
+                "要货明细",
+                "原合同号",
+                "C003",
+                "贸易术语",
+                "DAP",
+            )
+            output = directory / "result.xlsx"
+
+            _run(sources, output)
+
+            workbook = load_workbook(output, data_only=True)
+            try:
+                c003 = _base_rows(workbook["基表"])[("C003", "SC-C")]
+                self.assertEqual("DAP", c003["贸易术语"])
+                codes = {
+                    row[0].value
+                    for row in workbook["异常清单"].iter_rows(min_row=2)
+                }
+                self.assertNotIn("CONFLICTING_GROUP_VALUE", codes)
             finally:
                 workbook.close()
 
@@ -567,6 +666,27 @@ def _replace_supply_center(
                 and sheet.cell(row_number, headers["供应中心简称"]).value == old_center
             ):
                 sheet.cell(row_number, headers["供应中心简称"], new_center)
+        workbook.save(path)
+    finally:
+        workbook.close()
+
+
+def _set_matching_cell(
+    path: Path,
+    sheet_name: str,
+    contract_header: str,
+    contract: str,
+    field_header: str,
+    value,
+) -> None:
+    workbook = load_workbook(path)
+    try:
+        sheet = workbook[sheet_name]
+        headers = {cell.value: cell.column for cell in sheet[2]}
+        for row_number in range(3, sheet.max_row + 1):
+            if sheet.cell(row_number, headers[contract_header]).value == contract:
+                sheet.cell(row_number, headers[field_header], value)
+                break
         workbook.save(path)
     finally:
         workbook.close()

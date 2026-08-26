@@ -65,10 +65,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "v0.4.1"
+          $version = python -c "import importlib.metadata; print(importlib.metadata.version('excel-arrival-tool'))"
+          $tag = "v$version"
           gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null
           if ($LASTEXITCODE -eq 0) {
             gh release upload $tag dist\ExcelRevenueTool.exe dist\SHA256SUMS.txt --clobber --repo $env:GITHUB_REPOSITORY
           } else {
-            gh release create $tag dist\ExcelRevenueTool.exe dist\SHA256SUMS.txt --target $env:GITHUB_SHA --title "Excel 收入统计工具 v0.4.1" --notes "Windows 64 位图形版。无需安装 Python，无需运行 BAT。"
+            gh release create $tag dist\ExcelRevenueTool.exe dist\SHA256SUMS.txt --target $env:GITHUB_SHA --title "Excel 收入统计工具 $tag" --notes "Windows 64 位图形版。无需安装 Python，无需运行 BAT。"
           }

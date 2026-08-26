@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 import unittest
 
 from revenue_tool.domain.models import BaseRow, IssueLog, PreviousData
@@ -71,8 +72,8 @@ class ComparisonTest(unittest.TestCase):
                 "supply_center": center,
                 "revenue_month_rpd": month,
                 "revenue_month_cpd": month if cpd_month is None else cpd_month,
-                "legacy_amount": None,
-                "monthly_new_order": None,
+                "legacy_amount": Decimal("0.00"),
+                "monthly_new_order": Decimal("0.00"),
                 "region": "R",
                 "country": "Country",
                 "customer_group": "G",
