@@ -23,7 +23,7 @@ class PipelineTest(unittest.TestCase):
 
             result = _run(sources, output)
 
-            self.assertEqual(6, result.base_count)
+            self.assertEqual(7, result.base_count)
             self.assertEqual(1, result.supply_pull_count)
             workbook = load_workbook(output, data_only=True)
             try:
@@ -105,6 +105,16 @@ class PipelineTest(unittest.TestCase):
                 self.assertEqual(70, c004["当月新订货"])
                 self.assertIsNone(c004["收入年月（按CPD）"])
 
+                c002 = rows[("C002", None)]
+                self.assertEqual("不要货", c002["收入分段类别"])
+                self.assertEqual("N", c002["多个供应中心发货"])
+                self.assertEqual("N", c002["分批发货"])
+                self.assertEqual("N", c002["多次要货"])
+                self.assertEqual("N", c002["分批供应"])
+                self.assertIsNone(c002["海运周期"])
+                self.assertIsNone(c002["到货日期（按RPD）"])
+                self.assertIsNone(c002["到货日期（按CPD）"])
+
                 supply = workbook["供应需要提拉诉求清单粗表"]
                 self.assertEqual(EXPECTED_SUPPLY_HEADERS, [c.value for c in supply[1]])
                 supply_rows = _rows_by_key(supply)
@@ -125,7 +135,7 @@ class PipelineTest(unittest.TestCase):
                 self.assertIn("DUPLICATE_ROW_IGNORED", codes)
                 self.assertIn("CONFLICTING_TRANSIT_DAYS", codes)
                 self.assertIn("CONFLICTING_COUNTRY_FOR_CONTRACT", codes)
-                self.assertIn("CONTRACT_NOT_FOUND_IN_DEMAND_DETAIL", codes)
+                self.assertNotIn("CONTRACT_NOT_FOUND_IN_DEMAND_DETAIL", codes)
                 self.assertIn("CONTROL_FLAG_MISMATCH", codes)
                 self.assertNotIn("CONFLICTING_CONTRACT_VALUE", codes)
                 self.assertNotIn("CONFLICTING_GROUP_VALUE", codes)
@@ -139,12 +149,6 @@ class PipelineTest(unittest.TestCase):
                 ]
                 self.assertEqual(2, len(control_mismatches))
                 self.assertEqual([6, 11], [row[4] for row in control_mismatches])
-                contract_missing = next(
-                    row
-                    for row in issue_rows
-                    if row[0] == "CONTRACT_NOT_FOUND_IN_DEMAND_DETAIL"
-                )
-                self.assertEqual("要货明细未找到该合同号", contract_missing[8])
                 transit_conflict = next(
                     row for row in issue_rows if row[0] == "CONFLICTING_TRANSIT_DAYS"
                 )
@@ -237,7 +241,7 @@ class PipelineTest(unittest.TestCase):
                 CONFIG,
             )
 
-            self.assertEqual(6, result.base_count)
+            self.assertEqual(7, result.base_count)
             workbook = load_workbook(output, data_only=True)
             try:
                 rows = _base_rows(workbook["基表"])
@@ -266,7 +270,7 @@ class PipelineTest(unittest.TestCase):
 
             result = _run(sources, output)
 
-            self.assertEqual(6, result.base_count)
+            self.assertEqual(7, result.base_count)
             workbook = load_workbook(output, data_only=True)
             try:
                 rows = _base_rows(workbook["基表"])
@@ -730,7 +734,9 @@ def _rows_by_key(sheet) -> dict[tuple[str, str], dict[str, object]]:
     return rows
 
 
-def _set_manual_values(path: Path, contract: str, center: str) -> None:
+def _set_manual_values(
+    path: Path, contract: str, center: str | None
+) -> None:
     workbook = load_workbook(path)
     try:
         sheet = workbook["基表"]

@@ -20,6 +20,7 @@ from revenue_tool.domain.models import (
 _HEADER_FILL = PatternFill("solid", fgColor="1F4E78")
 _HEADER_FONT = Font(color="FFFFFF", bold=True)
 _EDITABLE_FILL = PatternFill("solid", fgColor="FFF2CC")
+_BANDED_FILL = PatternFill("solid", fgColor="D9EAF7")
 _THIN_BLUE = Side(style="thin", color="9EADBF")
 
 
@@ -192,6 +193,16 @@ class ExcelOutputAdapter:
             if field in editable_fields and sheet.max_row >= 2:
                 for cell in sheet[letter][1:]:
                     cell.fill = _EDITABLE_FILL
+
+        # Structured Table supplied the old row stripes.  Preserve that
+        # visual hierarchy after switching to a worksheet AutoFilter, while
+        # keeping the three editable columns visibly yellow.
+        for row_number in range(2, sheet.max_row + 1):
+            if row_number % 2:
+                continue
+            for column_number, field in enumerate(field_ids, start=1):
+                if field not in editable_fields:
+                    sheet.cell(row_number, column_number).fill = _BANDED_FILL
 
         last_column = get_column_letter(len(columns))
         last_row = max(1, sheet.max_row)

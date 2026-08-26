@@ -5,6 +5,10 @@ from pathlib import Path
 from typing import Any
 
 
+DEMAND_CENTER = "DEMAND_CENTER"
+CONTRACT_ONLY_NO_DEMAND = "CONTRACT_ONLY_NO_DEMAND"
+
+
 @dataclass(frozen=True)
 class Issue:
     code: str
@@ -79,6 +83,7 @@ class SourceData:
 @dataclass
 class BaseRow:
     values: dict[str, Any]
+    row_kind: str = DEMAND_CENTER
 
 
 @dataclass

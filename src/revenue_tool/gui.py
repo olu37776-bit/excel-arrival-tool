@@ -58,7 +58,7 @@ def main(argv: list[str] | None = None) -> int:
 
     ttk.Label(
         frame,
-        text="请选择四个源文件和结果保存位置",
+        text="请选择三个必选源文件、可选当月订货和结果保存位置",
         font=("Microsoft YaHei UI", 13, "bold"),
     ).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 12))
 
