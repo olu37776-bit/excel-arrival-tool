@@ -30,7 +30,11 @@ def resolve_role_sheet(
     role: str,
     config: ToolConfig,
 ) -> SheetResolution:
-    """Resolve one business sheet by its field contract, never by name alone."""
+    """Resolve one business sheet by its field contract.
+
+    Names only make diagnostics deterministic; every worksheet must satisfy the
+    same required-field contract before it can be selected.
+    """
     sheet_spec = config.sheets[role]
     expected_names = {
         normalize_lookup(sheet_spec["canonical"]),
