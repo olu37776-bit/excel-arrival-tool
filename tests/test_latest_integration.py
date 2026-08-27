@@ -20,7 +20,13 @@ from tests.test_pipeline import (
 
 
 VISIBLE_SHEETS = [
-    "基表",
+    "合同收入预测",
+    "收入分配",
+    "RPD月度收入汇总",
+    "CPD月度收入汇总",
+    "待处理收入",
+    "收入归月明细",
+    "要货记录明细",
     "RPD跨月变化",
     "CPD跨月变化",
     "供应需要提拉诉求清单粗表",
@@ -63,7 +69,7 @@ class LatestIntegrationTest(unittest.TestCase):
                         )
                         self.assertEqual("A2", sheet.freeze_panes)
 
-                    base = workbook["基表"]
+                    base = workbook["收入分配"]
                     headers = {
                         cell.value: cell.column for cell in base[1]
                     }
@@ -73,7 +79,7 @@ class LatestIntegrationTest(unittest.TestCase):
                     self.assertEqual(
                         "00FFF2CC",
                         base.cell(
-                            2, headers["是否手工调整收入月份"]
+                            2, headers["手工分配金额"]
                         ).fill.fgColor.rgb,
                     )
                     workbook.save(output)
@@ -85,7 +91,7 @@ class LatestIntegrationTest(unittest.TestCase):
                 self.assertFalse(
                     any(name.startswith("xl/tables/") for name in names)
                 )
-                for index in range(1, 6):
+                for index in range(1, 12):
                     content = archive.read(
                         f"xl/worksheets/sheet{index}.xml"
                     )
@@ -122,7 +128,7 @@ class LatestIntegrationTest(unittest.TestCase):
                     ):
                         matching.append(issue)
                 self.assertEqual([], matching)
-                row = _base_rows(workbook["基表"])[("C003", "SC-C")]
+                row = _base_rows(workbook["收入分配"])[("C003", "SC-C")]
                 self.assertIsNone(row["海运周期"])
                 self.assertIsNone(row["到货日期（按RPD）"])
                 self.assertIsNone(row["到货日期（按CPD）"])

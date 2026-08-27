@@ -658,7 +658,7 @@ def _read_previous_metadata(
     dict[str, str],
     dict[tuple[str, str], str] | None,
 ]:
-    default_sheet = config.output["sheets"]["base"]
+    default_sheet = config.output["legacy_v08"]["sheets"]["base"]
     default_names = config.base_names_by_id
     if "_tool_meta" not in workbook.sheetnames:
         return default_sheet, default_names, None

@@ -33,7 +33,13 @@ class ToolConfig:
 
     @property
     def base_columns(self) -> list[dict[str, str]]:
-        return self.output["base_columns"]
+        """Legacy v0.8 field contract retained only for compatibility reads."""
+
+        return self.output["legacy_v08"]["base_columns"]
+
+    @property
+    def datasets(self) -> dict[str, dict[str, Any]]:
+        return self.output["datasets"]
 
     @property
     def base_names_by_id(self) -> dict[str, str]:
@@ -160,7 +166,10 @@ def _validate(raw: dict[str, Any]) -> None:
         ):
             raise ValueError(f"Sheet 角色 {role} header_row 必须为空或正整数")
 
-    columns = raw["output"].get("base_columns", [])
+    legacy_output = raw["output"].get("legacy_v08")
+    if not isinstance(legacy_output, dict):
+        raise ValueError("output.legacy_v08 必须为对象")
+    columns = legacy_output.get("base_columns", [])
     expected_base_ids = [
         "contract_no",
         "legacy_amount",
@@ -206,7 +215,7 @@ def _validate(raw: dict[str, Any]) -> None:
         "customer_group",
         "supply_center",
     ]
-    change_common = raw["output"].get("change_common_columns", [])
+    change_common = legacy_output.get("change_common_columns", [])
     if not _valid_columns(change_common, expected_change_common):
         raise ValueError("变化清单公共字段 ID 或顺序不符合契约")
     expected_supply_pull = expected_change_common + [
@@ -214,11 +223,11 @@ def _validate(raw: dict[str, Any]) -> None:
         "revenue_month_cpd",
     ]
     if not _valid_columns(
-        raw["output"].get("supply_pull_columns", []),
+        legacy_output.get("supply_pull_columns", []),
         expected_supply_pull,
     ):
         raise ValueError("供应需要提拉诉求清单字段 ID 或顺序不符合契约")
-    change_tails = raw["output"].get("change_tail_columns")
+    change_tails = legacy_output.get("change_tail_columns")
     if not isinstance(change_tails, dict) or set(change_tails) != {
         "rpd",
         "cpd",
@@ -252,34 +261,10 @@ def _validate(raw: dict[str, Any]) -> None:
         "message",
     ]
     if not _valid_columns(
-        raw["output"].get("issue_columns", []), expected_issue_ids
+        legacy_output.get("issue_columns", []), expected_issue_ids
     ):
         raise ValueError("异常清单字段 ID 或顺序不符合契约")
-    output_sheets = raw["output"].get("sheets")
-    if not isinstance(output_sheets, dict):
-        raise ValueError("输出 sheets 必须为对象")
-    output_sheet_names = list(output_sheets.values())
-    output_names_are_valid = all(
-        isinstance(name, str) and bool(name.strip())
-        for name in output_sheet_names
-    )
-    if (
-        set(output_sheets)
-        != {
-            "base",
-            "rpd_changes",
-            "cpd_changes",
-            "supply_pull",
-            "issues",
-        }
-        or not output_names_are_valid
-        or len({_name_identity(name) for name in output_sheet_names})
-        != len(output_sheet_names)
-        or _name_identity("_tool_meta")
-        in {_name_identity(name) for name in output_sheet_names}
-        or any(not _valid_sheet_name(name) for name in output_sheet_names)
-    ):
-        raise ValueError("五个输出 Sheet 显示名必须非空、唯一且不能占用 _tool_meta")
+    _validate_output_datasets(raw["output"])
     if raw["workbook"].get("contains_direction") not in {
         "header_contains_expected",
         "either",
@@ -335,6 +320,75 @@ def _valid_columns(columns: Any, expected_ids: list[str]) -> bool:
         and all(isinstance(name, str) and name.strip() for name in names)
         and len({_name_identity(name) for name in names}) == len(names)
     )
+
+
+def _validate_output_datasets(output: dict[str, Any]) -> None:
+    datasets = output.get("datasets")
+    expected = [
+        "contract_forecast",
+        "allocation",
+        "rpd_monthly_summary",
+        "cpd_monthly_summary",
+        "pending_revenue",
+        "monthly_posting_detail",
+        "demand_record_detail",
+        "rpd_changes",
+        "cpd_changes",
+        "supply_pull",
+        "issues",
+        "fulfillment_projection",
+    ]
+    if not isinstance(datasets, dict) or list(datasets) != expected:
+        raise ValueError("output.datasets 的数据集 ID 和顺序不符合新工作簿契约")
+    sheet_names: list[str] = []
+    valid_types = {"text", "amount", "integer", "date", "boolean"}
+    for dataset_id, spec in datasets.items():
+        if not isinstance(spec, dict):
+            raise ValueError(f"输出数据集 {dataset_id} 必须为对象")
+        sheet_name = spec.get("sheet")
+        if (
+            not isinstance(sheet_name, str)
+            or not sheet_name.strip()
+            or not _valid_sheet_name(sheet_name)
+            or _name_identity(sheet_name) == _name_identity("_tool_meta")
+        ):
+            raise ValueError(f"输出数据集 {dataset_id} Sheet 名无效")
+        sheet_names.append(sheet_name)
+        if spec.get("hidden") is not (dataset_id == "fulfillment_projection"):
+            raise ValueError("仅 fulfillment_projection 数据集必须隐藏")
+        columns = spec.get("columns")
+        if not isinstance(columns, list) or not columns:
+            raise ValueError(f"输出数据集 {dataset_id} columns 不能为空")
+        if any(not isinstance(item, dict) for item in columns):
+            raise ValueError(f"输出数据集 {dataset_id} 字段配置无效")
+        ids = [column.get("id") for column in columns]
+        names = [column.get("name") for column in columns]
+        if (
+            any(not isinstance(value, str) or not value.strip() for value in ids)
+            or any(not isinstance(value, str) or not value.strip() for value in names)
+            or len(set(ids)) != len(ids)
+            or len({_name_identity(name) for name in names}) != len(names)
+            or any(column.get("type") not in valid_types for column in columns)
+            or any(
+                "editable" in column
+                and not isinstance(column["editable"], bool)
+                for column in columns
+            )
+        ):
+            raise ValueError(f"输出数据集 {dataset_id} 字段配置无效")
+    if len({_name_identity(name) for name in sheet_names}) != len(sheet_names):
+        raise ValueError("输出数据集 Sheet 显示名必须唯一")
+    editable = {
+        (dataset_id, column["id"])
+        for dataset_id, spec in datasets.items()
+        for column in spec["columns"]
+        if column.get("editable")
+    }
+    if editable != {
+        ("allocation", "manual_allocated_amount"),
+        ("allocation", "allocation_note"),
+    }:
+        raise ValueError("仅收入分配的手工分配金额和分配备注允许编辑")
 
 
 def _name_identity(value: str) -> str:

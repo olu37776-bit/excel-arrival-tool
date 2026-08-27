@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -102,11 +103,22 @@ class ComparisonRow:
 @dataclass(frozen=True)
 class PipelineResult:
     output_path: Path
-    base_count: int
+    contract_count: int
+    candidate_count: int
+    allocated_amount: Decimal
+    unallocated_amount: Decimal
+    rpd_posted_amount: Decimal
+    cpd_posted_amount: Decimal
+    pending_count: int
     rpd_change_count: int
     cpd_change_count: int
     supply_pull_count: int
     issue_count: int
+
+    @property
+    def base_count(self) -> int:
+        """Compatibility alias for integrations not yet updated."""
+        return self.candidate_count
 
 
 class WorkbookReadError(RuntimeError):

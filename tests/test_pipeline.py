@@ -23,27 +23,38 @@ class PipelineTest(unittest.TestCase):
 
             result = _run(sources, output)
 
-            self.assertEqual(7, result.base_count)
+            self.assertEqual(5, result.contract_count)
+            self.assertEqual(6, result.candidate_count)
             self.assertEqual(1, result.supply_pull_count)
             workbook = load_workbook(output, data_only=True)
             try:
                 self.assertEqual(
                     [
-                        "基表",
+                        "合同收入预测",
+                        "收入分配",
+                        "RPD月度收入汇总",
+                        "CPD月度收入汇总",
+                        "待处理收入",
+                        "收入归月明细",
+                        "要货记录明细",
                         "RPD跨月变化",
                         "CPD跨月变化",
                         "供应需要提拉诉求清单粗表",
                         "异常清单",
+                        "_fulfillment_projection",
                         "_tool_meta",
                     ],
                     workbook.sheetnames,
                 )
                 self.assertEqual("hidden", workbook["_tool_meta"].sheet_state)
-                self.assertEqual("3", workbook["_tool_meta"]["B1"].value)
-                base = workbook["基表"]
-                self.assertEqual(EXPECTED_BASE_HEADERS, [c.value for c in base[1]])
+                self.assertEqual("4", workbook["_tool_meta"]["B1"].value)
+                self.assertEqual(
+                    "hidden", workbook["_fulfillment_projection"].sheet_state
+                )
+                base = workbook["收入分配"]
+                self.assertEqual(EXPECTED_ALLOCATION_HEADERS, [c.value for c in base[1]])
                 self.assertEqual("A2", base.freeze_panes)
-                for sheet_name in workbook.sheetnames[:5]:
+                for sheet_name in workbook.sheetnames[:11]:
                     business_sheet = workbook[sheet_name]
                     self.assertFalse(business_sheet.tables)
                     self.assertIsNotNone(business_sheet.auto_filter.ref)
@@ -106,15 +117,11 @@ class PipelineTest(unittest.TestCase):
                 self.assertEqual(70, c004["当月新订货"])
                 self.assertIsNone(c004["收入年月（按CPD）"])
 
-                c002 = rows[("C002", None)]
-                self.assertEqual("不要货", c002["收入分段类别"])
-                self.assertEqual("N", c002["多个供应中心发货"])
-                self.assertEqual("N", c002["分批发货"])
-                self.assertEqual("N", c002["多次要货"])
-                self.assertEqual("N", c002["分批供应"])
-                self.assertIsNone(c002["海运周期"])
-                self.assertIsNone(c002["到货日期（按RPD）"])
-                self.assertIsNone(c002["到货日期（按CPD）"])
+                contracts = _contract_rows(workbook["合同收入预测"])
+                c002 = contracts["C002"]
+                self.assertEqual("NO_DEMAND", c002["要货状态"])
+                self.assertEqual(0, c002["分配候选数"])
+                self.assertEqual("不要货", c002["分配状态"])
 
                 supply = workbook["供应需要提拉诉求清单粗表"]
                 self.assertEqual(EXPECTED_SUPPLY_HEADERS, [c.value for c in supply[1]])
@@ -179,13 +186,13 @@ class PipelineTest(unittest.TestCase):
             self.assertGreaterEqual(result.cpd_change_count, 3)
             workbook = load_workbook(second_result, data_only=True)
             try:
-                base_rows = _base_rows(workbook["基表"])
+                base_rows = _base_rows(workbook["收入分配"])
                 inherited = base_rows[("C001", "SC-A")]
-                self.assertEqual("Y", inherited["是否手工调整收入月份"])
-                self.assertEqual("2026-04", inherited["手工调整收入月份"])
-                self.assertEqual("业务确认", inherited["调整备注"])
+                self.assertEqual(40, inherited["手工分配金额"])
+                self.assertEqual(40, inherited["最终金额"])
+                self.assertEqual("业务确认", inherited["分配备注"])
                 self.assertIsNone(
-                    base_rows[("C005", "SC-E")]["是否手工调整收入月份"]
+                    base_rows[("C005", "SC-E")]["手工分配金额"]
                 )
 
                 rpd = _rows_by_key(workbook["RPD跨月变化"])
@@ -223,7 +230,7 @@ class PipelineTest(unittest.TestCase):
 
             workbook = load_workbook(output, data_only=True)
             try:
-                rows = _base_rows(workbook["基表"])
+                rows = _base_rows(workbook["收入分配"])
                 self.assertEqual(0, rows[("C001", "SC-A")]["当月新订货"])
                 codes = {
                     row[0].value
@@ -248,10 +255,10 @@ class PipelineTest(unittest.TestCase):
                 CONFIG,
             )
 
-            self.assertEqual(7, result.base_count)
+            self.assertEqual(6, result.candidate_count)
             workbook = load_workbook(output, data_only=True)
             try:
-                rows = _base_rows(workbook["基表"])
+                rows = _base_rows(workbook["收入分配"])
                 self.assertTrue(
                     all(row["当月新订货"] == 0 for row in rows.values())
                 )
@@ -277,10 +284,10 @@ class PipelineTest(unittest.TestCase):
 
             result = _run(sources, output)
 
-            self.assertEqual(7, result.base_count)
+            self.assertEqual(6, result.candidate_count)
             workbook = load_workbook(output, data_only=True)
             try:
-                rows = _base_rows(workbook["基表"])
+                rows = _base_rows(workbook["收入分配"])
                 self.assertEqual(100, rows[("C001", "SC-A")]["遗留量"])
                 self.assertEqual(50, rows[("C001", "SC-A")]["当月新订货"])
                 codes = {
@@ -318,7 +325,7 @@ class PipelineTest(unittest.TestCase):
 
             workbook = load_workbook(output, data_only=True)
             try:
-                c003 = _base_rows(workbook["基表"])[("C003", "SC-C")]
+                c003 = _base_rows(workbook["收入分配"])[("C003", "SC-C")]
                 self.assertEqual(0, c003["遗留量"])
                 codes = {
                     row[0].value
@@ -349,7 +356,7 @@ class PipelineTest(unittest.TestCase):
 
             workbook = load_workbook(output, data_only=True)
             try:
-                c003 = _base_rows(workbook["基表"])[("C003", "SC-C")]
+                c003 = _base_rows(workbook["收入分配"])[("C003", "SC-C")]
                 self.assertEqual("未解锁", c003["是否解锁备货"])
                 matching = [
                     row
@@ -381,7 +388,7 @@ class PipelineTest(unittest.TestCase):
 
             workbook = load_workbook(output, data_only=True)
             try:
-                c003 = _base_rows(workbook["基表"])[("C003", "SC-C")]
+                c003 = _base_rows(workbook["收入分配"])[("C003", "SC-C")]
                 self.assertEqual(0, c003["遗留量"])
                 codes = [
                     row[0].value
@@ -419,7 +426,7 @@ class PipelineTest(unittest.TestCase):
                     "INVALID_TRANSIT_DAYS", matching[0]["异常代码"]
                 )
                 self.assertIn("transit_days=bad", matching[0]["原始值"])
-                row = _base_rows(workbook["基表"])[("C003", "SC-C")]
+                row = _base_rows(workbook["收入分配"])[("C003", "SC-C")]
                 self.assertIsNone(row["海运周期"])
                 self.assertIsNone(row["到货日期（按RPD）"])
             finally:
@@ -443,7 +450,7 @@ class PipelineTest(unittest.TestCase):
 
             workbook = load_workbook(output, data_only=True)
             try:
-                c003 = _base_rows(workbook["基表"])[("C003", "SC-C")]
+                c003 = _base_rows(workbook["收入分配"])[("C003", "SC-C")]
                 self.assertEqual("DAP", c003["贸易术语"])
                 codes = {
                     row[0].value
@@ -465,8 +472,9 @@ class PipelineTest(unittest.TestCase):
             _set_manual_values(first_result, "C001", "SC-A")
 
             data = json.loads(CONFIG.read_text(encoding="utf-8"))
-            data["output"]["sheets"]["base"] = "主数据"
-            for column in data["output"]["base_columns"]:
+            allocation_config = data["output"]["datasets"]["allocation"]
+            allocation_config["sheet"] = "分配新表"
+            for column in allocation_config["columns"]:
                 column["name"] = f"新-{column['id']}"
             changed_config.write_text(
                 json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -481,7 +489,7 @@ class PipelineTest(unittest.TestCase):
 
             workbook = load_workbook(second_result, data_only=True)
             try:
-                sheet = workbook["主数据"]
+                sheet = workbook["分配新表"]
                 headers = {cell.value: cell.column for cell in sheet[1]}
                 row_number = next(
                     row
@@ -490,14 +498,10 @@ class PipelineTest(unittest.TestCase):
                     and sheet.cell(row, headers["新-supply_center"]).value == "SC-A"
                 )
                 self.assertEqual(
-                    "Y", sheet.cell(row_number, headers["新-manual_adjust_flag"]).value
+                    40, sheet.cell(row_number, headers["新-manual_allocated_amount"]).value
                 )
                 self.assertEqual(
-                    "2026-04",
-                    sheet.cell(row_number, headers["新-manual_revenue_month"]).value,
-                )
-                self.assertEqual(
-                    "业务确认", sheet.cell(row_number, headers["新-adjustment_note"]).value
+                    "业务确认", sheet.cell(row_number, headers["新-allocation_note"]).value
                 )
             finally:
                 workbook.close()
@@ -517,9 +521,8 @@ class PipelineTest(unittest.TestCase):
 
             workbook = load_workbook(output, data_only=True)
             try:
-                inherited = _base_rows(workbook["基表"])[("C001", "SC-A")]
-                self.assertEqual("Y", inherited["是否手工调整收入月份"])
-                self.assertEqual("2026-04", inherited["手工调整收入月份"])
+                inherited = _base_rows(workbook["收入分配"])[("C001", "SC-A")]
+                self.assertIsNone(inherited["手工分配金额"])
             finally:
                 workbook.close()
 
@@ -564,9 +567,9 @@ class PipelineTest(unittest.TestCase):
 
             workbook = load_workbook(second_result, data_only=True)
             try:
-                inherited = _base_rows(workbook["基表"])[("C001", "sc-a")]
-                self.assertEqual("Y", inherited["是否手工调整收入月份"])
-                self.assertEqual("2026-04", inherited["手工调整收入月份"])
+                inherited = _base_rows(workbook["收入分配"])[("C001", "sc-a")]
+                self.assertEqual(40, inherited["手工分配金额"])
+                self.assertEqual("业务确认", inherited["分配备注"])
                 self.assertEqual(1, workbook["RPD跨月变化"].max_row)
                 self.assertEqual(1, workbook["CPD跨月变化"].max_row)
             finally:
@@ -584,7 +587,7 @@ class PipelineTest(unittest.TestCase):
                 )
             with self.assertRaisesRegex(ValueError, "任何一个本次源文件"):
                 _run(sources, sources[0])
-            with self.assertRaisesRegex(ValueError, "上一次成功运行结果"):
+            with self.assertRaisesRegex(ValueError, "上一次结果 / 已分配结果"):
                 _run(sources, output, previous=output)
 
             self.assertFalse(output.exists())
@@ -599,18 +602,20 @@ class PipelineTest(unittest.TestCase):
                 _run(tuple(sources), directory / "result.xlsx")
 
 
+EXPECTED_ALLOCATION_HEADERS = [
+    column["name"]
+    for column in json.loads(CONFIG.read_text(encoding="utf-8"))["output"]
+    ["datasets"]["allocation"]["columns"]
+]
+
 EXPECTED_BASE_HEADERS = [
-    "合同号", "遗留量", "当月新订货", "BG", "地区部", "国家", "结转类型",
-    "客户群", "项目名称", "贸易术语", "履行供应中心", "多个供应中心发货",
-    "是否解锁备货", "分批发货", "海运周期", "ATA", "ASD", "RPD",
-    "多次要货", "最晚ASD", "最晚RPD", "货未发完", "CPD", "分批供应",
-    "到货日期（按RPD）", "到货日期（按CPD）", "收入年月（按RPD）",
-    "收入年月（按CPD）", "收入分段类别", "是否手工调整收入月份",
-    "手工调整收入月份", "调整备注",
+    column["name"]
+    for column in json.loads(CONFIG.read_text(encoding="utf-8"))["output"]
+    ["legacy_v08"]["base_columns"]
 ]
 
 EXPECTED_SUPPLY_HEADERS = [
-    "合同号", "遗留量", "当月新订货", "地区部", "国家", "客户群",
+    "合同号", "遗留量", "当月新订货", "地区部", "国家", "结转类型", "客户群",
     "履行供应中心", "收入年月（按RPD）", "收入年月（按CPD）",
 ]
 
@@ -763,7 +768,20 @@ def _add_header(sheet, headers: list[str]) -> None:
 
 
 def _base_rows(sheet) -> dict[tuple[str, str], dict[str, object]]:
-    return _rows_by_key(sheet)
+    rows = _rows_by_key(sheet)
+    for row in rows.values():
+        row.setdefault("遗留量", row.get("遗留量（参考）"))
+        row.setdefault("当月新订货", row.get("当月新订货（参考）"))
+    return rows
+
+
+def _contract_rows(sheet) -> dict[str, dict[str, object]]:
+    headers = [cell.value for cell in sheet[1]]
+    return {
+        data["合同号"]: data
+        for values in sheet.iter_rows(min_row=2, values_only=True)
+        if (data := dict(zip(headers, values))).get("合同号")
+    }
 
 
 def _rows_by_key(sheet) -> dict[tuple[str, str], dict[str, object]]:
@@ -780,16 +798,15 @@ def _set_manual_values(
 ) -> None:
     workbook = load_workbook(path)
     try:
-        sheet = workbook["基表"]
+        sheet = workbook["收入分配"]
         headers = {cell.value: cell.column for cell in sheet[1]}
         for row_number in range(2, sheet.max_row + 1):
             if (
                 sheet.cell(row_number, headers["合同号"]).value == contract
                 and sheet.cell(row_number, headers["履行供应中心"]).value == center
             ):
-                sheet.cell(row_number, headers["是否手工调整收入月份"], "Y")
-                sheet.cell(row_number, headers["手工调整收入月份"], "2026-04")
-                sheet.cell(row_number, headers["调整备注"], "业务确认")
+                sheet.cell(row_number, headers["手工分配金额"], 40)
+                sheet.cell(row_number, headers["分配备注"], "业务确认")
                 break
         workbook.save(path)
     finally:
@@ -871,7 +888,7 @@ def _set_transit_value(
 def _remove_new_base_columns(path: Path) -> None:
     workbook = load_workbook(path)
     try:
-        workbook["基表"].delete_cols(20, 3)
+        workbook["收入分配"].delete_cols(20, 3)
         workbook.save(path)
     finally:
         workbook.close()

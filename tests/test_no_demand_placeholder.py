@@ -9,6 +9,7 @@ import unittest
 from openpyxl import load_workbook
 
 from revenue_tool.adapters.excel_reader import ExcelInputAdapter
+from revenue_tool.adapters.previous_result_reader import PreviousResultReader
 from revenue_tool.config import load_config
 from revenue_tool.domain.models import (
     BaseRow,
@@ -153,21 +154,14 @@ class NoDemandPlaceholderTest(unittest.TestCase):
 
             workbook = load_workbook(output, data_only=True)
             try:
-                rows = _base_rows(workbook["基表"])
-                c002 = rows[("C002", None)]
-                c008 = rows[("C008", None)]
+                rows = _contract_rows(workbook["合同收入预测"])
+                c002 = rows["C002"]
+                c008 = rows["C008"]
                 self.assertEqual(22, c002["当月新订货"])
                 self.assertEqual(88, c008["当月新订货"])
                 self.assertEqual(0, c008["遗留量"])
-                self.assertEqual("不要货", c008["收入分段类别"])
-                self.assertEqual(
-                    1,
-                    sum(
-                        1
-                        for contract, _center in rows
-                        if contract == "C002"
-                    ),
-                )
+                self.assertEqual("不要货", c008["分配状态"])
+                self.assertEqual(0, c008["分配候选数"])
                 codes = {
                     row[0].value
                     for row in workbook["异常清单"].iter_rows(min_row=2)
@@ -189,7 +183,7 @@ class NoDemandPlaceholderTest(unittest.TestCase):
 
             workbook = load_workbook(output, data_only=True)
             try:
-                rows = _base_rows(workbook["基表"])
+                rows = _base_rows(workbook["收入分配"])
                 self.assertFalse(
                     any(contract == "C003" for contract, _center in rows)
                 )
@@ -212,14 +206,13 @@ class NoDemandPlaceholderTest(unittest.TestCase):
             second_result = directory / "second.xlsx"
             third_result = directory / "third.xlsx"
             _run(first_sources, first_result)
-            _set_manual_values(first_result, "C002", None)
-
             _run(first_sources, second_result, previous=first_result)
             workbook = load_workbook(second_result, data_only=True)
             try:
-                placeholder = _base_rows(workbook["基表"])[("C002", None)]
-                self.assertEqual("Y", placeholder["是否手工调整收入月份"])
-                self.assertEqual("2026-04", placeholder["手工调整收入月份"])
+                self.assertNotIn(
+                    "C002",
+                    {row["合同号"] for row in _base_rows(workbook["收入分配"]).values()},
+                )
             finally:
                 workbook.close()
 
@@ -227,12 +220,11 @@ class NoDemandPlaceholderTest(unittest.TestCase):
             _run(first_sources, third_result, previous=second_result)
             workbook = load_workbook(third_result, data_only=True)
             try:
-                rows = _base_rows(workbook["基表"])
-                self.assertNotIn(("C002", None), rows)
+                rows = _base_rows(workbook["收入分配"])
                 actual = rows[("C002", "SC-Z")]
-                self.assertIsNone(actual["是否手工调整收入月份"])
-                self.assertIsNone(actual["手工调整收入月份"])
-                self.assertIsNone(actual["调整备注"])
+                self.assertIsNone(actual["上期手工金额"])
+                self.assertIsNone(actual["手工分配金额"])
+                self.assertIsNone(actual["分配备注"])
             finally:
                 workbook.close()
 
@@ -245,28 +237,15 @@ class NoDemandPlaceholderTest(unittest.TestCase):
             output = directory / "result.xlsx"
             _run(sources, output)
 
-            workbook = load_workbook(output)
-            try:
-                base = workbook["基表"]
-                headers = {cell.value: cell.column for cell in base[1]}
-                for row_number in range(2, base.max_row + 1):
-                    if base.cell(row_number, headers["合同号"]).value == "C002":
-                        base.cell(
-                            row_number,
-                            headers["收入分段类别"],
-                            "被人工改动",
-                        )
-                        break
-                workbook.save(output)
-            finally:
-                workbook.close()
-
             issues = IssueLog()
-            previous = ExcelInputAdapter().read_previous(
+            previous = PreviousResultReader().read(
                 output, load_config(CONFIG), issues
             )
-
-            row = previous.rows[business_key_identity("C002", None)]
+            row = next(
+                item
+                for item in previous.fulfillment_projections
+                if item.contract_no == "C002"
+            )
             self.assertEqual(CONTRACT_ONLY_NO_DEMAND, row.row_kind)
             self.assertNotIn(
                 "PREVIOUS_ROW_KIND_UNAVAILABLE",
@@ -279,17 +258,8 @@ class NoDemandPlaceholderTest(unittest.TestCase):
         with TemporaryDirectory() as temporary:
             directory = Path(temporary)
             sources = _write_sources(directory, "legacy", variant="first")
-            output = directory / "result.xlsx"
-            _run(sources, output)
-
-            workbook = load_workbook(output)
-            try:
-                metadata = workbook["_tool_meta"]
-                metadata["B1"] = "2"
-                metadata.delete_rows(37, metadata.max_row - 36)
-                workbook.save(output)
-            finally:
-                workbook.close()
+            output = directory / "legacy-v08.xlsx"
+            _write_v08_no_demand_result(output)
 
             previous = ExcelInputAdapter().read_previous(
                 output, load_config(CONFIG), IssueLog()
@@ -407,7 +377,7 @@ def _append_demand_contract(path: Path, contract: str, center: str) -> None:
 def _clear_result_months(path: Path, contract: str, center: str) -> None:
     workbook = load_workbook(path)
     try:
-        sheet = workbook["基表"]
+        sheet = workbook["_fulfillment_projection"]
         headers = {cell.value: cell.column for cell in sheet[1]}
         for row_number in range(2, sheet.max_row + 1):
             if (
@@ -425,6 +395,45 @@ def _clear_result_months(path: Path, contract: str, center: str) -> None:
         workbook.save(path)
     finally:
         workbook.close()
+
+
+def _contract_rows(sheet) -> dict[str, dict[str, object]]:
+    headers = [cell.value for cell in sheet[1]]
+    return {
+        row["合同号"]: row
+        for values in sheet.iter_rows(min_row=2, values_only=True)
+        if (row := dict(zip(headers, values))).get("合同号")
+    }
+
+
+def _write_v08_no_demand_result(path: Path) -> None:
+    from openpyxl import Workbook
+    from tests.test_pipeline import EXPECTED_BASE_HEADERS
+
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "基表"
+    sheet.append(EXPECTED_BASE_HEADERS)
+    values = {name: None for name in EXPECTED_BASE_HEADERS}
+    values.update(
+        {
+            "合同号": "C002",
+            "遗留量": 10,
+            "当月新订货": 0,
+            "履行供应中心": None,
+            "多个供应中心发货": "N",
+            "分批发货": "N",
+            "多次要货": "N",
+            "分批供应": "N",
+            "收入分段类别": "不要货",
+        }
+    )
+    sheet.append([values[name] for name in EXPECTED_BASE_HEADERS])
+    metadata = workbook.create_sheet("_tool_meta")
+    metadata.append(["schema_version", "2"])
+    metadata.append(["base_sheet", "基表"])
+    workbook.save(path)
+    workbook.close()
 
 
 if __name__ == "__main__":

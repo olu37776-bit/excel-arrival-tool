@@ -26,7 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", required=True, help="结果 Excel 路径")
     parser.add_argument(
         "--previous",
-        help="可选：上一次成功运行结果，用于人工字段继承和跨月比较",
+        help="可选：上一次结果 / 已分配结果，用于金额备注继承和跨月比较",
     )
     parser.add_argument(
         "--config",
@@ -52,7 +52,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"执行失败: {exc}", file=sys.stderr)
         return 2
     print(f"结果文件: {result.output_path}")
-    print(f"基表行数: {result.base_count}")
+    print(f"合同数: {result.contract_count}")
+    print(f"分配候选数: {result.candidate_count}")
+    print(f"已分配金额: {result.allocated_amount:.2f}")
+    print(f"待分配金额: {result.unallocated_amount:.2f}")
+    print(f"RPD归月金额: {result.rpd_posted_amount:.2f}")
+    print(f"CPD归月金额: {result.cpd_posted_amount:.2f}")
+    print(f"待处理记录: {result.pending_count}")
     print(f"RPD跨月变化: {result.rpd_change_count}")
     print(f"CPD跨月变化: {result.cpd_change_count}")
     print(f"供应需要提拉诉求: {result.supply_pull_count}")

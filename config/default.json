@@ -57,6 +57,7 @@
     "carryover_countries": ["阿拉伯联合酋长国", "巴基斯坦", "巴西", "菲律宾", "马来西亚", "沙特阿拉伯", "印度尼西亚"]
   },
   "output": {
+    "legacy_v08": {
     "sheets": {
       "base": "基表",
       "rpd_changes": "RPD跨月变化",
@@ -143,5 +144,283 @@
       {"id": "raw_value", "name": "原始值"},
       {"id": "message", "name": "原因"}
     ]
+    },
+    "datasets": {
+      "contract_forecast": {
+        "sheet": "合同收入预测", "hidden": false,
+        "columns": [
+          {"id": "contract_no", "name": "合同号", "type": "text"},
+          {"id": "legacy_amount", "name": "遗留量", "type": "amount"},
+          {"id": "monthly_new_order", "name": "当月新订货", "type": "amount"},
+          {"id": "revenue_forecast", "name": "收入预测", "type": "amount"},
+          {"id": "bg", "name": "BG", "type": "text"},
+          {"id": "region", "name": "地区部", "type": "text"},
+          {"id": "country", "name": "国家", "type": "text"},
+          {"id": "carryover_type", "name": "结转类型", "type": "text"},
+          {"id": "customer_group", "name": "客户群", "type": "text"},
+          {"id": "project_name", "name": "项目名称", "type": "text"},
+          {"id": "demand_state", "name": "要货状态", "type": "text"},
+          {"id": "fulfillment_center_count", "name": "履行供应中心数", "type": "integer"},
+          {"id": "candidate_count", "name": "分配候选数", "type": "integer"},
+          {"id": "allocated_amount", "name": "已分配金额", "type": "amount"},
+          {"id": "unallocated_amount", "name": "待分配金额", "type": "amount"},
+          {"id": "allocation_status", "name": "分配状态", "type": "text"},
+          {"id": "rpd_posted_amount", "name": "RPD已归月金额", "type": "amount"},
+          {"id": "rpd_pending_amount", "name": "RPD待归月金额", "type": "amount"},
+          {"id": "cpd_posted_amount", "name": "CPD已归月金额", "type": "amount"},
+          {"id": "cpd_pending_amount", "name": "CPD待归月金额", "type": "amount"}
+        ]
+      },
+      "allocation": {
+        "sheet": "收入分配", "hidden": false,
+        "columns": [
+          {"id": "allocation_candidate_id", "name": "candidate ID", "type": "text"},
+          {"id": "contract_no", "name": "合同号", "type": "text"},
+          {"id": "contract_revenue_forecast_reference", "name": "合同收入预测（参考，不可直接汇总）", "type": "amount"},
+          {"id": "legacy_amount", "name": "遗留量（参考）", "type": "amount"},
+          {"id": "monthly_new_order", "name": "当月新订货（参考）", "type": "amount"},
+          {"id": "previous_manual_amount", "name": "上期手工金额", "type": "amount"},
+          {"id": "auto_allocated_amount", "name": "自动金额", "type": "amount"},
+          {"id": "manual_allocated_amount", "name": "手工分配金额", "type": "amount", "editable": true},
+          {"id": "final_allocated_amount", "name": "最终金额", "type": "amount"},
+          {"id": "contract_allocated_amount", "name": "合同已分配金额", "type": "amount"},
+          {"id": "contract_unallocated_amount", "name": "合同待分配金额", "type": "amount"},
+          {"id": "allocation_status", "name": "分配状态", "type": "text"},
+          {"id": "allocation_source", "name": "分配来源", "type": "text"},
+          {"id": "review_required", "name": "需复核", "type": "text"},
+          {"id": "allocation_note", "name": "分配备注", "type": "text", "editable": true},
+          {"id": "inherited_from_run_id", "name": "继承来源run_id", "type": "text"},
+          {"id": "bg", "name": "BG", "type": "text"},
+          {"id": "region", "name": "地区部", "type": "text"},
+          {"id": "country", "name": "国家", "type": "text"},
+          {"id": "carryover_type", "name": "结转类型", "type": "text"},
+          {"id": "customer_group", "name": "客户群", "type": "text"},
+          {"id": "project_name", "name": "项目名称", "type": "text"},
+          {"id": "supply_center", "name": "履行供应中心", "type": "text"},
+          {"id": "demand_record_count", "name": "要货记录数", "type": "integer"},
+          {"id": "demand_status_summary", "name": "需求状态摘要", "type": "text"},
+          {"id": "source_row_summary", "name": "源行摘要", "type": "text"},
+          {"id": "multiple_supply_centers", "name": "多个供应中心发货", "type": "text"},
+          {"id": "stock_unlocked", "name": "是否解锁备货", "type": "text"},
+          {"id": "split_shipment", "name": "分批发货", "type": "text"},
+          {"id": "multiple_demand", "name": "多次要货", "type": "text"},
+          {"id": "shipment_incomplete", "name": "货未发完", "type": "text"},
+          {"id": "split_supply", "name": "分批供应", "type": "text"},
+          {"id": "incoterm", "name": "贸易术语", "type": "text"},
+          {"id": "transit_days", "name": "海运周期", "type": "integer"},
+          {"id": "ata", "name": "ATA", "type": "date"},
+          {"id": "asd", "name": "ASD", "type": "date"},
+          {"id": "rpd", "name": "RPD", "type": "date"},
+          {"id": "latest_asd", "name": "最晚ASD", "type": "date"},
+          {"id": "latest_rpd", "name": "最晚RPD", "type": "date"},
+          {"id": "cpd", "name": "CPD", "type": "date"},
+          {"id": "arrival_date_rpd", "name": "到货日期（按RPD）", "type": "date"},
+          {"id": "arrival_date_cpd", "name": "到货日期（按CPD）", "type": "date"},
+          {"id": "revenue_month_rpd", "name": "收入年月（按RPD）", "type": "text"},
+          {"id": "revenue_month_cpd", "name": "收入年月（按CPD）", "type": "text"},
+          {"id": "revenue_segment", "name": "收入分段类别", "type": "text"},
+          {"id": "projection_changed", "name": "履行投影变化", "type": "text"},
+          {"id": "contract_forecast_changed", "name": "合同收入预测变化", "type": "text"},
+          {"id": "issue_summary", "name": "异常摘要", "type": "text"},
+          {"id": "pending_reason", "name": "待处理原因", "type": "text"}
+        ]
+      },
+      "rpd_monthly_summary": {
+        "sheet": "RPD月度收入汇总", "hidden": false,
+        "columns": [
+          {"id": "revenue_month", "name": "收入年月", "type": "text"},
+          {"id": "bg", "name": "BG", "type": "text"},
+          {"id": "region", "name": "地区部", "type": "text"},
+          {"id": "country", "name": "国家", "type": "text"},
+          {"id": "carryover_type", "name": "结转类型", "type": "text"},
+          {"id": "customer_group", "name": "客户群", "type": "text"},
+          {"id": "monthly_forecast", "name": "当月预测", "type": "amount"},
+          {"id": "order_not_shipped", "name": "订未发", "type": "amount"},
+          {"id": "shipped_not_received", "name": "发未收", "type": "amount"},
+          {"id": "unrecorded_order_contract_count", "name": "未录入订货（合同数）", "type": "integer"}
+        ]
+      },
+      "cpd_monthly_summary": {
+        "sheet": "CPD月度收入汇总", "hidden": false,
+        "columns": [
+          {"id": "revenue_month", "name": "收入年月", "type": "text"},
+          {"id": "bg", "name": "BG", "type": "text"},
+          {"id": "region", "name": "地区部", "type": "text"},
+          {"id": "country", "name": "国家", "type": "text"},
+          {"id": "carryover_type", "name": "结转类型", "type": "text"},
+          {"id": "customer_group", "name": "客户群", "type": "text"},
+          {"id": "monthly_forecast", "name": "当月预测", "type": "amount"},
+          {"id": "order_not_shipped", "name": "订未发", "type": "amount"},
+          {"id": "shipped_not_received", "name": "发未收", "type": "amount"},
+          {"id": "unrecorded_order_contract_count", "name": "未录入订货（合同数）", "type": "integer"}
+        ]
+      },
+      "pending_revenue": {
+        "sheet": "待处理收入", "hidden": false,
+        "columns": [
+          {"id": "contract_no", "name": "合同号", "type": "text"},
+          {"id": "allocation_candidate_id", "name": "candidate ID", "type": "text"},
+          {"id": "supply_center", "name": "履行供应中心", "type": "text"},
+          {"id": "contract_revenue_forecast", "name": "合同收入预测", "type": "amount"},
+          {"id": "allocated_amount", "name": "已分配金额", "type": "amount"},
+          {"id": "pending_amount", "name": "待处理金额", "type": "amount"},
+          {"id": "rpd_pending_amount", "name": "RPD待归月金额", "type": "amount"},
+          {"id": "cpd_pending_amount", "name": "CPD待归月金额", "type": "amount"},
+          {"id": "revenue_segment", "name": "收入分段类别", "type": "text"},
+          {"id": "processing_status", "name": "处理状态", "type": "text"},
+          {"id": "pending_reason", "name": "待处理原因", "type": "text"},
+          {"id": "suggested_action", "name": "建议动作", "type": "text"},
+          {"id": "previous_manual_amount", "name": "上期手工金额", "type": "amount"},
+          {"id": "previous_allocation_note", "name": "上期分配备注", "type": "text"}
+        ]
+      },
+      "monthly_posting_detail": {
+        "sheet": "收入归月明细", "hidden": false,
+        "columns": [
+          {"id": "perspective", "name": "统计口径", "type": "text"},
+          {"id": "allocation_candidate_id", "name": "candidate ID", "type": "text"},
+          {"id": "contract_no", "name": "合同号", "type": "text"},
+          {"id": "supply_center", "name": "履行供应中心", "type": "text"},
+          {"id": "revenue_month", "name": "收入年月", "type": "text"},
+          {"id": "revenue_segment", "name": "收入分段类别", "type": "text"},
+          {"id": "final_allocated_amount", "name": "最终分配金额", "type": "amount"},
+          {"id": "posted_amount", "name": "正式归月金额", "type": "amount"},
+          {"id": "pending_amount", "name": "待归月金额", "type": "amount"},
+          {"id": "posting_status", "name": "归月状态", "type": "text"},
+          {"id": "pending_reason", "name": "待处理原因", "type": "text"},
+          {"id": "bg", "name": "BG", "type": "text"},
+          {"id": "region", "name": "地区部", "type": "text"},
+          {"id": "country", "name": "国家", "type": "text"},
+          {"id": "carryover_type", "name": "结转类型", "type": "text"},
+          {"id": "customer_group", "name": "客户群", "type": "text"},
+          {"id": "project_name", "name": "项目名称", "type": "text"}
+        ]
+      },
+      "demand_record_detail": {
+        "sheet": "要货记录明细", "hidden": false,
+        "columns": [
+          {"id": "demand_record_id", "name": "本次运行记录ID", "type": "text"},
+          {"id": "allocation_candidate_id", "name": "candidate ID", "type": "text"},
+          {"id": "contract_no", "name": "合同号", "type": "text"},
+          {"id": "supply_center", "name": "履行供应中心", "type": "text"},
+          {"id": "demand_status", "name": "需求状态", "type": "text"},
+          {"id": "incoterm", "name": "贸易术语", "type": "text"},
+          {"id": "stock_control_flag", "name": "备货总控标识", "type": "text"},
+          {"id": "shipment_control_flag", "name": "发货总控标识", "type": "text"},
+          {"id": "ata", "name": "ATA", "type": "date"},
+          {"id": "asd", "name": "ASD", "type": "date"},
+          {"id": "rpd", "name": "RPD", "type": "date"},
+          {"id": "cpd", "name": "CPD", "type": "date"},
+          {"id": "bg", "name": "BG", "type": "text"},
+          {"id": "source_workbook", "name": "源文件", "type": "text"},
+          {"id": "source_sheet", "name": "源Sheet", "type": "text"},
+          {"id": "source_row_number", "name": "源行号", "type": "integer"},
+          {"id": "invalid_fields", "name": "无效字段", "type": "text"}
+        ]
+      },
+      "rpd_changes": {
+        "sheet": "RPD跨月变化", "hidden": false,
+        "columns": [
+          {"id": "contract_no", "name": "合同号", "type": "text"},
+          {"id": "legacy_amount", "name": "遗留量", "type": "amount"},
+          {"id": "monthly_new_order", "name": "当月新订货", "type": "amount"},
+          {"id": "region", "name": "地区部", "type": "text"},
+          {"id": "country", "name": "国家", "type": "text"},
+          {"id": "carryover_type", "name": "结转类型", "type": "text"},
+          {"id": "customer_group", "name": "客户群", "type": "text"},
+          {"id": "supply_center", "name": "履行供应中心", "type": "text"},
+          {"id": "previous_month", "name": "上期收入年月（按RPD）", "type": "text"},
+          {"id": "current_month", "name": "本期收入年月（按RPD）", "type": "text"},
+          {"id": "direction", "name": "变化方向", "type": "text"},
+          {"id": "change_months", "name": "变化月数", "type": "integer"}
+        ]
+      },
+      "cpd_changes": {
+        "sheet": "CPD跨月变化", "hidden": false,
+        "columns": [
+          {"id": "contract_no", "name": "合同号", "type": "text"},
+          {"id": "legacy_amount", "name": "遗留量", "type": "amount"},
+          {"id": "monthly_new_order", "name": "当月新订货", "type": "amount"},
+          {"id": "region", "name": "地区部", "type": "text"},
+          {"id": "country", "name": "国家", "type": "text"},
+          {"id": "carryover_type", "name": "结转类型", "type": "text"},
+          {"id": "customer_group", "name": "客户群", "type": "text"},
+          {"id": "supply_center", "name": "履行供应中心", "type": "text"},
+          {"id": "previous_month", "name": "上期收入年月（按CPD）", "type": "text"},
+          {"id": "current_month", "name": "本期收入年月（按CPD）", "type": "text"},
+          {"id": "direction", "name": "变化方向", "type": "text"},
+          {"id": "change_months", "name": "变化月数", "type": "integer"}
+        ]
+      },
+      "supply_pull": {
+        "sheet": "供应需要提拉诉求清单粗表", "hidden": false,
+        "columns": [
+          {"id": "contract_no", "name": "合同号", "type": "text"},
+          {"id": "legacy_amount", "name": "遗留量", "type": "amount"},
+          {"id": "monthly_new_order", "name": "当月新订货", "type": "amount"},
+          {"id": "region", "name": "地区部", "type": "text"},
+          {"id": "country", "name": "国家", "type": "text"},
+          {"id": "carryover_type", "name": "结转类型", "type": "text"},
+          {"id": "customer_group", "name": "客户群", "type": "text"},
+          {"id": "supply_center", "name": "履行供应中心", "type": "text"},
+          {"id": "revenue_month_rpd", "name": "收入年月（按RPD）", "type": "text"},
+          {"id": "revenue_month_cpd", "name": "收入年月（按CPD）", "type": "text"}
+        ]
+      },
+      "issues": {
+        "sheet": "异常清单", "hidden": false,
+        "columns": [
+          {"id": "code", "name": "异常代码", "type": "text"},
+          {"id": "severity", "name": "严重级别", "type": "text"},
+          {"id": "workbook", "name": "文件", "type": "text"},
+          {"id": "sheet", "name": "Sheet", "type": "text"},
+          {"id": "row_number", "name": "行号", "type": "integer"},
+          {"id": "business_key", "name": "业务键", "type": "text"},
+          {"id": "field", "name": "字段", "type": "text"},
+          {"id": "raw_value", "name": "原始值", "type": "text"},
+          {"id": "message", "name": "原因", "type": "text"}
+        ]
+      },
+      "fulfillment_projection": {
+        "sheet": "_fulfillment_projection", "hidden": true,
+        "columns": [
+          {"id": "allocation_candidate_id", "name": "candidate ID", "type": "text"},
+          {"id": "candidate_id_version", "name": "candidate ID版本", "type": "text"},
+          {"id": "projection_fingerprint", "name": "投影指纹", "type": "text"},
+          {"id": "projection_fingerprint_version", "name": "投影指纹版本", "type": "text"},
+          {"id": "contract_no", "name": "合同号", "type": "text"},
+          {"id": "supply_center", "name": "履行供应中心", "type": "text"},
+          {"id": "row_kind", "name": "row_kind", "type": "text"},
+          {"id": "multiple_supply_centers", "name": "多个供应中心发货", "type": "text"},
+          {"id": "demand_record_count", "name": "要货记录数", "type": "integer"},
+          {"id": "demand_status_summary", "name": "需求状态摘要", "type": "text"},
+          {"id": "source_row_summary", "name": "源行摘要", "type": "text"},
+          {"id": "demand_record_ids", "name": "要货记录ID集合", "type": "text"},
+          {"id": "ata_values", "name": "ATA集合", "type": "text"},
+          {"id": "asd_values", "name": "ASD集合", "type": "text"},
+          {"id": "rpd_values", "name": "RPD集合", "type": "text"},
+          {"id": "cpd_values", "name": "CPD集合", "type": "text"},
+          {"id": "incoterm", "name": "贸易术语", "type": "text"},
+          {"id": "stock_unlocked", "name": "是否解锁备货", "type": "text"},
+          {"id": "split_shipment", "name": "分批发货", "type": "text"},
+          {"id": "transit_days", "name": "海运周期", "type": "integer"},
+          {"id": "ata", "name": "ATA", "type": "date"},
+          {"id": "asd", "name": "ASD", "type": "date"},
+          {"id": "rpd", "name": "RPD", "type": "date"},
+          {"id": "multiple_demand", "name": "多次要货", "type": "text"},
+          {"id": "latest_asd", "name": "最晚ASD", "type": "date"},
+          {"id": "latest_rpd", "name": "最晚RPD", "type": "date"},
+          {"id": "shipment_incomplete", "name": "货未发完", "type": "text"},
+          {"id": "cpd", "name": "CPD", "type": "date"},
+          {"id": "split_supply", "name": "分批供应", "type": "text"},
+          {"id": "arrival_date_rpd", "name": "到货日期（按RPD）", "type": "date"},
+          {"id": "arrival_date_cpd", "name": "到货日期（按CPD）", "type": "date"},
+          {"id": "revenue_month_rpd", "name": "收入年月（按RPD）", "type": "text"},
+          {"id": "revenue_month_cpd", "name": "收入年月（按CPD）", "type": "text"},
+          {"id": "revenue_segment", "name": "收入分段类别", "type": "text"},
+          {"id": "issue_codes", "name": "异常代码集合", "type": "text"}
+        ]
+      }
+    }
   }
 }

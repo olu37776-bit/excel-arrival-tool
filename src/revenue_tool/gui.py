@@ -92,7 +92,7 @@ def main(argv: list[str] | None = None) -> int:
         ("要货明细 Excel", "demand_detail", False),
         ("国家运输周期 Excel", "transit", False),
         ("结果保存位置", "output", True),
-        ("上一次成功结果（可选）", "previous", False),
+        ("上一次结果 / 已分配结果（可选）", "previous", False),
     ]
     for row, (label, field, is_output) in enumerate(fields, start=1):
         ttk.Label(frame, text=label).grid(
@@ -108,7 +108,10 @@ def main(argv: list[str] | None = None) -> int:
 
     ttk.Label(
         frame,
-        text="第一次运行不用选择上一次结果；后续需要继承和跨期比较时再选择。",
+        text=(
+            "第一次运行不用选择；后续可选择已填写手工分配金额和备注的"
+            "上一次结果，用于继承、复核和跨期比较。"
+        ),
         foreground="#555555",
     ).grid(row=7, column=0, columnspan=3, sticky="w", pady=(8, 4))
 
@@ -158,11 +161,14 @@ def main(argv: list[str] | None = None) -> int:
                 "\n".join(
                     [
                         f"结果文件：{result.output_path}",
-                        f"基表行数：{result.base_count}",
-                        f"RPD 跨月变化：{result.rpd_change_count}",
-                        f"CPD 跨月变化：{result.cpd_change_count}",
-                        f"供应需要提拉诉求：{result.supply_pull_count}",
-                        f"异常记录：{result.issue_count}",
+                        f"合同数：{result.contract_count}",
+                        f"分配候选数：{result.candidate_count}",
+                        f"已分配金额：{result.allocated_amount:,.2f}",
+                        f"待分配金额：{result.unallocated_amount:,.2f}",
+                        f"RPD 归月金额：{result.rpd_posted_amount:,.2f}",
+                        f"CPD 归月金额：{result.cpd_posted_amount:,.2f}",
+                        f"待处理记录数：{result.pending_count}",
+                        f"异常数：{result.issue_count}",
                     ]
                 ),
             )

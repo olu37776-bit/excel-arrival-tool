@@ -26,9 +26,9 @@ class ConfigTest(unittest.TestCase):
 
     def test_duplicate_output_sheet_name_is_rejected(self) -> None:
         data = json.loads(CONFIG.read_text(encoding="utf-8"))
-        data["output"]["sheets"]["issues"] = data["output"]["sheets"][
-            "base"
-        ]
+        data["output"]["datasets"]["issues"]["sheet"] = data["output"][
+            "datasets"
+        ]["allocation"]["sheet"]
 
         with TemporaryDirectory() as temporary:
             path = Path(temporary) / "invalid.json"
@@ -36,7 +36,7 @@ class ConfigTest(unittest.TestCase):
                 json.dumps(data, ensure_ascii=False), encoding="utf-8"
             )
 
-            with self.assertRaisesRegex(ValueError, "输出 Sheet"):
+            with self.assertRaisesRegex(ValueError, "Sheet 显示名必须唯一"):
                 load_config(path)
 
     def test_sheet_required_fields_must_reference_role_fields(self) -> None:
