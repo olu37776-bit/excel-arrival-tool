@@ -21,7 +21,6 @@ class DataQualityAnalyzer:
         issues: IssueLog,
     ) -> None:
         self._log_country_conflicts(source, issues)
-        self._log_control_flag_risks(source.rows["demand_detail"], issues)
 
     def _log_country_conflicts(
         self, source: SourceData, issues: IssueLog
@@ -47,29 +46,6 @@ class DataQualityAnalyzer:
                 ),
             )
 
-    def _log_control_flag_risks(
-        self, rows: list[ParsedRow], issues: IssueLog
-    ) -> None:
-        for row in rows:
-            stock = row.values.get("stock_control_flag")
-            shipment = row.values.get("shipment_control_flag")
-            if (
-                stock in {"Y", "N"}
-                and shipment in {"Y", "N"}
-                and stock != shipment
-            ):
-                contract = str(row.values.get("contract_no") or "")
-                center = str(row.values.get("supply_center") or "")
-                issues.add(
-                    "CONTROL_FLAG_MISMATCH",
-                    "同一要货明细记录的备货总控标识与发货总控标识不同步",
-                    workbook=row.workbook,
-                    sheet=row.sheet,
-                    row_number=row.row_number,
-                    business_key=f"{contract} | {center}",
-                    field="stock_control_flag+shipment_control_flag",
-                    raw_value=f"{stock} | {shipment}",
-                )
 
 def _distinct_entries(
     rows: list[ParsedRow], field: str

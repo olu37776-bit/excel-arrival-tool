@@ -27,6 +27,9 @@ from revenue_tool.services.normalization import (
 from revenue_tool.services.stock_unlock import aggregate_stock_unlock
 
 
+_DEEP_SUPPLY_CENTER = normalize_lookup("深供")
+
+
 @dataclass(frozen=True)
 class TransitLookupEntry:
     row: ParsedRow
@@ -99,6 +102,28 @@ class RevenueEngine:
             if not center_rows:
                 continue
             multiple_centers = "Y" if len(center_rows) > 1 else "N"
+            deep_supply_found = any(
+                normalize_lookup(center) == _DEEP_SUPPLY_CENTER
+                for center, _group in center_rows
+            )
+            apply_deep_supply_display = (
+                len(center_rows) > 1 and deep_supply_found
+            )
+            if len(center_rows) > 1 and not deep_supply_found:
+                issues.add(
+                    "MULTI_CENTER_DEEP_SUPPLY_NOT_FOUND",
+                    (
+                        "多中心合同未找到“深供”金额承载行，"
+                        "为避免金额丢失，未执行展示归零"
+                    ),
+                    workbook=source.workbook_for("demand_detail").name,
+                    sheet=source.sheet_names.get("demand_detail", ""),
+                    business_key=contract,
+                    field="supply_center",
+                    raw_value=" | ".join(
+                        center for center, _group in center_rows
+                    ),
+                )
             for center, group in center_rows:
                 display_key = (contract, center)
                 identity_key = business_key_identity(*display_key)
@@ -178,9 +203,19 @@ class RevenueEngine:
                     legacy_amount,
                     monthly_new_order,
                 )
+                display_legacy_amount = legacy_amount
+                display_monthly_new_order = monthly_new_order
+                if (
+                    apply_deep_supply_display
+                    and normalize_lookup(center) != _DEEP_SUPPLY_CENTER
+                ):
+                    display_legacy_amount = ZERO_AMOUNT
+                    display_monthly_new_order = ZERO_AMOUNT
 
                 values: dict[str, Any] = {
                     **contract_values,
+                    "legacy_amount": display_legacy_amount,
+                    "monthly_new_order": display_monthly_new_order,
                     "incoterm": incoterm,
                     "supply_center": center,
                     "multiple_supply_centers": multiple_centers,
@@ -273,7 +308,10 @@ def _manual_values(
             else None
         )
         for field in (
+            "revenue_forecast",
             "manual_adjust_flag",
+            "manual_revenue_forecast_rpd",
+            "manual_revenue_forecast_cpd",
             "manual_revenue_month",
             "adjustment_note",
         )

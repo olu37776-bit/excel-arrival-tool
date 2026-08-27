@@ -68,6 +68,7 @@
       {"id": "contract_no", "name": "合同号"},
       {"id": "legacy_amount", "name": "遗留量"},
       {"id": "monthly_new_order", "name": "当月新订货"},
+      {"id": "revenue_forecast", "name": "收入预测"},
       {"id": "bg", "name": "BG"},
       {"id": "region", "name": "地区部"},
       {"id": "country", "name": "国家"},
@@ -95,6 +96,8 @@
       {"id": "revenue_month_cpd", "name": "收入年月（按CPD）"},
       {"id": "revenue_segment", "name": "收入分段类别"},
       {"id": "manual_adjust_flag", "name": "是否手工调整收入月份"},
+      {"id": "manual_revenue_forecast_rpd", "name": "手工调整收入预测（按RPD）"},
+      {"id": "manual_revenue_forecast_cpd", "name": "手工调整收入预测（按CPD）"},
       {"id": "manual_revenue_month", "name": "手工调整收入月份"},
       {"id": "adjustment_note", "name": "调整备注"}
     ],

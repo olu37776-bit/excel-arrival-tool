@@ -137,7 +137,7 @@ class PipelineTest(unittest.TestCase):
                 self.assertIn("CONFLICTING_TRANSIT_DAYS", codes)
                 self.assertIn("CONFLICTING_COUNTRY_FOR_CONTRACT", codes)
                 self.assertNotIn("CONTRACT_NOT_FOUND_IN_DEMAND_DETAIL", codes)
-                self.assertIn("CONTROL_FLAG_MISMATCH", codes)
+                self.assertNotIn("CONTROL_FLAG_MISMATCH", codes)
                 self.assertNotIn("CONFLICTING_CONTRACT_VALUE", codes)
                 self.assertNotIn("CONFLICTING_GROUP_VALUE", codes)
                 self.assertNotIn("ARRIVAL_CPD_UNAVAILABLE", codes)
@@ -145,11 +145,6 @@ class PipelineTest(unittest.TestCase):
                 self.assertNotIn("TEXT_PLACEHOLDER_NORMALIZED_TO_BLANK", codes)
                 self.assertNotIn("SUSPECT_AMOUNT_FLOAT_RESIDUE", codes)
                 self.assertNotIn("MISSING_INCOTERM", codes)
-                control_mismatches = [
-                    row for row in issue_rows if row[0] == "CONTROL_FLAG_MISMATCH"
-                ]
-                self.assertEqual(2, len(control_mismatches))
-                self.assertEqual([6, 11], [row[4] for row in control_mismatches])
                 transit_conflict = next(
                     row for row in issue_rows if row[0] == "CONFLICTING_TRANSIT_DAYS"
                 )
@@ -600,12 +595,13 @@ class PipelineTest(unittest.TestCase):
 
 
 EXPECTED_BASE_HEADERS = [
-    "合同号", "遗留量", "当月新订货", "BG", "地区部", "国家", "结转类型",
+    "合同号", "遗留量", "当月新订货", "收入预测", "BG", "地区部", "国家", "结转类型",
     "客户群", "项目名称", "贸易术语", "履行供应中心", "多个供应中心发货",
     "是否解锁备货", "分批发货", "海运周期", "ATA", "ASD", "RPD",
     "多次要货", "最晚ASD", "最晚RPD", "货未发完", "CPD", "分批供应",
     "到货日期（按RPD）", "到货日期（按CPD）", "收入年月（按RPD）",
     "收入年月（按CPD）", "收入分段类别", "是否手工调整收入月份",
+    "手工调整收入预测（按RPD）", "手工调整收入预测（按CPD）",
     "手工调整收入月份", "调整备注",
 ]
 

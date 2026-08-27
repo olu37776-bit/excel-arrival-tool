@@ -35,6 +35,13 @@ from revenue_tool.services.normalization import (
 )
 
 
+_PREVIOUS_MANUAL_AMOUNT_FIELDS = {
+    "revenue_forecast",
+    "manual_revenue_forecast_rpd",
+    "manual_revenue_forecast_cpd",
+}
+
+
 class ExcelInputAdapter:
     def read_source(
         self,
@@ -216,11 +223,26 @@ class ExcelInputAdapter:
                     field = column["id"]
                     index = indexes[field]
                     cell = cells[index] if index is not None and index < len(cells) else None
-                    values[field] = _parse_previous_value(
-                        field,
-                        cell.value if cell is not None else None,
-                        workbook.epoch,
-                    )
+                    raw_value = cell.value if cell is not None else None
+                    if field in _PREVIOUS_MANUAL_AMOUNT_FIELDS:
+                        value, valid = _parse_previous_manual_amount(cell)
+                        values[field] = value
+                        if not valid:
+                            issues.add(
+                                "INVALID_PREVIOUS_MANUAL_AMOUNT",
+                                "上期人工金额非空且无法解析，已按空白处理",
+                                workbook=workbook_path.name,
+                                sheet=sheet.title,
+                                row_number=row_number,
+                                field=field,
+                                raw_value=raw_value,
+                            )
+                    else:
+                        values[field] = _parse_previous_value(
+                            field,
+                            raw_value,
+                            workbook.epoch,
+                        )
                 display_key = (
                     str(values.get("contract_no") or ""),
                     str(values.get("supply_center") or ""),
@@ -627,6 +649,24 @@ def _parse_previous_value(field: str, value: Any, epoch: datetime) -> Any:
     if field == "manual_revenue_month":
         return value
     return normalize_text(value)
+
+
+def _parse_previous_manual_amount(cell) -> tuple[Decimal | None, bool]:
+    if cell is None:
+        return None, True
+    raw = cell.value
+    if raw is None:
+        return None, True
+    if isinstance(raw, str):
+        normalized = normalize_text(raw)
+        if not normalized or normalized == "(空白)":
+            return None, True
+        if normalized.casefold() in {"value", "#value", "#value!"}:
+            return None, False
+    if getattr(cell, "data_type", None) == "e":
+        return None, False
+    amount = normalize_amount(raw)
+    return (amount, True) if amount is not None else (None, False)
 
 
 def _error_code_for_type(field_type: str) -> str:

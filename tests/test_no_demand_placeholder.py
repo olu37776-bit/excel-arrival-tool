@@ -286,7 +286,16 @@ class NoDemandPlaceholderTest(unittest.TestCase):
             try:
                 metadata = workbook["_tool_meta"]
                 metadata["B1"] = "2"
-                metadata.delete_rows(37, metadata.max_row - 36)
+                row_kind_header = next(
+                    row_number
+                    for row_number in range(1, metadata.max_row + 1)
+                    if metadata.cell(row_number, 1).value
+                    == "row_kind_contract_no"
+                )
+                metadata.delete_rows(
+                    row_kind_header,
+                    metadata.max_row - row_kind_header + 1,
+                )
                 workbook.save(output)
             finally:
                 workbook.close()
