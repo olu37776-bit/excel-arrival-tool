@@ -216,6 +216,9 @@ class RevenueEngine:
                     **contract_values,
                     "legacy_amount": display_legacy_amount,
                     "monthly_new_order": display_monthly_new_order,
+                    "revenue_forecast": (
+                        display_legacy_amount + display_monthly_new_order
+                    ),
                     "incoterm": incoterm,
                     "supply_center": center,
                     "multiple_supply_centers": multiple_centers,
@@ -260,12 +263,13 @@ def _build_contract_values(
     carryover_countries: set[str],
 ) -> dict[str, Any]:
     legacy_country = _value(legacy, "country")
+    legacy_amount = _amount_value(legacy, "legacy_amount")
+    monthly_new_order = _amount_value(monthly, "monthly_new_order")
     return {
         "contract_no": contract,
-        "legacy_amount": _amount_value(legacy, "legacy_amount"),
-        "monthly_new_order": _amount_value(
-            monthly, "monthly_new_order"
-        ),
+        "legacy_amount": legacy_amount,
+        "monthly_new_order": monthly_new_order,
+        "revenue_forecast": legacy_amount + monthly_new_order,
         "bg": _fallback(
             _value(legacy, "bg"),
             _value(monthly, "bg"),
@@ -308,7 +312,6 @@ def _manual_values(
             else None
         )
         for field in (
-            "revenue_forecast",
             "manual_adjust_flag",
             "manual_revenue_forecast_rpd",
             "manual_revenue_forecast_cpd",

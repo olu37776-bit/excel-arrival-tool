@@ -36,7 +36,6 @@ from revenue_tool.services.normalization import (
 
 
 _PREVIOUS_MANUAL_AMOUNT_FIELDS = {
-    "revenue_forecast",
     "manual_revenue_forecast_rpd",
     "manual_revenue_forecast_cpd",
 }
