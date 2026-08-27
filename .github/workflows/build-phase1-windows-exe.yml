@@ -1,0 +1,79 @@
+name: Build Phase 1 Windows EXE
+
+on:
+  push:
+    branches:
+      - refactor/revenue-allocation-v1
+    paths:
+      - "src/**"
+      - "config/**"
+      - "pyproject.toml"
+      - ".github/workflows/build-phase1-windows-exe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out Phase 1 source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build dependencies
+        run: python -m pip install --upgrade pip pyinstaller .
+
+      - name: Build graphical executable
+        run: >-
+          pyinstaller --noconfirm --clean --onefile --windowed
+          --name ExcelRevenueTool
+          --paths src
+          --collect-all openpyxl
+          --add-data "config/default.json;config"
+          src/revenue_tool/gui.py
+
+      - name: Test built executable
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath "dist\ExcelRevenueTool.exe" -ArgumentList "--smoke-test" -Wait -PassThru
+          if ($process.ExitCode -ne 0) {
+            throw "Windows executable smoke test failed with exit code $($process.ExitCode)"
+          }
+
+      - name: Name Phase 1 package and create checksum
+        shell: pwsh
+        run: |
+          Copy-Item "dist\ExcelRevenueTool.exe" "dist\ExcelRevenueTool-Phase1.exe"
+          $hash = (Get-FileHash "dist\ExcelRevenueTool-Phase1.exe" -Algorithm SHA256).Hash.ToLower()
+          "$hash  ExcelRevenueTool-Phase1.exe" | Set-Content "dist\SHA256SUMS-Phase1.txt" -Encoding ascii
+
+      - name: Upload Phase 1 workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExcelRevenueTool-Phase1-${{ github.sha }}
+          path: |
+            dist/ExcelRevenueTool-Phase1.exe
+            dist/SHA256SUMS-Phase1.txt
+          if-no-files-found: error
+
+      - name: Publish Phase 1 prerelease download
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $shortSha = $env:GITHUB_SHA.Substring(0, 7)
+          $tag = "phase1-$shortSha"
+          $title = "Excel 收入统计工具 Phase 1 ($shortSha)"
+          $notes = "从 refactor/revenue-allocation-v1 分支构建。源提交：$env:GITHUB_SHA。该预发布包不代表 main 正式版本。"
+          gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag dist\ExcelRevenueTool-Phase1.exe dist\SHA256SUMS-Phase1.txt --clobber --repo $env:GITHUB_REPOSITORY
+          } else {
+            gh release create $tag dist\ExcelRevenueTool-Phase1.exe dist\SHA256SUMS-Phase1.txt --target $env:GITHUB_SHA --title $title --notes $notes --prerelease --repo $env:GITHUB_REPOSITORY
+          }
