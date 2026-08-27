@@ -28,19 +28,28 @@ jobs:
       - name: Install build dependencies
         run: python -m pip install --upgrade pip pyinstaller .
 
+      - name: Resolve versioned executable name
+        shell: pwsh
+        run: |
+          $version = python -c "import importlib.metadata; print(importlib.metadata.version('excel-arrival-tool'))"
+          "APP_VERSION=$version" >> $env:GITHUB_ENV
+          "EXE_NAME=ExcelRevenueTool-v$version.exe" >> $env:GITHUB_ENV
+
       - name: Build graphical executable
-        run: >-
-          pyinstaller --noconfirm --clean --onefile --windowed
-          --name ExcelRevenueTool
-          --paths src
-          --collect-all openpyxl
-          --add-data "config/default.json;config"
-          src/revenue_tool/gui.py
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --clean --onefile --windowed `
+            --name "ExcelRevenueTool-v$env:APP_VERSION" `
+            --paths src `
+            --collect-all openpyxl `
+            --add-data "config/default.json;config" `
+            src/revenue_tool/gui.py
 
       - name: Test built executable
         shell: pwsh
         run: |
-          $process = Start-Process -FilePath "dist\ExcelRevenueTool.exe" -ArgumentList "--smoke-test" -Wait -PassThru
+          $exePath = Join-Path "dist" $env:EXE_NAME
+          $process = Start-Process -FilePath $exePath -ArgumentList "--smoke-test" -Wait -PassThru
           if ($process.ExitCode -ne 0) {
             throw "Windows executable smoke test failed with exit code $($process.ExitCode)"
           }
@@ -48,15 +57,16 @@ jobs:
       - name: Create checksum
         shell: pwsh
         run: |
-          $hash = (Get-FileHash dist\ExcelRevenueTool.exe -Algorithm SHA256).Hash.ToLower()
-          "$hash  ExcelRevenueTool.exe" | Set-Content dist\SHA256SUMS.txt -Encoding ascii
+          $exePath = Join-Path "dist" $env:EXE_NAME
+          $hash = (Get-FileHash $exePath -Algorithm SHA256).Hash.ToLower()
+          "$hash  $env:EXE_NAME" | Set-Content dist\SHA256SUMS.txt -Encoding ascii
 
       - name: Upload Windows package
         uses: actions/upload-artifact@v4
         with:
-          name: ExcelRevenueTool-Windows
+          name: ExcelRevenueTool-Windows-v${{ env.APP_VERSION }}
           path: |
-            dist/ExcelRevenueTool.exe
+            dist/${{ env.EXE_NAME }}
             dist/SHA256SUMS.txt
           if-no-files-found: error
 
@@ -65,11 +75,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $version = python -c "import importlib.metadata; print(importlib.metadata.version('excel-arrival-tool'))"
-          $tag = "v$version"
+          $tag = "v$env:APP_VERSION"
+          $exePath = Join-Path "dist" $env:EXE_NAME
           gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null
           if ($LASTEXITCODE -eq 0) {
-            gh release upload $tag dist\ExcelRevenueTool.exe dist\SHA256SUMS.txt --clobber --repo $env:GITHUB_REPOSITORY
+            gh release upload $tag $exePath dist\SHA256SUMS.txt --clobber --repo $env:GITHUB_REPOSITORY
           } else {
-            gh release create $tag dist\ExcelRevenueTool.exe dist\SHA256SUMS.txt --target $env:GITHUB_SHA --title "Excel 收入统计工具 $tag" --notes "Windows 64 位图形版。无需安装 Python，无需运行 BAT。"
+            gh release create $tag $exePath dist\SHA256SUMS.txt --target $env:GITHUB_SHA --title "Excel 收入统计工具 $tag" --notes "Windows 64 位图形版。无需安装 Python，无需运行 BAT。"
           }
