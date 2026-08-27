@@ -4,19 +4,51 @@ from pathlib import Path
 
 from revenue_tool.adapters.excel_reader import ExcelInputAdapter
 from revenue_tool.adapters.excel_writer import ExcelOutputAdapter
-from revenue_tool.config import load_config
+from revenue_tool.config import ToolConfig, load_config
 from revenue_tool.domain.models import (
     IssueLog,
     PipelineResult,
     PreviousData,
+    SourceData,
     SourceFiles,
 )
+from revenue_tool.domain.revenue_models import RevenuePhase1Models
 from revenue_tool.services.calculation import RevenueEngine
 from revenue_tool.services.comparison import (
     build_supply_pull_rows,
     compare_revenue_months,
 )
 from revenue_tool.services.data_quality import DataQualityAnalyzer
+from revenue_tool.services.contract_finance import ContractFactBuilder
+from revenue_tool.services.demand_records import DemandRecordService
+from revenue_tool.services.fulfillment_projection import (
+    FulfillmentProjectionService,
+)
+
+
+def build_phase1_models(
+    source: SourceData,
+    config: ToolConfig,
+    issues: IssueLog,
+) -> RevenuePhase1Models:
+    """Run the Phase 1 domain path without changing the production workbook."""
+
+    contract_facts = ContractFactBuilder().build(source, config)
+    demand_records = DemandRecordService().build(
+        source.rows["demand_detail"]
+    )
+    fulfillment_projections = FulfillmentProjectionService().build(
+        contract_facts,
+        demand_records,
+        source,
+        config,
+        issues,
+    )
+    return RevenuePhase1Models(
+        contract_facts=tuple(contract_facts),
+        demand_records=tuple(demand_records),
+        fulfillment_projections=tuple(fulfillment_projections),
+    )
 
 
 def run_pipeline(

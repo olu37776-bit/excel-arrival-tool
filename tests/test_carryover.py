@@ -63,11 +63,13 @@ class CarryoverCountryTest(unittest.TestCase):
 
         self.assertIsNone(rows[0].values["carryover_type"])
 
-    def test_carryover_uses_legacy_country_not_demand_fallback(self) -> None:
-        rows = _calculate([None], ["阿拉伯联合酋长国"])
+    def test_carryover_uses_final_resolved_demand_country(self) -> None:
+        rows = _calculate([None] * len(COUNTRIES), COUNTRIES)
 
-        self.assertEqual("阿拉伯联合酋长国", rows[0].values["country"])
-        self.assertIsNone(rows[0].values["carryover_type"])
+        self.assertEqual(COUNTRIES, [row.values["country"] for row in rows])
+        self.assertTrue(
+            all(row.values["carryover_type"] == "交付类" for row in rows)
+        )
 
 
 def _calculate(

@@ -25,6 +25,10 @@ from revenue_tool.services.normalization import (
     ZERO_AMOUNT,
 )
 from revenue_tool.services.stock_unlock import aggregate_stock_unlock
+from revenue_tool.services.contract_finance import (
+    ContractFactBuilder,
+    contract_fact_to_legacy_values,
+)
 
 
 @dataclass(frozen=True)
@@ -35,6 +39,9 @@ class TransitLookupEntry:
 
 
 class RevenueEngine:
+    def __init__(self, *, legacy_carryover_compat: bool = False) -> None:
+        self._legacy_carryover_compat = legacy_carryover_compat
+
     def calculate(
         self,
         source: SourceData,
@@ -42,17 +49,10 @@ class RevenueEngine:
         config: ToolConfig,
         issues: IssueLog,
     ) -> list[BaseRow]:
-        legacy_rows = _valid_contract_rows(source.rows["legacy"])
-        monthly_rows = _valid_contract_rows(source.rows["monthly_order"])
         demand_rows = _valid_contract_rows(source.rows["demand_detail"])
-
-        legacy_first = _first_contract_rows(legacy_rows)
-        monthly_first = _first_contract_rows(monthly_rows)
-        demand_first_by_contract = _first_by_contract(demand_rows)
-        contracts = {
-            row.values["contract_no"]
-            for row in legacy_rows + monthly_rows + demand_rows
-        }
+        contract_facts = ContractFactBuilder(
+            legacy_carryover_compat=self._legacy_carryover_compat
+        ).build(source, config)
         demand_by_contract: dict[str, list[ParsedRow]] = defaultdict(list)
         for row in demand_rows:
             demand_by_contract[row.values["contract_no"]].append(row)
@@ -64,22 +64,10 @@ class RevenueEngine:
             normalize_text(key).upper(): int(value)
             for key, value in config.rules["fixed_transit_days"].items()
         }
-        carryover_countries = {
-            normalize_country_identity(value)
-            for value in config.rules["carryover_countries"]
-        }
         result: list[BaseRow] = []
-        for contract in sorted(contracts, key=normalize_lookup):
-            demand_contract = demand_first_by_contract.get(contract)
-            legacy = legacy_first.get(contract)
-            monthly = monthly_first.get(contract)
-            contract_values = _build_contract_values(
-                contract=contract,
-                legacy=legacy,
-                monthly=monthly,
-                demand_contract=demand_contract,
-                carryover_countries=carryover_countries,
-            )
+        for fact in contract_facts:
+            contract = fact.contract_no
+            contract_values = contract_fact_to_legacy_values(fact)
             contract_demand = demand_by_contract.get(contract, [])
             if not contract_demand:
                 identity_key = business_key_identity(contract, None)
@@ -216,51 +204,6 @@ class RevenueEngine:
         )
 
 
-def _build_contract_values(
-    *,
-    contract: str,
-    legacy: ParsedRow | None,
-    monthly: ParsedRow | None,
-    demand_contract: ParsedRow | None,
-    carryover_countries: set[str],
-) -> dict[str, Any]:
-    legacy_country = _value(legacy, "country")
-    return {
-        "contract_no": contract,
-        "legacy_amount": _amount_value(legacy, "legacy_amount"),
-        "monthly_new_order": _amount_value(
-            monthly, "monthly_new_order"
-        ),
-        "bg": _fallback(
-            _value(legacy, "bg"),
-            _value(monthly, "bg"),
-            _value(demand_contract, "bg"),
-        ),
-        "region": _fallback(
-            _value(legacy, "region"),
-            _value(demand_contract, "region"),
-        ),
-        "country": _fallback(
-            legacy_country,
-            _value(demand_contract, "country"),
-        ),
-        "carryover_type": (
-            "交付类"
-            if normalize_country_identity(legacy_country)
-            in carryover_countries
-            else None
-        ),
-        "customer_group": _fallback(
-            _value(legacy, "customer_group"),
-            _value(demand_contract, "customer_group"),
-        ),
-        "project_name": _fallback(
-            _value(legacy, "project_name"),
-            _value(demand_contract, "project_name"),
-        ),
-    }
-
-
 def _manual_values(
     previous: PreviousData,
     identity_key: tuple[str, str],
@@ -324,26 +267,6 @@ def _build_no_demand_row(
 
 def _valid_contract_rows(rows: list[ParsedRow]) -> list[ParsedRow]:
     return [row for row in rows if nonblank(row.values.get("contract_no"))]
-
-
-def _first_contract_rows(
-    rows: list[ParsedRow],
-) -> dict[str, ParsedRow]:
-    grouped: dict[str, list[ParsedRow]] = defaultdict(list)
-    for row in rows:
-        grouped[str(row.values["contract_no"])].append(row)
-    return {contract: values[0] for contract, values in grouped.items()}
-
-
-def _first_by_contract(
-    rows: list[ParsedRow],
-) -> dict[str, ParsedRow]:
-    result: dict[str, ParsedRow] = {}
-    for row in rows:
-        contract = row.values.get("contract_no")
-        if contract and str(contract) not in result:
-            result[str(contract)] = row
-    return result
 
 
 def _group_by_supply_center(
@@ -632,22 +555,6 @@ def _revenue_segment(
             return "未录入订货"
         return "订未发"
     return "不要货"
-
-
-def _fallback(*values: Any) -> Any:
-    for value in values:
-        if nonblank(value):
-            return value
-    return None
-
-
-def _value(row: ParsedRow | None, field: str) -> Any:
-    return row.values.get(field) if row is not None else None
-
-
-def _amount_value(row: ParsedRow | None, field: str) -> Decimal:
-    value = _value(row, field)
-    return value if isinstance(value, Decimal) else ZERO_AMOUNT
 
 
 def _first_nonblank_value(rows: list[ParsedRow], field: str) -> Any:
