@@ -40,6 +40,16 @@ _PREVIOUS_MANUAL_AMOUNT_FIELDS = {
     "manual_revenue_forecast_cpd",
 }
 
+# Display names are not identities.  Metadata-backed results resolve by the
+# stable field ID; these aliases keep older workbooks without usable metadata
+# readable after Issue #27's display-only rename.
+_PREVIOUS_OUTPUT_NAME_ALIASES = {
+    "manual_adjust_flag": ("是否手工调整收入月份",),
+    "manual_revenue_forecast_rpd": ("手工调整收入预测（按RPD）",),
+    "manual_revenue_forecast_cpd": ("手工调整收入预测（按CPD）",),
+    "manual_revenue_month": ("手工调整收入月份",),
+}
+
 
 class ExcelInputAdapter:
     def read_source(
@@ -178,7 +188,7 @@ class ExcelInputAdapter:
                 )
                 match = resolve_name(
                     previous_name,
-                    [],
+                    _PREVIOUS_OUTPUT_NAME_ALIASES.get(column["id"], ()),
                     headers,
                     config.workbook["contains_direction"],
                 )

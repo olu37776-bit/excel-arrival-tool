@@ -73,7 +73,7 @@ class LatestIntegrationTest(unittest.TestCase):
                     self.assertEqual(
                         "00FFF2CC",
                         base.cell(
-                            2, headers["是否手工调整收入月份"]
+                            2, headers["是否手工调整预测"]
                         ).fill.fgColor.rgb,
                     )
                     workbook.save(output)

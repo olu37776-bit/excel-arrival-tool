@@ -263,6 +263,10 @@ def _build_contract_values(
     carryover_countries: set[str],
 ) -> dict[str, Any]:
     legacy_country = _value(legacy, "country")
+    resolved_country = _fallback(
+        legacy_country,
+        _value(demand_contract, "country"),
+    )
     legacy_amount = _amount_value(legacy, "legacy_amount")
     monthly_new_order = _amount_value(monthly, "monthly_new_order")
     return {
@@ -279,13 +283,10 @@ def _build_contract_values(
             _value(legacy, "region"),
             _value(demand_contract, "region"),
         ),
-        "country": _fallback(
-            legacy_country,
-            _value(demand_contract, "country"),
-        ),
+        "country": resolved_country,
         "carryover_type": (
             "交付类"
-            if normalize_country_identity(legacy_country)
+            if normalize_country_identity(resolved_country)
             in carryover_countries
             else None
         ),

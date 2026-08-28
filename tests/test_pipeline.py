@@ -176,11 +176,11 @@ class PipelineTest(unittest.TestCase):
             try:
                 base_rows = _base_rows(workbook["基表"])
                 inherited = base_rows[("C001", "SC-A")]
-                self.assertEqual("Y", inherited["是否手工调整收入月份"])
-                self.assertEqual("2026-04", inherited["手工调整收入月份"])
+                self.assertEqual("Y", inherited["是否手工调整预测"])
+                self.assertEqual("2026-04", inherited["调整金额"])
                 self.assertEqual("业务确认", inherited["调整备注"])
                 self.assertIsNone(
-                    base_rows[("C005", "SC-E")]["是否手工调整收入月份"]
+                    base_rows[("C005", "SC-E")]["是否手工调整预测"]
                 )
 
                 rpd = _rows_by_key(workbook["RPD跨月变化"])
@@ -513,8 +513,8 @@ class PipelineTest(unittest.TestCase):
             workbook = load_workbook(output, data_only=True)
             try:
                 inherited = _base_rows(workbook["基表"])[("C001", "SC-A")]
-                self.assertEqual("Y", inherited["是否手工调整收入月份"])
-                self.assertEqual("2026-04", inherited["手工调整收入月份"])
+                self.assertEqual("Y", inherited["是否手工调整预测"])
+                self.assertEqual("2026-04", inherited["调整金额"])
             finally:
                 workbook.close()
 
@@ -560,8 +560,8 @@ class PipelineTest(unittest.TestCase):
             workbook = load_workbook(second_result, data_only=True)
             try:
                 inherited = _base_rows(workbook["基表"])[("C001", "sc-a")]
-                self.assertEqual("Y", inherited["是否手工调整收入月份"])
-                self.assertEqual("2026-04", inherited["手工调整收入月份"])
+                self.assertEqual("Y", inherited["是否手工调整预测"])
+                self.assertEqual("2026-04", inherited["调整金额"])
                 self.assertEqual(1, workbook["RPD跨月变化"].max_row)
                 self.assertEqual(1, workbook["CPD跨月变化"].max_row)
             finally:
@@ -600,9 +600,8 @@ EXPECTED_BASE_HEADERS = [
     "是否解锁备货", "分批发货", "海运周期", "ATA", "ASD", "RPD",
     "多次要货", "最晚ASD", "最晚RPD", "货未发完", "CPD", "分批供应",
     "到货日期（按RPD）", "到货日期（按CPD）", "收入年月（按RPD）",
-    "收入年月（按CPD）", "收入分段类别", "是否手工调整收入月份",
-    "手工调整收入预测（按RPD）", "手工调整收入预测（按CPD）",
-    "手工调整收入月份", "调整备注",
+    "收入年月（按CPD）", "收入分段类别", "是否手工调整预测",
+    "调整月份（按RPD）", "调整月份（按CPD）", "调整金额", "调整备注",
 ]
 
 EXPECTED_SUPPLY_HEADERS = [
@@ -783,8 +782,8 @@ def _set_manual_values(
                 sheet.cell(row_number, headers["合同号"]).value == contract
                 and sheet.cell(row_number, headers["履行供应中心"]).value == center
             ):
-                sheet.cell(row_number, headers["是否手工调整收入月份"], "Y")
-                sheet.cell(row_number, headers["手工调整收入月份"], "2026-04")
+                sheet.cell(row_number, headers["是否手工调整预测"], "Y")
+                sheet.cell(row_number, headers["调整金额"], "2026-04")
                 sheet.cell(row_number, headers["调整备注"], "业务确认")
                 break
         workbook.save(path)

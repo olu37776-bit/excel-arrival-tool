@@ -18,8 +18,8 @@ from tests.test_pipeline import (
 
 
 MANUAL_ADJUSTMENT_HEADERS = (
-    "手工调整收入预测（按RPD）",
-    "手工调整收入预测（按CPD）",
+    "调整月份（按RPD）",
+    "调整月份（按CPD）",
 )
 
 MANUAL_AMOUNT_IDS = (
@@ -27,6 +27,13 @@ MANUAL_AMOUNT_IDS = (
     "manual_revenue_forecast_rpd",
     "manual_revenue_forecast_cpd",
 )
+
+LEGACY_MANUAL_DISPLAY_NAMES = {
+    "是否手工调整预测": "是否手工调整收入月份",
+    "调整月份（按RPD）": "手工调整收入预测（按RPD）",
+    "调整月份（按CPD）": "手工调整收入预测（按CPD）",
+    "调整金额": "手工调整收入月份",
+}
 
 
 class ManualRevenueForecastTest(unittest.TestCase):
@@ -114,13 +121,13 @@ class ManualRevenueForecastTest(unittest.TestCase):
                 rows = _base_rows(workbook["基表"])
                 inherited = rows[("C001", "SC-A")]
                 self.assertEqual(150, inherited["收入预测"])
-                self.assertEqual(0, inherited["手工调整收入预测（按RPD）"])
-                self.assertEqual(-7.5, inherited["手工调整收入预测（按CPD）"])
+                self.assertEqual(0, inherited["调整月份（按RPD）"])
+                self.assertEqual(-7.5, inherited["调整月份（按CPD）"])
                 positive = rows[("C001", "SC-B")]
                 self.assertEqual(150, positive["收入预测"])
                 self.assertEqual(
                     12.34,
-                    positive["手工调整收入预测（按RPD）"],
+                    positive["调整月份（按RPD）"],
                 )
                 blank = rows[("C003", "SC-C")]
                 for header in MANUAL_ADJUSTMENT_HEADERS:
@@ -188,7 +195,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
             workbook = load_workbook(output, data_only=True)
             try:
                 row = _base_rows(workbook["基表"])[("C001", "SC-A")]
-                self.assertIsNone(row["手工调整收入预测（按RPD）"])
+                self.assertIsNone(row["调整月份（按RPD）"])
                 matching = [
                     values
                     for values in workbook["异常清单"].iter_rows(
@@ -221,8 +228,8 @@ class ManualRevenueForecastTest(unittest.TestCase):
             workbook = load_workbook(output, data_only=True)
             try:
                 inherited = _base_rows(workbook["基表"])[("C001", "SC-A")]
-                self.assertEqual("Y", inherited["是否手工调整收入月份"])
-                self.assertEqual("2026-04", inherited["手工调整收入月份"])
+                self.assertEqual("Y", inherited["是否手工调整预测"])
+                self.assertEqual("2026-04", inherited["调整金额"])
                 self.assertEqual("业务确认", inherited["调整备注"])
                 self.assertEqual(
                     inherited["遗留量"] + inherited["当月新订货"],
@@ -240,6 +247,63 @@ class ManualRevenueForecastTest(unittest.TestCase):
                 self.assertNotIn("PREVIOUS_BASE_UNUSABLE", codes)
             finally:
                 workbook.close()
+
+    def test_legacy_display_names_inherit_with_or_without_metadata(self) -> None:
+        for keep_metadata in (True, False):
+            with self.subTest(keep_metadata=keep_metadata):
+                with TemporaryDirectory() as temporary:
+                    directory = Path(temporary)
+                    sources = _write_sources(
+                        directory,
+                        "legacy-names",
+                        variant="first",
+                    )
+                    previous = directory / "previous.xlsx"
+                    output = directory / "current.xlsx"
+                    _run(sources, previous)
+                    _set_manual_values(previous, "C001", "SC-A")
+                    _set_manual_amounts(
+                        previous,
+                        "C001",
+                        "SC-A",
+                        rpd=0,
+                        cpd=-7.5,
+                    )
+                    _rename_manual_headers_to_legacy(
+                        previous,
+                        keep_metadata=keep_metadata,
+                    )
+
+                    _run(sources, output, previous=previous)
+
+                    workbook = load_workbook(output, data_only=True)
+                    try:
+                        inherited = _base_rows(workbook["基表"])[
+                            ("C001", "SC-A")
+                        ]
+                        self.assertEqual("Y", inherited["是否手工调整预测"])
+                        self.assertEqual(0, inherited["调整月份（按RPD）"])
+                        self.assertEqual(-7.5, inherited["调整月份（按CPD）"])
+                        self.assertEqual("2026-04", inherited["调整金额"])
+                        self.assertEqual("业务确认", inherited["调整备注"])
+                        unavailable = {
+                            values[6]
+                            for values in workbook["异常清单"].iter_rows(
+                                min_row=2,
+                                values_only=True,
+                            )
+                            if values[0] == "PREVIOUS_FIELD_UNAVAILABLE"
+                        }
+                        self.assertTrue(
+                            {
+                                "manual_adjust_flag",
+                                "manual_revenue_forecast_rpd",
+                                "manual_revenue_forecast_cpd",
+                                "manual_revenue_month",
+                            }.isdisjoint(unavailable)
+                        )
+                    finally:
+                        workbook.close()
 
     def test_deep_supply_keeps_contract_amounts_and_other_center_displays_zero(
         self,
@@ -434,13 +498,39 @@ def _set_manual_amounts(
                 sheet.cell(row_number, headers["收入预测"]).value = revenue_forecast
                 sheet.cell(
                     row_number,
-                    headers["手工调整收入预测（按RPD）"],
+                    headers["调整月份（按RPD）"],
                 ).value = rpd
                 sheet.cell(
                     row_number,
-                    headers["手工调整收入预测（按CPD）"],
+                    headers["调整月份（按CPD）"],
                 ).value = cpd
                 break
+        workbook.save(path)
+    finally:
+        workbook.close()
+
+
+def _rename_manual_headers_to_legacy(
+    path: Path,
+    *,
+    keep_metadata: bool,
+) -> None:
+    workbook = load_workbook(path)
+    try:
+        base = workbook["基表"]
+        for cell in base[1]:
+            if cell.value in LEGACY_MANUAL_DISPLAY_NAMES:
+                cell.value = LEGACY_MANUAL_DISPLAY_NAMES[cell.value]
+        if keep_metadata:
+            metadata = workbook["_tool_meta"]
+            for row_number in range(5, metadata.max_row + 1):
+                value = metadata.cell(row_number, 2).value
+                if value in LEGACY_MANUAL_DISPLAY_NAMES:
+                    metadata.cell(row_number, 2).value = (
+                        LEGACY_MANUAL_DISPLAY_NAMES[value]
+                    )
+        else:
+            workbook.remove(workbook["_tool_meta"])
         workbook.save(path)
     finally:
         workbook.close()

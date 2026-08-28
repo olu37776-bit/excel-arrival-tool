@@ -218,8 +218,8 @@ class NoDemandPlaceholderTest(unittest.TestCase):
             workbook = load_workbook(second_result, data_only=True)
             try:
                 placeholder = _base_rows(workbook["基表"])[("C002", None)]
-                self.assertEqual("Y", placeholder["是否手工调整收入月份"])
-                self.assertEqual("2026-04", placeholder["手工调整收入月份"])
+                self.assertEqual("Y", placeholder["是否手工调整预测"])
+                self.assertEqual("2026-04", placeholder["调整金额"])
             finally:
                 workbook.close()
 
@@ -230,8 +230,8 @@ class NoDemandPlaceholderTest(unittest.TestCase):
                 rows = _base_rows(workbook["基表"])
                 self.assertNotIn(("C002", None), rows)
                 actual = rows[("C002", "SC-Z")]
-                self.assertIsNone(actual["是否手工调整收入月份"])
-                self.assertIsNone(actual["手工调整收入月份"])
+                self.assertIsNone(actual["是否手工调整预测"])
+                self.assertIsNone(actual["调整金额"])
                 self.assertIsNone(actual["调整备注"])
             finally:
                 workbook.close()
