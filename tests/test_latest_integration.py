@@ -76,6 +76,31 @@ class LatestIntegrationTest(unittest.TestCase):
                             2, headers["是否手工调整预测"]
                         ).fill.fgColor.rgb,
                     )
+                    for header in (
+                        "是否修改收入分段类别",
+                        "调整月份（按RPD）",
+                        "调整月份（按CPD）",
+                        "调整金额",
+                        "调整备注",
+                    ):
+                        self.assertEqual(
+                            "00FFF2CC",
+                            base.cell(2, headers[header]).fill.fgColor.rgb,
+                        )
+                    for header in (
+                        "收入年月（按RPD）",
+                        "收入年月（按CPD）",
+                        "调整月份（按RPD）",
+                        "调整月份（按CPD）",
+                    ):
+                        self.assertEqual(
+                            "@",
+                            base.cell(2, headers[header]).number_format,
+                        )
+                    self.assertEqual(
+                        "#,##0.00",
+                        base.cell(2, headers["调整金额"]).number_format,
+                    )
                     workbook.save(output)
                 finally:
                     workbook.close()

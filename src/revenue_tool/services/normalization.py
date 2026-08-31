@@ -37,6 +37,15 @@ def normalize_country_identity(value: Any) -> str:
     ).casefold()
 
 
+def canonical_country_identity(
+    value: Any,
+    aliases: dict[str, str] | None = None,
+) -> str:
+    """Resolve one strict, explicitly configured country identity."""
+    identity = normalize_country_identity(value)
+    return (aliases or {}).get(identity, identity)
+
+
 def is_business_blank(value: Any, *, data_type: str | None = None) -> bool:
     """Return whether a source value is a documented business null."""
     if value is None:

@@ -6,6 +6,8 @@ from pathlib import Path
 import unicodedata
 from typing import Any
 
+from revenue_tool.services.normalization import normalize_country_identity
+
 
 @dataclass(frozen=True)
 class ToolConfig:
@@ -160,6 +162,30 @@ def _validate(raw: dict[str, Any]) -> None:
         ):
             raise ValueError(f"Sheet 角色 {role} header_row 必须为空或正整数")
 
+    carryover_countries = raw["rules"].get("carryover_countries")
+    if (
+        not isinstance(carryover_countries, list)
+        or not carryover_countries
+        or any(
+            not isinstance(value, str) or not value.strip()
+            for value in carryover_countries
+        )
+    ):
+        raise ValueError("carryover_countries 必须为非空国家名称列表")
+    canonical_country_identities = {
+        normalize_country_identity(value) for value in carryover_countries
+    }
+    country_aliases = raw["rules"].get("country_aliases")
+    if not isinstance(country_aliases, dict) or any(
+        not isinstance(alias, str)
+        or not alias.strip()
+        or not isinstance(canonical, str)
+        or normalize_country_identity(canonical)
+        not in canonical_country_identities
+        for alias, canonical in country_aliases.items()
+    ):
+        raise ValueError("country_aliases 必须显式映射到七国 canonical 名称")
+
     columns = raw["output"].get("base_columns", [])
     expected_base_ids = [
         "contract_no",
@@ -192,6 +218,7 @@ def _validate(raw: dict[str, Any]) -> None:
         "revenue_month_rpd",
         "revenue_month_cpd",
         "revenue_segment",
+        "manual_revenue_segment_flag",
         "manual_adjust_flag",
         "manual_revenue_forecast_rpd",
         "manual_revenue_forecast_cpd",
@@ -199,13 +226,14 @@ def _validate(raw: dict[str, Any]) -> None:
         "adjustment_note",
     ]
     if not _valid_columns(columns, expected_base_ids):
-        raise ValueError("基表 35 个稳定字段 ID、顺序和显示名必须符合契约")
+        raise ValueError("基表 36 个稳定字段 ID、顺序和显示名必须符合契约")
     expected_change_common = [
         "contract_no",
         "legacy_amount",
         "monthly_new_order",
         "region",
         "country",
+        "carryover_type",
         "customer_group",
         "supply_center",
     ]

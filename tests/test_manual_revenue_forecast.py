@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -17,13 +18,14 @@ from tests.test_pipeline import (
 )
 
 
-MANUAL_ADJUSTMENT_HEADERS = (
+MANUAL_MONTH_HEADERS = (
     "调整月份（按RPD）",
     "调整月份（按CPD）",
 )
 
-MANUAL_AMOUNT_IDS = (
+POST_32_FIELD_IDS = (
     "revenue_forecast",
+    "manual_revenue_segment_flag",
     "manual_revenue_forecast_rpd",
     "manual_revenue_forecast_cpd",
 )
@@ -51,7 +53,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
             try:
                 base = workbook["基表"]
                 headers = [cell.value for cell in base[1]]
-                self.assertEqual(35, len(headers))
+                self.assertEqual(36, len(headers))
                 self.assertEqual(EXPECTED_BASE_HEADERS, headers)
                 indexes = {cell.value: cell.column for cell in base[1]}
                 for row_number in range(2, base.max_row + 1):
@@ -65,12 +67,36 @@ class ManualRevenueForecastTest(unittest.TestCase):
                         "FFF2CC",
                         forecast_cell.fill.fgColor.rgb[-6:],
                     )
-                    for header in MANUAL_ADJUSTMENT_HEADERS:
+                    for header in MANUAL_MONTH_HEADERS:
                         cell = base.cell(row_number, indexes[header])
                         self.assertIsNone(cell.value)
-                        self.assertEqual("#,##0.00", cell.number_format)
+                        self.assertEqual("@", cell.number_format)
                         self.assertEqual("solid", cell.fill.fill_type)
                         self.assertEqual("FFF2CC", cell.fill.fgColor.rgb[-6:])
+                    for header in (
+                        "是否修改收入分段类别",
+                        "调整金额",
+                    ):
+                        cell = base.cell(row_number, indexes[header])
+                        self.assertIsNone(cell.value)
+                        self.assertEqual("solid", cell.fill.fill_type)
+                        self.assertEqual("FFF2CC", cell.fill.fgColor.rgb[-6:])
+                    self.assertEqual(
+                        "#,##0.00",
+                        base.cell(row_number, indexes["调整金额"]).number_format,
+                    )
+                    self.assertEqual(
+                        "@",
+                        base.cell(
+                            row_number, indexes["收入年月（按RPD）"]
+                        ).number_format,
+                    )
+                    self.assertEqual(
+                        "@",
+                        base.cell(
+                            row_number, indexes["收入年月（按CPD）"]
+                        ).number_format,
+                    )
 
                 rows = _base_rows(base)
                 self.assertEqual(100, rows[("C001", "SC-A")]["遗留量"])
@@ -84,8 +110,8 @@ class ManualRevenueForecastTest(unittest.TestCase):
                     if value is None:
                         break
                     field_ids.append(value)
-                self.assertEqual(35, len(field_ids))
-                for field in MANUAL_AMOUNT_IDS:
+                self.assertEqual(36, len(field_ids))
+                for field in POST_32_FIELD_IDS:
                     self.assertIn(field, field_ids)
             finally:
                 workbook.close()
@@ -99,19 +125,22 @@ class ManualRevenueForecastTest(unittest.TestCase):
             previous = directory / "previous.xlsx"
             output = directory / "current.xlsx"
             _run(sources, previous)
-            _set_manual_amounts(
+            _set_manual_inputs(
                 previous,
                 "C001",
                 "SC-A",
                 revenue_forecast=123.456,
-                rpd=0,
-                cpd=-7.5,
+                segment_flag="N",
+                rpd="2026-09",
+                cpd="2026-10",
+                amount=0,
             )
-            _set_manual_amounts(
+            _set_manual_inputs(
                 previous,
                 "C001",
                 "SC-B",
-                rpd=12.34,
+                rpd="2026-11",
+                amount=-7.5,
             )
 
             _run(sources, output, previous=previous)
@@ -121,16 +150,19 @@ class ManualRevenueForecastTest(unittest.TestCase):
                 rows = _base_rows(workbook["基表"])
                 inherited = rows[("C001", "SC-A")]
                 self.assertEqual(150, inherited["收入预测"])
-                self.assertEqual(0, inherited["调整月份（按RPD）"])
-                self.assertEqual(-7.5, inherited["调整月份（按CPD）"])
+                self.assertEqual("N", inherited["是否修改收入分段类别"])
+                self.assertEqual("2026-09", inherited["调整月份（按RPD）"])
+                self.assertEqual("2026-10", inherited["调整月份（按CPD）"])
+                self.assertEqual(0, inherited["调整金额"])
                 positive = rows[("C001", "SC-B")]
                 self.assertEqual(150, positive["收入预测"])
                 self.assertEqual(
-                    12.34,
+                    "2026-11",
                     positive["调整月份（按RPD）"],
                 )
+                self.assertEqual(-7.5, positive["调整金额"])
                 blank = rows[("C003", "SC-C")]
-                for header in MANUAL_ADJUSTMENT_HEADERS:
+                for header in MANUAL_MONTH_HEADERS:
                     self.assertIsNone(blank[header])
             finally:
                 workbook.close()
@@ -144,7 +176,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
             previous = directory / "previous.xlsx"
             output = directory / "current.xlsx"
             _run(sources, previous)
-            _set_manual_amounts(
+            _set_manual_inputs(
                 previous,
                 "C001",
                 "SC-A",
@@ -183,11 +215,11 @@ class ManualRevenueForecastTest(unittest.TestCase):
             previous = directory / "previous.xlsx"
             output = directory / "current.xlsx"
             _run(sources, previous)
-            _set_manual_amounts(
+            _set_manual_inputs(
                 previous,
                 "C001",
                 "SC-A",
-                rpd="not-an-amount",
+                rpd="not-a-month",
             )
 
             _run(sources, output, previous=previous)
@@ -202,11 +234,177 @@ class ManualRevenueForecastTest(unittest.TestCase):
                         min_row=2,
                         values_only=True,
                     )
-                    if values[0] == "INVALID_PREVIOUS_MANUAL_AMOUNT"
+                    if values[0] == "INVALID_PREVIOUS_MANUAL_MONTH"
                     and values[6] == "manual_revenue_forecast_rpd"
                 ]
                 self.assertEqual(1, len(matching))
-                self.assertEqual("not-an-amount", matching[0][7])
+                self.assertEqual("not-a-month", matching[0][7])
+            finally:
+                workbook.close()
+
+    def test_invalid_previous_manual_amount_and_flag_are_reported_as_blank(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "invalid-inputs", variant="first")
+            previous = directory / "previous.xlsx"
+            output = directory / "current.xlsx"
+            _run(sources, previous)
+            _set_manual_inputs(
+                previous,
+                "C001",
+                "SC-A",
+                segment_flag="MAYBE",
+                amount="not-an-amount",
+            )
+
+            _run(sources, output, previous=previous)
+
+            workbook = load_workbook(output, data_only=True)
+            try:
+                row = _base_rows(workbook["基表"])[("C001", "SC-A")]
+                self.assertIsNone(row["是否修改收入分段类别"])
+                self.assertIsNone(row["调整金额"])
+                matching = {
+                    (values[0], values[6])
+                    for values in workbook["异常清单"].iter_rows(
+                        min_row=2,
+                        values_only=True,
+                    )
+                }
+                self.assertIn(
+                    (
+                        "INVALID_PREVIOUS_MANUAL_FLAG",
+                        "manual_revenue_segment_flag",
+                    ),
+                    matching,
+                )
+                self.assertIn(
+                    (
+                        "INVALID_PREVIOUS_MANUAL_AMOUNT",
+                        "manual_revenue_month",
+                    ),
+                    matching,
+                )
+            finally:
+                workbook.close()
+
+    def test_date_cells_for_manual_months_are_normalized_to_text(self) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "date-months", variant="first")
+            previous = directory / "previous.xlsx"
+            output = directory / "current.xlsx"
+            _run(sources, previous)
+            _set_manual_inputs(
+                previous,
+                "C001",
+                "SC-A",
+                rpd=datetime(2026, 9, 15),
+                cpd=datetime(2026, 10, 1),
+            )
+
+            _run(sources, output, previous=previous)
+
+            workbook = load_workbook(output)
+            try:
+                base = workbook["基表"]
+                rows = _base_rows(base)
+                row = rows[("C001", "SC-A")]
+                self.assertEqual("2026-09", row["调整月份（按RPD）"])
+                self.assertEqual("2026-10", row["调整月份（按CPD）"])
+                headers = {cell.value: cell.column for cell in base[1]}
+                row_number = next(
+                    number
+                    for number in range(2, base.max_row + 1)
+                    if base.cell(number, headers["合同号"]).value == "C001"
+                    and base.cell(number, headers["履行供应中心"]).value
+                    == "SC-A"
+                )
+                self.assertEqual(
+                    "@",
+                    base.cell(
+                        row_number, headers["调整月份（按RPD）"]
+                    ).number_format,
+                )
+            finally:
+                workbook.close()
+
+    def test_business_blank_markers_remain_blank_without_manual_issues(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "blank-markers", variant="first")
+            previous = directory / "previous.xlsx"
+            output = directory / "current.xlsx"
+            _run(sources, previous)
+            _set_manual_inputs(
+                previous,
+                "C001",
+                "SC-A",
+                segment_flag="VALUE",
+                rpd="VALUE",
+                cpd="(空白)",
+                amount="#VALUE!",
+            )
+
+            _run(sources, output, previous=previous)
+
+            workbook = load_workbook(output, data_only=True)
+            try:
+                row = _base_rows(workbook["基表"])[("C001", "SC-A")]
+                for header in (
+                    "是否修改收入分段类别",
+                    "调整月份（按RPD）",
+                    "调整月份（按CPD）",
+                    "调整金额",
+                ):
+                    self.assertIsNone(row[header])
+                manual_issue_codes = {
+                    values[0]
+                    for values in workbook["异常清单"].iter_rows(
+                        min_row=2,
+                        values_only=True,
+                    )
+                    if values[6]
+                    in {
+                        "manual_revenue_segment_flag",
+                        "manual_revenue_forecast_rpd",
+                        "manual_revenue_forecast_cpd",
+                        "manual_revenue_month",
+                    }
+                }
+                self.assertEqual(set(), manual_issue_codes)
+            finally:
+                workbook.close()
+
+    def test_old_35_column_result_keeps_old_manual_values_and_new_flag_blank(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "old-35", variant="first")
+            previous = directory / "previous.xlsx"
+            output = directory / "current.xlsx"
+            _run(sources, previous)
+            _set_manual_values(previous, "C001", "SC-A")
+            _remove_fields_from_result(
+                previous,
+                ("manual_revenue_segment_flag",),
+            )
+
+            _run(sources, output, previous=previous)
+
+            workbook = load_workbook(output, data_only=True)
+            try:
+                row = _base_rows(workbook["基表"])[("C001", "SC-A")]
+                self.assertIsNone(row["是否修改收入分段类别"])
+                self.assertEqual("2026-04", row["调整月份（按RPD）"])
+                self.assertEqual("2026-05", row["调整月份（按CPD）"])
+                self.assertEqual(125.5, row["调整金额"])
+                self.assertEqual("业务确认", row["调整备注"])
             finally:
                 workbook.close()
 
@@ -219,7 +417,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
             output = directory / "current.xlsx"
             _run(first_sources, previous)
             _set_manual_values(previous, "C001", "SC-A")
-            _remove_fields_from_result(previous, MANUAL_AMOUNT_IDS)
+            _remove_fields_from_result(previous, POST_32_FIELD_IDS)
 
             result = _run(second_sources, output, previous=previous)
 
@@ -229,13 +427,14 @@ class ManualRevenueForecastTest(unittest.TestCase):
             try:
                 inherited = _base_rows(workbook["基表"])[("C001", "SC-A")]
                 self.assertEqual("Y", inherited["是否手工调整预测"])
-                self.assertEqual("2026-04", inherited["调整金额"])
+                self.assertEqual(125.5, inherited["调整金额"])
                 self.assertEqual("业务确认", inherited["调整备注"])
                 self.assertEqual(
                     inherited["遗留量"] + inherited["当月新订货"],
                     inherited["收入预测"],
                 )
-                for header in MANUAL_ADJUSTMENT_HEADERS:
+                self.assertIsNone(inherited["是否修改收入分段类别"])
+                for header in MANUAL_MONTH_HEADERS:
                     self.assertIsNone(inherited[header])
                 codes = {
                     values[0]
@@ -262,13 +461,6 @@ class ManualRevenueForecastTest(unittest.TestCase):
                     output = directory / "current.xlsx"
                     _run(sources, previous)
                     _set_manual_values(previous, "C001", "SC-A")
-                    _set_manual_amounts(
-                        previous,
-                        "C001",
-                        "SC-A",
-                        rpd=0,
-                        cpd=-7.5,
-                    )
                     _rename_manual_headers_to_legacy(
                         previous,
                         keep_metadata=keep_metadata,
@@ -281,10 +473,17 @@ class ManualRevenueForecastTest(unittest.TestCase):
                         inherited = _base_rows(workbook["基表"])[
                             ("C001", "SC-A")
                         ]
+                        self.assertEqual(
+                            "Y", inherited["是否修改收入分段类别"]
+                        )
                         self.assertEqual("Y", inherited["是否手工调整预测"])
-                        self.assertEqual(0, inherited["调整月份（按RPD）"])
-                        self.assertEqual(-7.5, inherited["调整月份（按CPD）"])
-                        self.assertEqual("2026-04", inherited["调整金额"])
+                        self.assertEqual(
+                            "2026-04", inherited["调整月份（按RPD）"]
+                        )
+                        self.assertEqual(
+                            "2026-05", inherited["调整月份（按CPD）"]
+                        )
+                        self.assertEqual(125.5, inherited["调整金额"])
                         self.assertEqual("业务确认", inherited["调整备注"])
                         unavailable = {
                             values[6]
@@ -477,14 +676,16 @@ class ManualRevenueForecastTest(unittest.TestCase):
                 workbook.close()
 
 
-def _set_manual_amounts(
+def _set_manual_inputs(
     path: Path,
     contract: str,
     center: str | None,
     *,
     revenue_forecast=None,
+    segment_flag=None,
     rpd=None,
     cpd=None,
+    amount=None,
 ) -> None:
     workbook = load_workbook(path)
     try:
@@ -498,12 +699,20 @@ def _set_manual_amounts(
                 sheet.cell(row_number, headers["收入预测"]).value = revenue_forecast
                 sheet.cell(
                     row_number,
+                    headers["是否修改收入分段类别"],
+                ).value = segment_flag
+                sheet.cell(
+                    row_number,
                     headers["调整月份（按RPD）"],
                 ).value = rpd
                 sheet.cell(
                     row_number,
                     headers["调整月份（按CPD）"],
                 ).value = cpd
+                sheet.cell(
+                    row_number,
+                    headers["调整金额"],
+                ).value = amount
                 break
         workbook.save(path)
     finally:
