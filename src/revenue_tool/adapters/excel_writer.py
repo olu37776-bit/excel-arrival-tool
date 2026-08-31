@@ -60,10 +60,16 @@ class ExcelOutputAdapter:
                 "legacy_amount",
                 "monthly_new_order",
                 "revenue_forecast",
+                "manual_revenue_month",
+            },
+            text_fields={
+                "revenue_month_rpd",
+                "revenue_month_cpd",
                 "manual_revenue_forecast_rpd",
                 "manual_revenue_forecast_cpd",
             },
             editable_fields={
+                "manual_revenue_segment_flag",
                 "manual_adjust_flag",
                 "manual_revenue_forecast_rpd",
                 "manual_revenue_forecast_cpd",
@@ -172,10 +178,12 @@ class ExcelOutputAdapter:
         *,
         date_fields: set[str] | None = None,
         amount_fields: set[str] | None = None,
+        text_fields: set[str] | None = None,
         editable_fields: set[str] | None = None,
     ) -> None:
         date_fields = date_fields or set()
         amount_fields = amount_fields or set()
+        text_fields = text_fields or set()
         editable_fields = editable_fields or set()
         sheet = workbook.create_sheet(sheet_name)
         sheet.sheet_view.showGridLines = False
@@ -210,6 +218,10 @@ class ExcelOutputAdapter:
                 for cell in sheet[letter][1:]:
                     cell.number_format = "#,##0.00"
                     cell.alignment = Alignment(horizontal="right")
+            elif field in text_fields:
+                for cell in sheet[letter][1:]:
+                    cell.number_format = "@"
+                    cell.alignment = Alignment(horizontal="left")
             else:
                 for cell in sheet[letter][1:]:
                     cell.alignment = Alignment(
@@ -223,7 +235,7 @@ class ExcelOutputAdapter:
 
         # Structured Table supplied the old row stripes.  Preserve that
         # visual hierarchy after switching to a worksheet AutoFilter, while
-        # keeping the three editable columns visibly yellow.
+        # keeping all editable columns visibly yellow.
         for row_number in range(2, sheet.max_row + 1):
             if row_number % 2:
                 continue

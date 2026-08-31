@@ -18,6 +18,7 @@ from revenue_tool.domain.models import (
 )
 from revenue_tool.services.normalization import (
     business_key_identity,
+    canonical_country_identity,
     nonblank,
     normalize_country_identity,
     normalize_lookup,
@@ -71,6 +72,12 @@ class RevenueEngine:
             normalize_country_identity(value)
             for value in config.rules["carryover_countries"]
         }
+        country_aliases = {
+            normalize_country_identity(alias): normalize_country_identity(
+                canonical
+            )
+            for alias, canonical in config.rules["country_aliases"].items()
+        }
         result: list[BaseRow] = []
         for contract in sorted(contracts, key=normalize_lookup):
             demand_contract = demand_first_by_contract.get(contract)
@@ -82,6 +89,7 @@ class RevenueEngine:
                 monthly=monthly,
                 demand_contract=demand_contract,
                 carryover_countries=carryover_countries,
+                country_aliases=country_aliases,
             )
             contract_demand = demand_by_contract.get(contract, [])
             if not contract_demand:
@@ -261,6 +269,7 @@ def _build_contract_values(
     monthly: ParsedRow | None,
     demand_contract: ParsedRow | None,
     carryover_countries: set[str],
+    country_aliases: dict[str, str],
 ) -> dict[str, Any]:
     legacy_country = _value(legacy, "country")
     resolved_country = _fallback(
@@ -286,7 +295,7 @@ def _build_contract_values(
         "country": resolved_country,
         "carryover_type": (
             "交付类"
-            if normalize_country_identity(resolved_country)
+            if canonical_country_identity(resolved_country, country_aliases)
             in carryover_countries
             else None
         ),
@@ -313,6 +322,7 @@ def _manual_values(
             else None
         )
         for field in (
+            "manual_revenue_segment_flag",
             "manual_adjust_flag",
             "manual_revenue_forecast_rpd",
             "manual_revenue_forecast_cpd",

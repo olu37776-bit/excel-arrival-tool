@@ -54,7 +54,12 @@
   },
   "rules": {
     "fixed_transit_days": {"FCA": 5, "FOB": 5, "EXW": 5},
-    "carryover_countries": ["阿拉伯联合酋长国", "巴基斯坦", "巴西", "菲律宾", "马来西亚", "沙特阿拉伯", "印度尼西亚"]
+    "carryover_countries": ["阿拉伯联合酋长国", "巴基斯坦", "巴西", "菲律宾", "马来西亚", "沙特阿拉伯", "印度尼西亚"],
+    "country_aliases": {
+      "印尼": "印度尼西亚",
+      "印度尼西亚共和国": "印度尼西亚",
+      "印度尼西亚（印尼）": "印度尼西亚"
+    }
   },
   "output": {
     "sheets": {
@@ -95,6 +100,7 @@
       {"id": "revenue_month_rpd", "name": "收入年月（按RPD）"},
       {"id": "revenue_month_cpd", "name": "收入年月（按CPD）"},
       {"id": "revenue_segment", "name": "收入分段类别"},
+      {"id": "manual_revenue_segment_flag", "name": "是否修改收入分段类别"},
       {"id": "manual_adjust_flag", "name": "是否手工调整预测"},
       {"id": "manual_revenue_forecast_rpd", "name": "调整月份（按RPD）"},
       {"id": "manual_revenue_forecast_cpd", "name": "调整月份（按CPD）"},
@@ -107,6 +113,7 @@
       {"id": "monthly_new_order", "name": "当月新订货"},
       {"id": "region", "name": "地区部"},
       {"id": "country", "name": "国家"},
+      {"id": "carryover_type", "name": "结转类型"},
       {"id": "customer_group", "name": "客户群"},
       {"id": "supply_center", "name": "履行供应中心"}
     ],
@@ -130,6 +137,7 @@
       {"id": "monthly_new_order", "name": "当月新订货"},
       {"id": "region", "name": "地区部"},
       {"id": "country", "name": "国家"},
+      {"id": "carryover_type", "name": "结转类型"},
       {"id": "customer_group", "name": "客户群"},
       {"id": "supply_center", "name": "履行供应中心"},
       {"id": "revenue_month_rpd", "name": "收入年月（按RPD）"},

@@ -50,6 +50,9 @@ class ComparisonTest(unittest.TestCase):
         self.assertEqual("取消", by_contract["C2"]["direction"])
         self.assertIsNone(by_contract["C2"]["change_months"])
         self.assertEqual("新增", by_contract["C3"]["direction"])
+        self.assertTrue(
+            all(row.values["carryover_type"] == "交付类" for row in result)
+        )
 
     def test_same_period_rpd_cpd_difference_builds_supply_pull_rows(self) -> None:
         rows = [
@@ -64,6 +67,7 @@ class ComparisonTest(unittest.TestCase):
         self.assertEqual("C1", result[0].values["contract_no"])
         self.assertEqual("2026-01", result[0].values["revenue_month_rpd"])
         self.assertEqual("2026-02", result[0].values["revenue_month_cpd"])
+        self.assertEqual("交付类", result[0].values["carryover_type"])
 
     def test_demand_to_no_demand_emits_each_previous_center_even_when_blank(self) -> None:
         previous = PreviousData(
@@ -92,6 +96,7 @@ class ComparisonTest(unittest.TestCase):
         self.assertIsNone(result[0].values["previous_month"])
         self.assertIsNone(result[0].values["current_month"])
         self.assertEqual(Decimal("99.00"), result[0].values["legacy_amount"])
+        self.assertEqual("交付类", result[0].values["carryover_type"])
 
     def test_no_demand_to_demand_emits_each_current_center_even_when_blank(self) -> None:
         previous = PreviousData(
@@ -117,6 +122,7 @@ class ComparisonTest(unittest.TestCase):
         )
         self.assertIsNone(result[0].values["previous_month"])
         self.assertIsNone(result[0].values["current_month"])
+        self.assertEqual("交付类", result[0].values["carryover_type"])
 
     def test_two_no_demand_periods_do_not_emit_changes_or_supply_pull(self) -> None:
         placeholder = self._placeholder("C1")
@@ -171,6 +177,7 @@ class ComparisonTest(unittest.TestCase):
                 "monthly_new_order": Decimal("0.00"),
                 "region": "R",
                 "country": "Country",
+                "carryover_type": "交付类",
                 "customer_group": "G",
                 "ata": date(2026, 1, 1),
             },
@@ -192,6 +199,7 @@ class ComparisonTest(unittest.TestCase):
                 "monthly_new_order": Decimal("0.00"),
                 "region": "R-current",
                 "country": None,
+                "carryover_type": "交付类",
                 "customer_group": "G-current",
             },
             row_kind=CONTRACT_ONLY_NO_DEMAND,

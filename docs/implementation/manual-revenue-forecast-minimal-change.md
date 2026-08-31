@@ -6,7 +6,7 @@
 - 仓库：`olu37776-bit/excel-arrival-tool`
 - 实施分支：`main`
 - 本次修正基线：`29243a621eb3985b296d2849b0be73f48b4fced7`
-- 修正规则：Issue #26、Issue #27
+- 修正规则：Issue #26、Issue #27、Issue #28
 
 > `refactor/revenue-allocation-v1` 暂时冻结，仅保留历史，不作为本次实施依据。本次直接在现有 `main` 稳定实现上做最小修改，不再引入 RevenueAllocationCandidate、PreviousRunState、Posting、月度汇总新工作簿或双任务 GUI。
 
@@ -14,15 +14,15 @@
 
 ## 1. 本次目标
 
-保持现有“合同号 + 履行供应中心”基表和五张业务 Sheet，只完成五项变化：
+保持现有“合同号 + 履行供应中心”基表和五张业务 Sheet；Issue #28在既有最小改动上补充字段类型、人工标识、辅助表结转类型和国家别名修正。
 
-1. 新增三个金额字段：
+1. 新增三个字段：
    - `收入预测`
    - `调整月份（按RPD）`
    - `调整月份（按CPD）`
 2. `收入预测`由系统按最终展示的`遗留量 + 当月新订货`计算。
 3. 多履行供应中心合同的`遗留量`、`当月新订货`和`收入预测`只在“深供”行显示，其他供应中心行显示0，避免金额重复汇总。
-4. 两个人工金额字段`调整月份（按RPD）/调整月份（按CPD）`首次为空，后续从上一次结果继承。
+4. 两个人工月份字段`调整月份（按RPD）/调整月份（按CPD）`首次为空，以`YYYY-MM`文本保存并从上一次结果继承；`调整金额`为Decimal两位小数。
 5. 取消`备货总控标识`与`发货总控标识`不同步异常，即停止生成`CONTROL_FLAG_MISMATCH`。
 
 除此之外，现有字段、日期计算、收入年月、收入分段、跨月变化、异常处理和 GUI 主流程均不改变。
@@ -47,7 +47,7 @@ manual_revenue_forecast_cpd
 调整月份（按CPD）
 ```
 
-`收入预测`是系统计算金额；`调整月份（按RPD）/调整月份（按CPD）`沿用原两个手工调整收入预测字段的数据类型和人工金额语义。Issue #27只修改显示名称，不改变稳定字段ID或业务规则。
+`收入预测`是系统计算金额。Issue #28纠正历史显示名造成的类型歧义：`调整月份（按RPD）/调整月份（按CPD）`是`YYYY-MM`文本，不是金额；`调整金额`是Decimal两位小数金额。稳定字段ID保持不变。
 
 ### 2.1 收入预测
 
@@ -65,28 +65,32 @@ manual_revenue_forecast_cpd
 
 不根据`收入预测`或`收入年月（按RPD）`自动生成。
 
+有效值为`YYYY-MM`文本；Excel日期/日期时间输入在下次读取时规范化为`YYYY-MM`。
+
 ### 2.3 调整月份（按CPD）
 
 首次为空，用户手工填写，后续继承。
 
 不根据`收入预测`或`收入年月（按CPD）`自动生成。
 
+有效值为`YYYY-MM`文本；Excel日期/日期时间输入在下次读取时规范化为`YYYY-MM`。
+
 ### 2.4 空白与0
 
-两个手工调整字段必须区分：
+`调整金额`必须区分：
 
 ```text
 空白 → None，表示未填写
 0 / 0.00 → Decimal("0.00")，表示用户明确填写0
 ```
 
-不得使用 truthy/falsy 判断人工金额。
+不得使用 truthy/falsy 判断人工金额。人工月份的空白表示未填写，不使用数值0表达月份。
 
 ---
 
 ## 3. 基表字段顺序
 
-现有32列调整为35列，冻结顺序如下：
+现有35列调整为36列，冻结顺序如下：
 
 ```text
 1  合同号
@@ -119,17 +123,19 @@ manual_revenue_forecast_cpd
 28 收入年月（按RPD）
 29 收入年月（按CPD）
 30 收入分段类别
-31 是否手工调整预测
-32 调整月份（按RPD）
-33 调整月份（按CPD）
-34 调整金额
-35 调整备注
+31 是否修改收入分段类别
+32 是否手工调整预测
+33 调整月份（按RPD）
+34 调整月份（按CPD）
+35 调整金额
+36 调整备注
 ```
 
 即：
 
 - `收入预测`插在`当月新订货`之后；
-- 两个人工金额字段插在`是否手工调整预测`之后；
+- `是否修改收入分段类别`紧跟系统`收入分段类别`；
+- 两个人工月份字段插在`是否手工调整预测`之后；
 - 其他原字段相对顺序保持不变。
 
 ---
@@ -151,6 +157,7 @@ manual_revenue_forecast_cpd
 人工字段继承集合扩展为：
 
 ```text
+manual_revenue_segment_flag
 manual_adjust_flag
 manual_revenue_forecast_rpd
 manual_revenue_forecast_cpd
@@ -158,21 +165,24 @@ manual_revenue_month
 adjustment_note
 ```
 
-首次没有上期结果时，五个人工字段全部为空；`收入预测`正常自动计算。
+首次没有上期结果时，六个人工字段全部为空；`收入预测`正常自动计算。
 
 旧32列结果作为上一次结果时：
 
 - 原`是否手工调整收入月份 / 手工调整收入月份 / 调整备注`通过稳定字段ID或旧显示名别名继续正常继承；
-- 旧32列结果不存在的两个新人工金额字段保持空白；
+- 旧32列结果不存在的两个新人工月份字段和新增人工分段标识保持空白；
 - `收入预测`根据本期遗留量和当月新订货重新计算；
 - 缺少新增字段不得导致整个上一次结果不可用；
 - RPD/CPD跨期比较继续按现有规则执行。
 
-输入解析必须把`调整月份（按RPD）/调整月份（按CPD）`按原有人工金额类型处理：
+输入解析必须把`调整月份（按RPD）/调整月份（按CPD）`按月份文本处理：
 
-- 正数、负数、0均支持；
+- `YYYY-MM`字符串原样继承；
+- Excel日期/日期时间规范化为`YYYY-MM`；
 - 空白保持`None`；
-- 非空且无法解析的人工金额不得静默变0，应记录明确的上期字段/金额异常并按空白处理。
+- 非空非法月份记录`INVALID_PREVIOUS_MANUAL_MONTH`并按空白处理。
+
+`调整金额`按Decimal两位小数解析，支持正数、负数和明确0；非法非空金额记录`INVALID_PREVIOUS_MANUAL_AMOUNT`并按空白处理。`是否修改收入分段类别`只允许空/Y/N，非法值记录`INVALID_PREVIOUS_MANUAL_FLAG`。
 
 ---
 
@@ -326,7 +336,7 @@ Y/N混合 → 部分解锁
 
 ## 7. 变化表和供应提拉表
 
-本次不新增这三个金额字段到：
+本次不把这三个字段加入：
 
 ```text
 RPD跨月变化
@@ -334,7 +344,7 @@ CPD跨月变化
 供应需要提拉诉求清单粗表
 ```
 
-这些表的字段契约保持现状。
+三张表均在`国家`后增加`结转类型`，普通月份变化、有要货/不要货状态变化和供应提拉均从BaseRow透传，不在Writer层重新判断。
 
 但因为`遗留量 / 当月新订货`在多中心合同中只在深供行展示，为保持跨月变化和供应提拉金额口径与基表一致：
 
@@ -348,13 +358,14 @@ CPD跨月变化
 
 修改`config/default.json`：
 
-1. `output.base_columns`加入三个字段并保持第3节顺序；
+1. `output.base_columns`加入新增字段并保持第3节36列顺序；
 2. 三个字段仅是输出字段，不加入四类源文件`fields`；
-3. 其他Sheet字段契约保持不变。
+3. `change_common_columns`和`supply_pull_columns`在国家后增加`carryover_type`；
+4. `rules.country_aliases`只保存显式合法别名到七国canonical名称的映射，不启用模糊匹配。
 
 修改`src/revenue_tool/config.py`：
 
-- `expected_base_ids`从32个更新为35个；
+- `expected_base_ids`更新为36个；
 - 更新错误文字，不再写死“基表32个稳定字段”；
 - 不改变其他源字段和Sheet契约。
 
@@ -376,15 +387,17 @@ metadata仍沿用当前schema 3即可，因为`_tool_meta`已经按`config.base_
 legacy_amount
 monthly_new_order
 revenue_forecast
-manual_revenue_forecast_rpd
-manual_revenue_forecast_cpd
+manual_revenue_month
 ```
+
+两个`manual_revenue_forecast_*`字段和两套自动收入年月属于文本格式`@`。
 
 ### 9.2 黄色可编辑字段
 
 `editable_fields`扩展为：
 
 ```text
+manual_revenue_segment_flag
 manual_adjust_flag
 manual_revenue_forecast_rpd
 manual_revenue_forecast_cpd
@@ -411,11 +424,11 @@ manual_revenue_forecast_rpd
 manual_revenue_forecast_cpd
 ```
 
-按人工金额解析，但空白保持`None`，不能像源`legacy_amount/monthly_new_order`那样空白转0。
+按人工月份解析，只接受`YYYY-MM`文本或可转换的Excel日期/日期时间，空白保持`None`。`manual_revenue_month`单独按人工金额解析，不能像源`legacy_amount/monthly_new_order`那样把空白转0。
 
 ### 10.2 `RevenueEngine`
 
-`_manual_values()`扩展为五个人工字段，不包含`revenue_forecast`。
+`_manual_values()`扩展为六个人工字段，不包含`revenue_forecast`。
 
 多中心金额展示规则建议在合同中心分组确定后实现：
 
@@ -472,22 +485,25 @@ _log_control_flag_risks()
 
 ### 12.1 字段契约
 
-- 基表35列表头和固定顺序；
+- 基表36列表头和固定顺序；
 - `收入预测`首次自动等于遗留量与当月新订货之和；
 - `收入预测`不是黄色可编辑字段；
 - `调整月份（按RPD）/调整月份（按CPD）`首次为空且黄色可编辑；
-- 三个新增字段金额格式为两位小数；
-- metadata包含三个新增稳定字段ID。
+- 两个人工月份和两套自动收入年月使用Excel文本格式`@`；
+- `调整金额`使用两位小数金额格式；
+- metadata包含36个稳定字段ID。
 
 ### 12.2 人工字段继承
 
 - 上期`收入预测`不继承，本期重新计算；
-- RPD人工预测继承；
-- CPD人工预测继承；
-- 正数、负数、明确0；
+- RPD人工月份继承；
+- CPD人工月份继承；
+- Excel日期月份规范化为`YYYY-MM`；
+- 调整金额支持正数、负数、明确0；
+- 人工收入分段标识只允许空/Y/N并正确继承；
 - 空白仍为空；
 - 旧32列结果仍可作为previous；
-- 旧结果缺新三列时不使跨期比较失效；
+- 旧结果缺新增列时不使跨期比较失效；
 - 原三个人工月份字段继续回归通过。
 
 ### 12.3 深供金额规则
@@ -601,10 +617,12 @@ python -m pip wheel . --no-deps --wheel-dir <临时目录>/wheel
 只有同时满足以下条件才能声明完成：
 
 ```text
-基表=35列且顺序正确
+基表=36列且顺序正确
 收入预测自动等于最终展示的遗留量与当月新订货之和
 收入预测不可编辑且不继承上期值
-`调整月份（按RPD）/调整月份（按CPD）`首次为空并正确继承
+`是否修改收入分段类别`首次为空并按业务键继承
+`调整月份（按RPD）/调整月份（按CPD）`以YYYY-MM文本首次为空并正确继承
+`调整金额`以Decimal两位小数继承
 明确0不会丢失
 多中心+深供时只有深供行保留遗留量、当月新订货和收入预测
 非深供行展示0但收入分段不受影响
@@ -613,6 +631,8 @@ CONTROL_FLAG_MISMATCH完全停止生成
 是否解锁备货三态保持正确
 旧32列previous兼容
 RPD/CPD跨期比较保持正确
+三张辅助表在国家后输出结转类型
+印尼合法别名通过显式映射命中且无模糊匹配
 全部测试通过
 ```
 

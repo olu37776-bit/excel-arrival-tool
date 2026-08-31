@@ -36,9 +36,14 @@ from revenue_tool.services.normalization import (
 
 
 _PREVIOUS_MANUAL_AMOUNT_FIELDS = {
+    "manual_revenue_month",
+}
+_PREVIOUS_MANUAL_MONTH_FIELDS = {
     "manual_revenue_forecast_rpd",
     "manual_revenue_forecast_cpd",
 }
+_PREVIOUS_MANUAL_FLAG_FIELDS = {"manual_revenue_segment_flag"}
+_REVENUE_MONTH_PATTERN = re.compile(r"^(\d{4})-(0[1-9]|1[0-2])$")
 
 # Display names are not identities.  Metadata-backed results resolve by the
 # stable field ID; these aliases keep older workbooks without usable metadata
@@ -240,6 +245,32 @@ class ExcelInputAdapter:
                             issues.add(
                                 "INVALID_PREVIOUS_MANUAL_AMOUNT",
                                 "上期人工金额非空且无法解析，已按空白处理",
+                                workbook=workbook_path.name,
+                                sheet=sheet.title,
+                                row_number=row_number,
+                                field=field,
+                                raw_value=raw_value,
+                            )
+                    elif field in _PREVIOUS_MANUAL_MONTH_FIELDS:
+                        value, valid = _parse_previous_manual_month(cell)
+                        values[field] = value
+                        if not valid:
+                            issues.add(
+                                "INVALID_PREVIOUS_MANUAL_MONTH",
+                                "上期人工月份非空且不是YYYY-MM，已按空白处理",
+                                workbook=workbook_path.name,
+                                sheet=sheet.title,
+                                row_number=row_number,
+                                field=field,
+                                raw_value=raw_value,
+                            )
+                    elif field in _PREVIOUS_MANUAL_FLAG_FIELDS:
+                        value, valid = _parse_previous_manual_flag(cell)
+                        values[field] = value
+                        if not valid:
+                            issues.add(
+                                "INVALID_PREVIOUS_MANUAL_FLAG",
+                                "上期人工标识只允许Y/N，已按空白处理",
                                 workbook=workbook_path.name,
                                 sheet=sheet.title,
                                 row_number=row_number,
@@ -655,8 +686,6 @@ def _parse_previous_value(field: str, value: Any, epoch: datetime) -> Any:
         if isinstance(value, (date, datetime)):
             return value.strftime("%Y-%m")
         return normalize_text(value)
-    if field == "manual_revenue_month":
-        return value
     return normalize_text(value)
 
 
@@ -664,18 +693,42 @@ def _parse_previous_manual_amount(cell) -> tuple[Decimal | None, bool]:
     if cell is None:
         return None, True
     raw = cell.value
-    if raw is None:
+    data_type = getattr(cell, "data_type", None)
+    if is_business_blank(raw, data_type=data_type):
         return None, True
-    if isinstance(raw, str):
-        normalized = normalize_text(raw)
-        if not normalized or normalized == "(空白)":
-            return None, True
-        if normalized.casefold() in {"value", "#value", "#value!"}:
-            return None, False
-    if getattr(cell, "data_type", None) == "e":
+    if data_type == "e":
         return None, False
     amount = normalize_amount(raw)
     return (amount, True) if amount is not None else (None, False)
+
+
+def _parse_previous_manual_month(cell) -> tuple[str | None, bool]:
+    if cell is None:
+        return None, True
+    raw = cell.value
+    data_type = getattr(cell, "data_type", None)
+    if is_business_blank(raw, data_type=data_type):
+        return None, True
+    if isinstance(raw, (date, datetime)):
+        return raw.strftime("%Y-%m"), True
+    if data_type == "e":
+        return None, False
+    text = normalize_text(raw)
+    if _REVENUE_MONTH_PATTERN.fullmatch(text):
+        return text, True
+    return None, False
+
+
+def _parse_previous_manual_flag(cell) -> tuple[str | None, bool]:
+    if cell is None:
+        return None, True
+    data_type = getattr(cell, "data_type", None)
+    if is_business_blank(cell.value, data_type=data_type):
+        return None, True
+    if data_type == "e":
+        return None, False
+    value = normalize_text(cell.value).upper()
+    return (value, True) if value in {"Y", "N"} else (None, False)
 
 
 def _error_code_for_type(field_type: str) -> str:

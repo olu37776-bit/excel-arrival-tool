@@ -167,6 +167,7 @@ def compare_revenue_months(
                 "monthly_new_order",
                 "region",
                 "country",
+                "carryover_type",
                 "customer_group",
                 "supply_center",
             )
@@ -264,6 +265,7 @@ def _state_change_row(
             "monthly_new_order",
             "region",
             "country",
+            "carryover_type",
             "customer_group",
         )
     }
@@ -356,6 +358,7 @@ def build_supply_pull_rows(
                 "monthly_new_order",
                 "region",
                 "country",
+                "carryover_type",
                 "customer_group",
                 "supply_center",
             )

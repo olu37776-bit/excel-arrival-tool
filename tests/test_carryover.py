@@ -9,7 +9,10 @@ from revenue_tool.domain.models import (
     SourceData,
 )
 from revenue_tool.services.calculation import RevenueEngine
-from revenue_tool.services.normalization import normalize_country_identity
+from revenue_tool.services.normalization import (
+    canonical_country_identity,
+    normalize_country_identity,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -78,6 +81,34 @@ class CarryoverCountryTest(unittest.TestCase):
         self.assertTrue(
             all(row.values["carryover_type"] == "交付类" for row in rows)
         )
+
+    def test_indonesia_business_alias_is_explicitly_canonicalized(self) -> None:
+        raw = "印度尼西亚（印尼）"
+        normalized_aliases = {
+            normalize_country_identity(alias): normalize_country_identity(
+                canonical
+            )
+            for alias, canonical in CONFIG.rules["country_aliases"].items()
+        }
+
+        self.assertEqual("印度尼西亚(印尼)", normalize_country_identity(raw))
+        self.assertEqual(
+            "印度尼西亚",
+            canonical_country_identity(raw, normalized_aliases),
+        )
+
+        legacy_priority = _calculate([raw], ["日本"])[0]
+        self.assertEqual(raw, legacy_priority.values["country"])
+        self.assertEqual("交付类", legacy_priority.values["carryover_type"])
+
+        demand_fallback = _calculate([None], [raw])[0]
+        self.assertEqual(raw, demand_fallback.values["country"])
+        self.assertEqual("交付类", demand_fallback.values["carryover_type"])
+
+    def test_country_aliases_do_not_enable_fuzzy_matching(self) -> None:
+        rows = _calculate(["印度尼西亚洲"], ["印度尼西亚"])
+
+        self.assertIsNone(rows[0].values["carryover_type"])
 
 
 def _calculate(
