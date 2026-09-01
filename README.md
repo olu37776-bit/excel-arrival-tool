@@ -2,8 +2,8 @@
 
 ## Windows 使用方式（推荐）
 
-1. [直接下载 ExcelRevenueTool-v0.8.4.exe](https://github.com/olu37776-bit/excel-arrival-tool/releases/download/v0.8.4/ExcelRevenueTool-v0.8.4.exe)。
-2. 双击 `ExcelRevenueTool-v0.8.4.exe`。不需要安装 Python，也不需要运行 BAT 或打开终端。
+1. [直接下载 ExcelRevenueTool-v0.8.5.exe](https://github.com/olu37776-bit/excel-arrival-tool/releases/download/v0.8.5/ExcelRevenueTool-v0.8.5.exe)。
+2. 双击 `ExcelRevenueTool-v0.8.5.exe`。不需要安装 Python，也不需要运行 BAT 或打开终端。
 3. 在窗口中选择三个必选源文件，并按需选择当月订货文件：
    - 遗留量 Excel
    - 当月订货 Excel（可选；没有时留空）
