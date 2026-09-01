@@ -331,6 +331,160 @@ class ManualRevenueForecastTest(unittest.TestCase):
             finally:
                 workbook.close()
 
+    def test_short_months_roundtrip_after_column_move_with_metadata_or_alias(
+        self,
+    ) -> None:
+        for metadata_mode in ("stable-id", "legacy-alias"):
+            with self.subTest(metadata_mode=metadata_mode):
+                with TemporaryDirectory() as temporary:
+                    directory = Path(temporary)
+                    sources = _write_sources(
+                        directory,
+                        f"short-{metadata_mode}",
+                        variant="first",
+                    )
+                    previous = directory / "previous.xlsx"
+                    output = directory / "current.xlsx"
+                    _run(sources, previous)
+                    _set_previous_month_context(
+                        previous,
+                        "C001",
+                        "SC-A",
+                        automatic_rpd="2026-06",
+                        automatic_cpd="2026-07",
+                        manual_rpd="9月",
+                        manual_cpd=10,
+                    )
+                    if metadata_mode == "stable-id":
+                        _rename_metadata_backed_field(
+                            previous,
+                            "manual_revenue_forecast_rpd",
+                            "用户填写RPD月份",
+                        )
+                        moved_header = "用户填写RPD月份"
+                    else:
+                        _rename_manual_headers_to_legacy(
+                            previous,
+                            keep_metadata=False,
+                        )
+                        moved_header = "手工调整收入预测（按RPD）"
+                    _insert_noncritical_column_and_move_to_end(
+                        previous,
+                        moved_header,
+                    )
+
+                    _run(sources, output, previous=previous)
+
+                    workbook = load_workbook(output)
+                    try:
+                        base = workbook["基表"]
+                        row = _base_rows(base)[("C001", "SC-A")]
+                        self.assertEqual(
+                            "2026-09", row["调整月份（按RPD）"]
+                        )
+                        self.assertEqual(
+                            "2026-10", row["调整月份（按CPD）"]
+                        )
+                        headers = {
+                            cell.value: cell.column for cell in base[1]
+                        }
+                        row_number = next(
+                            number
+                            for number in range(2, base.max_row + 1)
+                            if base.cell(number, headers["合同号"]).value
+                            == "C001"
+                            and base.cell(
+                                number, headers["履行供应中心"]
+                            ).value
+                            == "SC-A"
+                        )
+                        for header in MANUAL_MONTH_HEADERS:
+                            cell = base.cell(row_number, headers[header])
+                            self.assertEqual("@", cell.number_format)
+                            self.assertNotIsInstance(
+                                cell.value, (datetime,)
+                            )
+                        issue_codes = {
+                            values[0]
+                            for values in workbook["异常清单"].iter_rows(
+                                min_row=2,
+                                values_only=True,
+                            )
+                            if values[6]
+                            in {
+                                "manual_revenue_forecast_rpd",
+                                "manual_revenue_forecast_cpd",
+                            }
+                        }
+                        self.assertEqual(set(), issue_codes)
+                    finally:
+                        workbook.close()
+
+    def test_month_only_ambiguity_and_missing_reference_require_year(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "year-required", variant="first")
+            previous = directory / "previous.xlsx"
+            output = directory / "current.xlsx"
+            _run(sources, previous)
+            _set_previous_month_context(
+                previous,
+                "C001",
+                "SC-A",
+                automatic_rpd="2026-03",
+                automatic_cpd="2026-03",
+                manual_rpd="9月",
+            )
+            _set_previous_month_context(
+                previous,
+                "C002",
+                None,
+                automatic_rpd=None,
+                automatic_cpd=None,
+                manual_cpd="10",
+            )
+
+            _run(sources, output, previous=previous)
+
+            workbook = load_workbook(output, data_only=True)
+            try:
+                rows = _base_rows(workbook["基表"])
+                self.assertIsNone(
+                    rows[("C001", "SC-A")]["调整月份（按RPD）"]
+                )
+                self.assertIsNone(rows[("C002", None)]["调整月份（按CPD）"])
+                matching = [
+                    values
+                    for values in workbook["异常清单"].iter_rows(
+                        min_row=2,
+                        values_only=True,
+                    )
+                    if values[0] == "MANUAL_MONTH_YEAR_REQUIRED"
+                ]
+                self.assertEqual(2, len(matching))
+                self.assertEqual(
+                    {
+                        (
+                            "C001 | SC-A",
+                            "manual_revenue_forecast_rpd",
+                            "9月",
+                        ),
+                        (
+                            "C002 | ",
+                            "manual_revenue_forecast_cpd",
+                            "10",
+                        ),
+                    },
+                    {(row[5], row[6], str(row[7])) for row in matching},
+                )
+                self.assertTrue(
+                    all("请填写完整年月" in row[8] for row in matching)
+                )
+            finally:
+                workbook.close()
+
     def test_business_blank_markers_remain_blank_without_manual_issues(
         self,
     ) -> None:
@@ -714,6 +868,95 @@ def _set_manual_inputs(
                     headers["调整金额"],
                 ).value = amount
                 break
+        workbook.save(path)
+    finally:
+        workbook.close()
+
+
+def _set_previous_month_context(
+    path: Path,
+    contract: str,
+    center: str | None,
+    *,
+    automatic_rpd,
+    automatic_cpd,
+    manual_rpd=None,
+    manual_cpd=None,
+) -> None:
+    workbook = load_workbook(path)
+    try:
+        sheet = workbook["基表"]
+        headers = {cell.value: cell.column for cell in sheet[1]}
+        for row_number in range(2, sheet.max_row + 1):
+            if (
+                sheet.cell(row_number, headers["合同号"]).value == contract
+                and sheet.cell(row_number, headers["履行供应中心"]).value
+                == center
+            ):
+                sheet.cell(
+                    row_number, headers["收入年月（按RPD）"]
+                ).value = automatic_rpd
+                sheet.cell(
+                    row_number, headers["收入年月（按CPD）"]
+                ).value = automatic_cpd
+                sheet.cell(
+                    row_number, headers["调整月份（按RPD）"]
+                ).value = manual_rpd
+                sheet.cell(
+                    row_number, headers["调整月份（按CPD）"]
+                ).value = manual_cpd
+                break
+        workbook.save(path)
+    finally:
+        workbook.close()
+
+
+def _rename_metadata_backed_field(
+    path: Path,
+    field_id: str,
+    display_name: str,
+) -> None:
+    workbook = load_workbook(path)
+    try:
+        metadata = workbook["_tool_meta"]
+        old_display_name = None
+        for row_number in range(5, metadata.max_row + 1):
+            if metadata.cell(row_number, 1).value == field_id:
+                old_display_name = metadata.cell(row_number, 2).value
+                metadata.cell(row_number, 2).value = display_name
+                break
+        if old_display_name is None:
+            raise AssertionError(f"metadata field not found: {field_id}")
+        base = workbook["基表"]
+        for cell in base[1]:
+            if cell.value == old_display_name:
+                cell.value = display_name
+                break
+        workbook.save(path)
+    finally:
+        workbook.close()
+
+
+def _insert_noncritical_column_and_move_to_end(
+    path: Path,
+    header: str,
+) -> None:
+    workbook = load_workbook(path)
+    try:
+        sheet = workbook["基表"]
+        sheet.insert_cols(3)
+        sheet.cell(1, 3).value = "用户附加说明"
+        source_column = next(
+            cell.column for cell in sheet[1] if cell.value == header
+        )
+        values = [
+            sheet.cell(row_number, source_column).value
+            for row_number in range(1, sheet.max_row + 1)
+        ]
+        sheet.delete_cols(source_column)
+        destination = sheet.max_column + 1
+        for row_number, value in enumerate(values, start=1):
+            sheet.cell(row_number, destination).value = value
         workbook.save(path)
     finally:
         workbook.close()

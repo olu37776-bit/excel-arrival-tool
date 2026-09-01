@@ -27,8 +27,11 @@ from revenue_tool.services.field_matching import resolve_name
 from revenue_tool.services.normalization import (
     business_key_identity,
     is_business_blank,
+    MANUAL_MONTH_INVALID,
+    MANUAL_MONTH_YEAR_REQUIRED,
     nonblank,
     normalize_amount,
+    normalize_manual_revenue_month,
     normalize_signature_value,
     normalize_text,
     ZERO_AMOUNT,
@@ -43,7 +46,6 @@ _PREVIOUS_MANUAL_MONTH_FIELDS = {
     "manual_revenue_forecast_cpd",
 }
 _PREVIOUS_MANUAL_FLAG_FIELDS = {"manual_revenue_segment_flag"}
-_REVENUE_MONTH_PATTERN = re.compile(r"^(\d{4})-(0[1-9]|1[0-2])$")
 
 # Display names are not identities.  Metadata-backed results resolve by the
 # stable field ID; these aliases keep older workbooks without usable metadata
@@ -232,11 +234,106 @@ class ExcelInputAdapter:
                 cells = list(sheet[row_number])
                 if _row_is_blank(cells):
                     continue
+                field_cells = {
+                    column["id"]: (
+                        cells[index]
+                        if index is not None and index < len(cells)
+                        else None
+                    )
+                    for column in config.base_columns
+                    for index in (indexes[column["id"]],)
+                }
                 values: dict[str, Any] = {}
+                for field in (
+                    "contract_no",
+                    "supply_center",
+                    "revenue_month_rpd",
+                    "revenue_month_cpd",
+                ):
+                    cell = field_cells[field]
+                    values[field] = _parse_previous_value(
+                        field,
+                        cell.value if cell is not None else None,
+                        workbook.epoch,
+                    )
+
+                display_key = (
+                    str(values.get("contract_no") or ""),
+                    str(values.get("supply_center") or ""),
+                )
+                for field, primary_field, secondary_field in (
+                    (
+                        "manual_revenue_forecast_rpd",
+                        "revenue_month_rpd",
+                        "revenue_month_cpd",
+                    ),
+                    (
+                        "manual_revenue_forecast_cpd",
+                        "revenue_month_cpd",
+                        "revenue_month_rpd",
+                    ),
+                ):
+                    cell = field_cells[field]
+                    raw_value = cell.value if cell is not None else None
+                    result = normalize_manual_revenue_month(
+                        raw_value,
+                        primary_reference_month=values.get(primary_field),
+                        secondary_reference_month=values.get(secondary_field),
+                        data_type=(
+                            getattr(cell, "data_type", None)
+                            if cell is not None
+                            else None
+                        ),
+                    )
+                    values[field] = result.value
+                    context = _manual_month_reference_context(
+                        values.get(primary_field),
+                        values.get(secondary_field),
+                    )
+                    if result.status == MANUAL_MONTH_YEAR_REQUIRED:
+                        issues.add(
+                            "MANUAL_MONTH_YEAR_REQUIRED",
+                            (
+                                "调整月份只填写了月份，但无法根据本行自动"
+                                "收入年月唯一确定年份；请填写完整年月，"
+                                f"例如2026-09。{context}"
+                            ),
+                            workbook=workbook_path.name,
+                            sheet=sheet.title,
+                            row_number=row_number,
+                            business_key=_display_key(display_key),
+                            field=field,
+                            raw_value=raw_value,
+                        )
+                    elif result.status == MANUAL_MONTH_INVALID:
+                        issues.add(
+                            "INVALID_PREVIOUS_MANUAL_MONTH",
+                            (
+                                "调整月份无法识别。可填写2026-09、"
+                                "2026年9月、9月或9；仅填写月份时，"
+                                "系统会根据本行自动收入年月补全年份。"
+                                f"{context}"
+                            ),
+                            workbook=workbook_path.name,
+                            sheet=sheet.title,
+                            row_number=row_number,
+                            business_key=_display_key(display_key),
+                            field=field,
+                            raw_value=raw_value,
+                        )
+
+                already_parsed = {
+                    "contract_no",
+                    "supply_center",
+                    "revenue_month_rpd",
+                    "revenue_month_cpd",
+                    *_PREVIOUS_MANUAL_MONTH_FIELDS,
+                }
                 for column in config.base_columns:
                     field = column["id"]
-                    index = indexes[field]
-                    cell = cells[index] if index is not None and index < len(cells) else None
+                    if field in already_parsed:
+                        continue
+                    cell = field_cells[field]
                     raw_value = cell.value if cell is not None else None
                     if field in _PREVIOUS_MANUAL_AMOUNT_FIELDS:
                         value, valid = _parse_previous_manual_amount(cell)
@@ -245,19 +342,6 @@ class ExcelInputAdapter:
                             issues.add(
                                 "INVALID_PREVIOUS_MANUAL_AMOUNT",
                                 "上期人工金额非空且无法解析，已按空白处理",
-                                workbook=workbook_path.name,
-                                sheet=sheet.title,
-                                row_number=row_number,
-                                field=field,
-                                raw_value=raw_value,
-                            )
-                    elif field in _PREVIOUS_MANUAL_MONTH_FIELDS:
-                        value, valid = _parse_previous_manual_month(cell)
-                        values[field] = value
-                        if not valid:
-                            issues.add(
-                                "INVALID_PREVIOUS_MANUAL_MONTH",
-                                "上期人工月份非空且不是YYYY-MM，已按空白处理",
                                 workbook=workbook_path.name,
                                 sheet=sheet.title,
                                 row_number=row_number,
@@ -283,10 +367,6 @@ class ExcelInputAdapter:
                             raw_value,
                             workbook.epoch,
                         )
-                display_key = (
-                    str(values.get("contract_no") or ""),
-                    str(values.get("supply_center") or ""),
-                )
                 key = business_key_identity(*display_key)
                 if previous_row_kinds is None:
                     row_kind = (
@@ -702,21 +782,16 @@ def _parse_previous_manual_amount(cell) -> tuple[Decimal | None, bool]:
     return (amount, True) if amount is not None else (None, False)
 
 
-def _parse_previous_manual_month(cell) -> tuple[str | None, bool]:
-    if cell is None:
-        return None, True
-    raw = cell.value
-    data_type = getattr(cell, "data_type", None)
-    if is_business_blank(raw, data_type=data_type):
-        return None, True
-    if isinstance(raw, (date, datetime)):
-        return raw.strftime("%Y-%m"), True
-    if data_type == "e":
-        return None, False
-    text = normalize_text(raw)
-    if _REVENUE_MONTH_PATTERN.fullmatch(text):
-        return text, True
-    return None, False
+def _manual_month_reference_context(
+    primary_reference: Any,
+    secondary_reference: Any,
+) -> str:
+    primary = normalize_text(primary_reference) or "空"
+    secondary = normalize_text(secondary_reference) or "空"
+    return (
+        f"同口径自动收入年月={primary}；"
+        f"另一口径自动收入年月={secondary}"
+    )
 
 
 def _parse_previous_manual_flag(cell) -> tuple[str | None, bool]:
