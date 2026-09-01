@@ -149,6 +149,20 @@ class PipelineTest(unittest.TestCase):
                 self.assertNotIn("TEXT_PLACEHOLDER_NORMALIZED_TO_BLANK", codes)
                 self.assertNotIn("SUSPECT_AMOUNT_FLOAT_RESIDUE", codes)
                 self.assertNotIn("MISSING_INCOTERM", codes)
+                one_side_month = [
+                    row
+                    for row in issue_rows
+                    if row[0] == "REVENUE_MONTH_ONE_SIDE_MISSING"
+                ]
+                self.assertEqual(1, len(one_side_month))
+                self.assertEqual("WARNING", one_side_month[0][1])
+                self.assertEqual("first-demand.xlsx", one_side_month[0][2])
+                self.assertEqual("要货明细", one_side_month[0][3])
+                self.assertEqual("C004 | SC-D", one_side_month[0][5])
+                self.assertEqual(
+                    "revenue_month_rpd+revenue_month_cpd",
+                    one_side_month[0][6],
+                )
                 transit_conflict = next(
                     row for row in issue_rows if row[0] == "CONFLICTING_TRANSIT_DAYS"
                 )

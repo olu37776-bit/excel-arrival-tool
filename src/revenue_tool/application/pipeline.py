@@ -17,6 +17,9 @@ from revenue_tool.services.comparison import (
     compare_revenue_months,
 )
 from revenue_tool.services.data_quality import DataQualityAnalyzer
+from revenue_tool.services.revenue_month_diagnostics import (
+    RevenueMonthDiagnostics,
+)
 
 
 def run_pipeline(
@@ -63,6 +66,12 @@ def run_pipeline(
     )
     base_rows = RevenueEngine().calculate(
         source, previous, config, issues
+    )
+    RevenueMonthDiagnostics().analyze(
+        base_rows,
+        workbook=source.workbook_for("demand_detail").name,
+        sheet=source.sheet_names.get("demand_detail", ""),
+        issues=issues,
     )
     if previous_path and previous.usable:
         rpd_changes = compare_revenue_months(
