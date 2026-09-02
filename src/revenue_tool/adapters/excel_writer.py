@@ -69,7 +69,7 @@ class ExcelOutputAdapter:
                 "manual_revenue_forecast_cpd",
             },
             editable_fields={
-                "manual_revenue_segment_flag",
+                "manual_revenue_segment",
                 "manual_adjust_flag",
                 "manual_revenue_forecast_rpd",
                 "manual_revenue_forecast_cpd",

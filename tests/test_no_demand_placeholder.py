@@ -52,7 +52,7 @@ class NoDemandPlaceholderTest(unittest.TestCase):
             {
                 business_key_identity("C100", None): BaseRow(
                     {
-                        "manual_revenue_segment_flag": "Y",
+                        "manual_revenue_segment": "特殊处理",
                         "manual_adjust_flag": "Y",
                         "manual_revenue_forecast_rpd": "2026-09",
                         "manual_revenue_forecast_cpd": "2026-10",
@@ -142,7 +142,7 @@ class NoDemandPlaceholderTest(unittest.TestCase):
         ):
             self.assertIsNone(row.values[field])
         self.assertEqual("Y", row.values["manual_adjust_flag"])
-        self.assertEqual("Y", row.values["manual_revenue_segment_flag"])
+        self.assertEqual("特殊处理", row.values["manual_revenue_segment"])
         self.assertEqual("2026-09", row.values["manual_revenue_forecast_rpd"])
         self.assertEqual("2026-10", row.values["manual_revenue_forecast_cpd"])
         self.assertEqual(Decimal("0.00"), row.values["manual_revenue_month"])
@@ -225,7 +225,7 @@ class NoDemandPlaceholderTest(unittest.TestCase):
             workbook = load_workbook(second_result, data_only=True)
             try:
                 placeholder = _base_rows(workbook["基表"])[("C002", None)]
-                self.assertEqual("Y", placeholder["是否修改收入分段类别"])
+                self.assertEqual("Y", placeholder["调整收入分段类别"])
                 self.assertEqual("Y", placeholder["是否手工调整预测"])
                 self.assertEqual("2026-04", placeholder["调整月份（按RPD）"])
                 self.assertEqual("2026-05", placeholder["调整月份（按CPD）"])
@@ -240,7 +240,7 @@ class NoDemandPlaceholderTest(unittest.TestCase):
                 rows = _base_rows(workbook["基表"])
                 self.assertNotIn(("C002", None), rows)
                 actual = rows[("C002", "SC-Z")]
-                self.assertIsNone(actual["是否修改收入分段类别"])
+                self.assertIsNone(actual["调整收入分段类别"])
                 self.assertIsNone(actual["是否手工调整预测"])
                 self.assertIsNone(actual["调整金额"])
                 self.assertIsNone(actual["调整备注"])

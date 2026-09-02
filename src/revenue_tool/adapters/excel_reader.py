@@ -45,12 +45,15 @@ _PREVIOUS_MANUAL_MONTH_FIELDS = {
     "manual_revenue_forecast_rpd",
     "manual_revenue_forecast_cpd",
 }
-_PREVIOUS_MANUAL_FLAG_FIELDS = {"manual_revenue_segment_flag"}
+_PREVIOUS_FREE_VALUE_FIELDS = {"manual_revenue_segment"}
+_LEGACY_MANUAL_REVENUE_SEGMENT_ID = "manual_revenue_segment_flag"
+_LEGACY_MANUAL_REVENUE_SEGMENT_NAME = "是否修改收入分段类别"
 
 # Display names are not identities.  Metadata-backed results resolve by the
 # stable field ID; these aliases keep older workbooks without usable metadata
 # readable after Issue #27's display-only rename.
 _PREVIOUS_OUTPUT_NAME_ALIASES = {
+    "manual_revenue_segment": (_LEGACY_MANUAL_REVENUE_SEGMENT_NAME,),
     "manual_adjust_flag": ("是否手工调整收入月份",),
     "manual_revenue_forecast_rpd": ("手工调整收入预测（按RPD）",),
     "manual_revenue_forecast_cpd": ("手工调整收入预测（按CPD）",),
@@ -147,6 +150,7 @@ class ExcelInputAdapter:
                 expected_sheet,
                 previous_names,
                 previous_row_kinds,
+                legacy_manual_revenue_segment,
             ) = _read_previous_metadata(
                 workbook,
                 config,
@@ -208,6 +212,15 @@ class ExcelInputAdapter:
                         sheet=sheet.title,
                         field=column["id"],
                     )
+            manual_segment_index = indexes.get("manual_revenue_segment")
+            if (
+                legacy_manual_revenue_segment is None
+                and manual_segment_index is not None
+                and manual_segment_index < len(headers)
+                and normalize_text(headers[manual_segment_index])
+                == _LEGACY_MANUAL_REVENUE_SEGMENT_NAME
+            ):
+                legacy_manual_revenue_segment = True
             essential = {
                 "contract_no",
                 "supply_center",
@@ -348,19 +361,11 @@ class ExcelInputAdapter:
                                 field=field,
                                 raw_value=raw_value,
                             )
-                    elif field in _PREVIOUS_MANUAL_FLAG_FIELDS:
-                        value, valid = _parse_previous_manual_flag(cell)
-                        values[field] = value
-                        if not valid:
-                            issues.add(
-                                "INVALID_PREVIOUS_MANUAL_FLAG",
-                                "上期人工标识只允许Y/N，已按空白处理",
-                                workbook=workbook_path.name,
-                                sheet=sheet.title,
-                                row_number=row_number,
-                                field=field,
-                                raw_value=raw_value,
-                            )
+                    elif field in _PREVIOUS_FREE_VALUE_FIELDS:
+                        values[field] = _parse_previous_manual_segment(
+                            cell,
+                            legacy_field=bool(legacy_manual_revenue_segment),
+                        )
                     else:
                         values[field] = _parse_previous_value(
                             field,
@@ -794,16 +799,27 @@ def _manual_month_reference_context(
     )
 
 
-def _parse_previous_manual_flag(cell) -> tuple[str | None, bool]:
+def _parse_previous_manual_segment(
+    cell,
+    *,
+    legacy_field: bool,
+) -> Any:
     if cell is None:
-        return None, True
+        return None
     data_type = getattr(cell, "data_type", None)
     if is_business_blank(cell.value, data_type=data_type):
-        return None, True
+        return None
     if data_type == "e":
-        return None, False
-    value = normalize_text(cell.value).upper()
-    return (value, True) if value in {"Y", "N"} else (None, False)
+        return None
+    if (
+        legacy_field
+        and isinstance(cell.value, str)
+        and normalize_text(cell.value).upper() in {"Y", "N"}
+    ):
+        # The legacy field was only a Y/N flag.  Those values do not encode an
+        # adjusted revenue segment and therefore cannot be migrated safely.
+        return None
+    return cell.value
 
 
 def _error_code_for_type(field_type: str) -> str:
@@ -834,11 +850,12 @@ def _read_previous_metadata(
     str,
     dict[str, str],
     dict[tuple[str, str], str] | None,
+    bool | None,
 ]:
     default_sheet = config.output["sheets"]["base"]
     default_names = config.base_names_by_id
     if "_tool_meta" not in workbook.sheetnames:
-        return default_sheet, default_names, None
+        return default_sheet, default_names, None, None
     sheet = workbook["_tool_meta"]
     try:
         if (
@@ -852,20 +869,28 @@ def _read_previous_metadata(
             raise ValueError("unsupported metadata schema")
         base_sheet = normalize_text(sheet["B2"].value)
         names: dict[str, str] = {}
+        legacy_manual_revenue_segment: bool | None = None
         for row_number in range(5, sheet.max_row + 1):
             field = normalize_text(sheet.cell(row_number, 1).value)
             name = normalize_text(sheet.cell(row_number, 2).value)
             if not field:
                 break
+            if field == _LEGACY_MANUAL_REVENUE_SEGMENT_ID:
+                field = "manual_revenue_segment"
+                legacy_manual_revenue_segment = True
+            elif field == "manual_revenue_segment":
+                legacy_manual_revenue_segment = False
             if field not in config.base_names_by_id:
                 raise ValueError("unknown field metadata")
             if not name:
                 raise ValueError("field metadata name missing")
+            if field in names:
+                raise ValueError("duplicate field metadata")
             names[field] = name
         if not base_sheet or not names:
             raise ValueError("metadata content is incomplete")
         if schema_version == "2":
-            return base_sheet, names, None
+            return base_sheet, names, None, legacy_manual_revenue_segment
 
         row_kind_header = None
         for row_number in range(5, sheet.max_row + 1):
@@ -900,7 +925,12 @@ def _read_previous_metadata(
             if key in row_kinds:
                 raise ValueError("duplicate row kind business key")
             row_kinds[key] = row_kind
-        return base_sheet, names, row_kinds
+        return (
+            base_sheet,
+            names,
+            row_kinds,
+            legacy_manual_revenue_segment,
+        )
     except Exception:
         issues.add(
             "PREVIOUS_METADATA_INVALID",
@@ -908,4 +938,4 @@ def _read_previous_metadata(
             workbook=workbook_path.name,
             sheet="_tool_meta",
         )
-        return default_sheet, default_names, None
+        return default_sheet, default_names, None, None

@@ -77,7 +77,7 @@ class LatestIntegrationTest(unittest.TestCase):
                         ).fill.fgColor.rgb,
                     )
                     for header in (
-                        "是否修改收入分段类别",
+                        "调整收入分段类别",
                         "调整月份（按RPD）",
                         "调整月份（按CPD）",
                         "调整金额",
