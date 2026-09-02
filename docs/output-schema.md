@@ -44,7 +44,7 @@
 | 28 | 收入年月（按RPD） | `revenue_month_rpd` | 对应到货日期的年月 |
 | 29 | 收入年月（按CPD） | `revenue_month_cpd` | 对应到货日期的年月 |
 | 30 | 收入分段类别 | `revenue_segment` | 需判断/发未收/未录入订货/订未发/不要货；无要货占位行显式为不要货 |
-| 31 | 是否修改收入分段类别 | `manual_revenue_segment_flag` | 人工Y/N标识；首次空，后续继承；不改写系统收入分段 |
+| 31 | 调整收入分段类别 | `manual_revenue_segment` | 人工自由输入值；首次空，后续原样继承；不改写系统收入分段 |
 | 32 | 是否手工调整预测 | `manual_adjust_flag` | 首次空，后续继承 |
 | 33 | 调整月份（按RPD） | `manual_revenue_forecast_rpd` | `YYYY-MM`文本；首次空，后续继承 |
 | 34 | 调整月份（按CPD） | `manual_revenue_forecast_cpd` | `YYYY-MM`文本；首次空，后续继承 |
@@ -293,7 +293,7 @@ row_kind = CONTRACT_ONLY_NO_DEMAND
 
 首次运行或新业务行为空；后续按稳定业务键继承。
 
-- `是否修改收入分段类别`：空/Y/N；仅表示人工判断状态，不改写系统计算的收入分段；
+- `调整收入分段类别`：允许任意普通Excel值，不做枚举或类型限制；不改写系统计算的收入分段；
 - `是否手工调整预测`：沿用既有人工标识；
 - `调整月份（按RPD）`：`YYYY-MM`文本，Excel格式为`@`；
 - `调整月份（按CPD）`：`YYYY-MM`文本，Excel格式为`@`；
@@ -307,7 +307,7 @@ row_kind = CONTRACT_ONLY_NO_DEMAND
 
 无要货占位行后续恢复真实中心时，不把空中心行的人工值自动复制给真实中心。
 
-人工月份若从上期读到Excel日期/日期时间，统一规范化为`YYYY-MM`；其他非空非法月份记录`INVALID_PREVIOUS_MANUAL_MONTH`并按空白处理。非法人工金额记录`INVALID_PREVIOUS_MANUAL_AMOUNT`，非法人工Y/N记录`INVALID_PREVIOUS_MANUAL_FLAG`，均不得静默改成0。
+人工月份若从上期读到Excel日期/日期时间，统一规范化为`YYYY-MM`；其他非空非法月份记录`INVALID_PREVIOUS_MANUAL_MONTH`并按空白处理。非法人工金额记录`INVALID_PREVIOUS_MANUAL_AMOUNT`。`调整收入分段类别`不生成Y/N或类别枚举限制异常；Excel error类型沿用通用安全空值处理。以上规则均不得把明确数值0静默改为空白。
 
 ## 13. 跨期与差异清单
 
@@ -340,6 +340,12 @@ row_kind = CONTRACT_ONLY_NO_DEMAND
 - 完全重复行被忽略。
 
 ## 15. 变更记录
+
+### 1.6 - 2026-09-02
+
+- `manual_revenue_segment_flag`迁移为`manual_revenue_segment`，显示名改为`调整收入分段类别`；
+- 该列改为完全自由填写的人工值，保留普通Excel值类型，不再执行Y/N或类别枚举校验；
+- 旧字段ID和显示名继续兼容读取，旧Y/N不猜测为具体调整类别。
 
 ### 1.5 - 2026-08-31
 

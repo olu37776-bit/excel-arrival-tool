@@ -322,7 +322,7 @@ def _manual_values(
             else None
         )
         for field in (
-            "manual_revenue_segment_flag",
+            "manual_revenue_segment",
             "manual_adjust_flag",
             "manual_revenue_forecast_rpd",
             "manual_revenue_forecast_cpd",

@@ -25,12 +25,13 @@ MANUAL_MONTH_HEADERS = (
 
 POST_32_FIELD_IDS = (
     "revenue_forecast",
-    "manual_revenue_segment_flag",
+    "manual_revenue_segment",
     "manual_revenue_forecast_rpd",
     "manual_revenue_forecast_cpd",
 )
 
 LEGACY_MANUAL_DISPLAY_NAMES = {
+    "调整收入分段类别": "是否修改收入分段类别",
     "是否手工调整预测": "是否手工调整收入月份",
     "调整月份（按RPD）": "手工调整收入预测（按RPD）",
     "调整月份（按CPD）": "手工调整收入预测（按CPD）",
@@ -55,6 +56,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
                 headers = [cell.value for cell in base[1]]
                 self.assertEqual(36, len(headers))
                 self.assertEqual(EXPECTED_BASE_HEADERS, headers)
+                self.assertEqual(0, len(base.data_validations.dataValidation))
                 indexes = {cell.value: cell.column for cell in base[1]}
                 for row_number in range(2, base.max_row + 1):
                     forecast_cell = base.cell(
@@ -74,7 +76,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
                         self.assertEqual("solid", cell.fill.fill_type)
                         self.assertEqual("FFF2CC", cell.fill.fgColor.rgb[-6:])
                     for header in (
-                        "是否修改收入分段类别",
+                        "调整收入分段类别",
                         "调整金额",
                     ):
                         cell = base.cell(row_number, indexes[header])
@@ -113,6 +115,107 @@ class ManualRevenueForecastTest(unittest.TestCase):
                 self.assertEqual(36, len(field_ids))
                 for field in POST_32_FIELD_IDS:
                     self.assertIn(field, field_ids)
+                self.assertNotIn("manual_revenue_segment_flag", field_ids)
+            finally:
+                workbook.close()
+
+    def test_manual_revenue_segment_preserves_common_excel_value_types(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "free-segment", variant="first")
+            previous = directory / "previous.xlsx"
+            output = directory / "current.xlsx"
+            _run(sources, previous)
+            cases = {
+                ("C001", "SC-A"): "发未收",
+                ("C001", "SC-B"): "9月确认",
+                ("C003", "SC-C"): 123,
+                ("C002", None): 0,
+                ("C004", "SC-D"): True,
+                ("C007", "SC-X"): datetime(2026, 9, 15, 8, 30),
+            }
+            for (contract, center), value in cases.items():
+                _set_manual_inputs(
+                    previous,
+                    contract,
+                    center,
+                    segment_flag=value,
+                )
+
+            _run(sources, output, previous=previous)
+
+            workbook = load_workbook(output, data_only=True)
+            try:
+                rows = _base_rows(workbook["基表"])
+                for key, expected in cases.items():
+                    with self.subTest(key=key, expected=expected):
+                        actual = rows[key]["调整收入分段类别"]
+                        self.assertEqual(expected, actual)
+                        self.assertIs(type(expected), type(actual))
+                self.assertEqual(
+                    "需判断",
+                    rows[("C001", "SC-A")]["收入分段类别"],
+                )
+                self.assertEqual(
+                    "发未收",
+                    rows[("C001", "SC-A")]["调整收入分段类别"],
+                )
+                issue_codes = {
+                    values[0]
+                    for values in workbook["异常清单"].iter_rows(
+                        min_row=2,
+                        values_only=True,
+                    )
+                }
+                self.assertNotIn("INVALID_PREVIOUS_MANUAL_FLAG", issue_codes)
+                self.assertNotIn("INVALID_MANUAL_REVENUE_SEGMENT", issue_codes)
+            finally:
+                workbook.close()
+
+    def test_legacy_manual_segment_flag_does_not_guess_y_n_but_keeps_content(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            sources = _write_sources(directory, "legacy-segment", variant="first")
+            previous = directory / "previous.xlsx"
+            output = directory / "current.xlsx"
+            _run(sources, previous)
+            _convert_manual_segment_to_legacy_field(
+                previous,
+                {
+                    ("C001", "SC-A"): "Y",
+                    ("C001", "SC-B"): "N",
+                    ("C003", "SC-C"): "特殊处理",
+                },
+            )
+
+            _run(sources, output, previous=previous)
+
+            workbook = load_workbook(output, data_only=True)
+            try:
+                rows = _base_rows(workbook["基表"])
+                self.assertIsNone(
+                    rows[("C001", "SC-A")]["调整收入分段类别"]
+                )
+                self.assertIsNone(
+                    rows[("C001", "SC-B")]["调整收入分段类别"]
+                )
+                self.assertEqual(
+                    "特殊处理",
+                    rows[("C003", "SC-C")]["调整收入分段类别"],
+                )
+                issue_codes = {
+                    values[0]
+                    for values in workbook["异常清单"].iter_rows(
+                        min_row=2,
+                        values_only=True,
+                    )
+                }
+                self.assertNotIn("PREVIOUS_METADATA_INVALID", issue_codes)
+                self.assertNotIn("INVALID_PREVIOUS_MANUAL_FLAG", issue_codes)
             finally:
                 workbook.close()
 
@@ -150,7 +253,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
                 rows = _base_rows(workbook["基表"])
                 inherited = rows[("C001", "SC-A")]
                 self.assertEqual(150, inherited["收入预测"])
-                self.assertEqual("N", inherited["是否修改收入分段类别"])
+                self.assertEqual("N", inherited["调整收入分段类别"])
                 self.assertEqual("2026-09", inherited["调整月份（按RPD）"])
                 self.assertEqual("2026-10", inherited["调整月份（按CPD）"])
                 self.assertEqual(0, inherited["调整金额"])
@@ -242,7 +345,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
             finally:
                 workbook.close()
 
-    def test_invalid_previous_manual_amount_and_flag_are_reported_as_blank(
+    def test_manual_segment_is_free_text_while_invalid_amount_is_reported(
         self,
     ) -> None:
         with TemporaryDirectory() as temporary:
@@ -264,7 +367,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
             workbook = load_workbook(output, data_only=True)
             try:
                 row = _base_rows(workbook["基表"])[("C001", "SC-A")]
-                self.assertIsNone(row["是否修改收入分段类别"])
+                self.assertEqual("MAYBE", row["调整收入分段类别"])
                 self.assertIsNone(row["调整金额"])
                 matching = {
                     (values[0], values[6])
@@ -273,11 +376,8 @@ class ManualRevenueForecastTest(unittest.TestCase):
                         values_only=True,
                     )
                 }
-                self.assertIn(
-                    (
-                        "INVALID_PREVIOUS_MANUAL_FLAG",
-                        "manual_revenue_segment_flag",
-                    ),
+                self.assertNotIn(
+                    ("INVALID_PREVIOUS_MANUAL_FLAG", "manual_revenue_segment"),
                     matching,
                 )
                 self.assertIn(
@@ -510,7 +610,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
             try:
                 row = _base_rows(workbook["基表"])[("C001", "SC-A")]
                 for header in (
-                    "是否修改收入分段类别",
+                    "调整收入分段类别",
                     "调整月份（按RPD）",
                     "调整月份（按CPD）",
                     "调整金额",
@@ -524,7 +624,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
                     )
                     if values[6]
                     in {
-                        "manual_revenue_segment_flag",
+                        "manual_revenue_segment",
                         "manual_revenue_forecast_rpd",
                         "manual_revenue_forecast_cpd",
                         "manual_revenue_month",
@@ -546,7 +646,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
             _set_manual_values(previous, "C001", "SC-A")
             _remove_fields_from_result(
                 previous,
-                ("manual_revenue_segment_flag",),
+                ("manual_revenue_segment",),
             )
 
             _run(sources, output, previous=previous)
@@ -554,7 +654,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
             workbook = load_workbook(output, data_only=True)
             try:
                 row = _base_rows(workbook["基表"])[("C001", "SC-A")]
-                self.assertIsNone(row["是否修改收入分段类别"])
+                self.assertIsNone(row["调整收入分段类别"])
                 self.assertEqual("2026-04", row["调整月份（按RPD）"])
                 self.assertEqual("2026-05", row["调整月份（按CPD）"])
                 self.assertEqual(125.5, row["调整金额"])
@@ -587,7 +687,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
                     inherited["遗留量"] + inherited["当月新订货"],
                     inherited["收入预测"],
                 )
-                self.assertIsNone(inherited["是否修改收入分段类别"])
+                self.assertIsNone(inherited["调整收入分段类别"])
                 for header in MANUAL_MONTH_HEADERS:
                     self.assertIsNone(inherited[header])
                 codes = {
@@ -628,7 +728,8 @@ class ManualRevenueForecastTest(unittest.TestCase):
                             ("C001", "SC-A")
                         ]
                         self.assertEqual(
-                            "Y", inherited["是否修改收入分段类别"]
+                            "Y" if keep_metadata else None,
+                            inherited["调整收入分段类别"],
                         )
                         self.assertEqual("Y", inherited["是否手工调整预测"])
                         self.assertEqual(
@@ -853,7 +954,7 @@ def _set_manual_inputs(
                 sheet.cell(row_number, headers["收入预测"]).value = revenue_forecast
                 sheet.cell(
                     row_number,
-                    headers["是否修改收入分段类别"],
+                    headers["调整收入分段类别"],
                 ).value = segment_flag
                 sheet.cell(
                     row_number,
@@ -932,6 +1033,41 @@ def _rename_metadata_backed_field(
             if cell.value == old_display_name:
                 cell.value = display_name
                 break
+        workbook.save(path)
+    finally:
+        workbook.close()
+
+
+def _convert_manual_segment_to_legacy_field(
+    path: Path,
+    values_by_key: dict[tuple[str, str | None], object],
+) -> None:
+    workbook = load_workbook(path)
+    try:
+        base = workbook["基表"]
+        headers = {cell.value: cell.column for cell in base[1]}
+        segment_column = headers["调整收入分段类别"]
+        base.cell(1, segment_column).value = "是否修改收入分段类别"
+        for row_number in range(2, base.max_row + 1):
+            key = (
+                base.cell(row_number, headers["合同号"]).value,
+                base.cell(row_number, headers["履行供应中心"]).value,
+            )
+            if key in values_by_key:
+                base.cell(row_number, segment_column).value = values_by_key[key]
+
+        metadata = workbook["_tool_meta"]
+        for row_number in range(5, metadata.max_row + 1):
+            if metadata.cell(row_number, 1).value == "manual_revenue_segment":
+                metadata.cell(row_number, 1).value = (
+                    "manual_revenue_segment_flag"
+                )
+                metadata.cell(row_number, 2).value = (
+                    "是否修改收入分段类别"
+                )
+                break
+        else:
+            raise AssertionError("manual revenue segment metadata not found")
         workbook.save(path)
     finally:
         workbook.close()

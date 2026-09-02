@@ -100,7 +100,7 @@
       {"id": "revenue_month_rpd", "name": "收入年月（按RPD）"},
       {"id": "revenue_month_cpd", "name": "收入年月（按CPD）"},
       {"id": "revenue_segment", "name": "收入分段类别"},
-      {"id": "manual_revenue_segment_flag", "name": "是否修改收入分段类别"},
+      {"id": "manual_revenue_segment", "name": "调整收入分段类别"},
       {"id": "manual_adjust_flag", "name": "是否手工调整预测"},
       {"id": "manual_revenue_forecast_rpd", "name": "调整月份（按RPD）"},
       {"id": "manual_revenue_forecast_cpd", "name": "调整月份（按CPD）"},

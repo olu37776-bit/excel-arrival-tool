@@ -218,7 +218,7 @@ def _validate(raw: dict[str, Any]) -> None:
         "revenue_month_rpd",
         "revenue_month_cpd",
         "revenue_segment",
-        "manual_revenue_segment_flag",
+        "manual_revenue_segment",
         "manual_adjust_flag",
         "manual_revenue_forecast_rpd",
         "manual_revenue_forecast_cpd",

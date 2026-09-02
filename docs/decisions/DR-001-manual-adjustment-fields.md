@@ -2,22 +2,22 @@
 
 - 状态：`CONFIRMED`
 - 日期：`2026-08-25`
-- 关联：`docs/output-schema.md`
+- 关联：`docs/output-schema.md`、Issue #34
 
 ## 决策
 
 最终基表中以下六个稳定字段ID属于人工维护字段：
 
-1. `manual_revenue_segment_flag`（显示为`是否修改收入分段类别`，空/Y/N）
+1. `manual_revenue_segment`（显示为`调整收入分段类别`，任意普通Excel值）
 2. `manual_adjust_flag`（显示为`是否手工调整预测`）
 3. `manual_revenue_forecast_rpd`（显示为`调整月份（按RPD）`，`YYYY-MM`文本）
 4. `manual_revenue_forecast_cpd`（显示为`调整月份（按CPD）`，`YYYY-MM`文本）
 5. `manual_revenue_month`（显示为`调整金额`，Decimal两位小数）
 6. `adjustment_note`（显示为`调整备注`）
 
-旧显示名仍用于上一次结果兼容读取。显示名称变化不改变字段数据类型、初始化、继承或计算规则。
+旧字段ID `manual_revenue_segment_flag`和旧显示名仍用于上一次结果兼容读取。旧Y/N仅表示原人工标识，不能猜测为具体调整类别；旧列中的其他实际内容可以直接继承。新字段不做Y/N、类别枚举或类型限制，空白与数值0、布尔值等实际值必须区分。
 
-`收入分段类别` 不属于人工维护字段，应按本次业务数据每次重新计算。`是否修改收入分段类别`只记录人工判断状态，不反向修改该系统字段。
+`收入分段类别` 不属于人工维护字段，应按本次业务数据每次重新计算。`调整收入分段类别`只保存和展示用户自由填写的调整值，不反向修改该系统字段。
 
 ## 初始化
 
