@@ -1,50 +1,51 @@
 # 企业作战地图：TOB Canonical Authority V1
 
-**状态：READY AFTER MOX VERIFIED**  
+**状态：READY FOR IMPLEMENTATION**  
 **文档分支：`enterprise-battle-map-authority`**  
 **本地实施分支：`feature/enterprise-battle-map`**  
-**适用范围：TOB 字段、表格、新增、编辑、API、`database.js`、SQLite、Migration、统计与点击筛选**  
-**前置门禁：MOX Canonical Contract 独立验证通过并完成人工验收**
+**适用范围：TOB 页面、Field Contract、Metric Contract、表格、新增、编辑、API、`database.js`、SQLite、Migration 与自动测试**  
+**前置条件：MOX V3 契约化实现已经完成，可作为代码结构参考；本文件定义 TOB 业务内容，MOX 代码不能反向覆盖本文件。**
 
 ---
 
-## 1. 实施原则
+## 1. 唯一 Authority 与实施原则
 
-TOB 复用 MOX 已验证的契约机制，不复制 MOX 字段。
-
-必须复用：
-
-- 共享 `FieldContract` 类型；
-- table/create/edit Projection；
-- Contract Validator；
-- Metric Contract 与 Metric Engine；
-- 客户 `customer_id` 关系模式；
-- `V*.sql + _migrations + database.js` 数据库治理；
-- 代码、测试、自动验证、文档、独立审查闭环。
-
-不得：
-
-- 从旧 TOB 页面或数据库反向创造目标字段；
-- 把 MOX 的客户类别、无线格局或微波字段套到 TOB；
-- 同时保留旧 Schema 与新 Contract；
-- 为了共用代码建立全企业超级 Schema；
-- 在 TOB 实施时顺便修改 ISP、电力或大企。
-
-Authority 顺序：
+TOB 的业务字段需求来自：
 
 1. 本文件；
-2. “企业作战地图基表”的 TOB Sheet；
+2. 本地“企业作战地图基表”的 TOB Sheet，用于核实精确 Sheet 名、Excel 列、Row2 分类、Row3 字段名、Data Validation 和字段说明；
 3. 用户后续明确修正；
-4. 当前代码、API、`database.js`、SQLite；
-5. 旧文档和旧配置。
+4. 当前代码、API、`database.js` 和 SQLite 仅代表现状；
+5. 本地旧文档、旧 Schema 和旧字段配置不再定义需求。
 
-当前工作簿中 TOB Sheet 的预期名称为 `tob`；本地实施必须读取工作簿确认精确大小写并写入 Contract。
+原则：
+
+- 全面参考 MOX 已完成的契约机制、Projection、Validator、Metric Engine、客户关系和数据库治理方式；
+- 不复制 MOX 的具体字段、分组或枚举；
+- TOB 只保留一份活动 Field Contract 和一份活动 Metric Contract；
+- 表格、新增、编辑必须由同一 TOB Field Contract 派生；
+- 统计值与点击筛选必须使用同一 TOB Metric Contract 条件；
+- 当前代码中不属于本文件最终字段的 TOB 旧业务字段全部删除；
+- 不保留长期 legacy alias、fallback、双读、双写或旧配置 re-export；
+- 旧数据如需保留，只能通过一次性 Migration 搬入最终字段；
+- 代码、测试、自动验证和状态文档必须同轮完成。
 
 ---
 
-## 2. 代码目标
+## 2. 代码结构
 
-推荐：
+复用现有共享层：
+
+```text
+src/enterprise/contracts/
+├─ field-contract.js
+├─ field-projections.js
+├─ contract-validator.js
+├─ metric-engine.js
+└─ option-sets.js
+```
+
+TOB 模块目标：
 
 ```text
 src/enterprise/tob/contracts/
@@ -52,32 +53,91 @@ src/enterprise/tob/contracts/
 └─ tob-metric-contract.js
 ```
 
-共享能力继续位于：
-
-```text
-src/enterprise/contracts/
-```
-
 要求：
 
-- TOB 只能有一份活动 Field Contract；
-- TOB 只能有一份活动 Metric Contract；
-- 表格、新增、编辑必须从 TOB Field Contract 派生；
-- 统计数值和点击筛选必须从 TOB Metric Contract 的同一 `where` 派生；
-- `src/config` 中旧 TOB 字段配置迁移完成后删除，不保留活动 re-export 或 fallback。
+- 不在 `src/config` 中建立或保留第二份 TOB 字段 Authority；
+- 若已有旧 TOB Schema，所有调用方迁移后删除；
+- 不新建一套 TOB 专用表格/表单引擎；
+- 复用 MOX 已验证的 table/create/edit Projection、特殊编辑器注册、Metric Engine 和 Validator；
+- 模块差异只放在 TOB Field Contract、TOB Metric Contract 和必要 Persistence Mapping 中。
 
 ---
 
-## 3. TOB 最终 34 个业务字段
+## 3. TOB Field Contract 对象要求
 
-### 3.1 客户信息（1—5）
+每个字段必须至少表达：
 
-| order | canonical key | 用户可见字段 | 目标来源 |
+```js
+{
+  key,
+  label,
+  group,
+  order,
+
+  authority: {
+    source,       // excel | requirement
+    sheet,
+    column,
+    row2Group,
+    row3Label
+  },
+
+  data: {
+    type,         // text | number | percent | enum | relation | progress
+    unit
+  },
+
+  ui: {
+    table: { visible, formatterId },
+    create: { visible, editable, controlId },
+    edit: { visible, editable, controlId }
+  },
+
+  runtime: {
+    source,       // business-table | customer-relation
+    apiReadField,
+    apiCreateField,
+    apiUpdateField,
+    dbColumn,
+    dbType
+  },
+
+  validation: {
+    required,
+    optionSetId,
+    min,
+    max
+  },
+
+  behavior: {
+    editorId,
+    formatterId
+  }
+}
+```
+
+Contract 是静态普通数据，不进入 Pinia 深响应式；特殊控件通过注册 ID 解析，不直接保存 Vue 组件实例。
+
+---
+
+## 4. TOB 最终 34 个业务字段
+
+TOB 新增和编辑只使用三个一级区块：
+
+1. 客户信息；
+2. 业务格局；
+3. 作战情况。
+
+表格不显示分组标题，但按以下 1—34 顺序展开。
+
+### 4.1 客户信息（1—5）
+
+| order | canonical key | 用户可见字段 | 规则 |
 |---:|---|---|---|
 | 1 | `region` | 地区部 | 客户主数据关联 |
 | 2 | `representativeOffice` | 代表处 | 客户主数据关联 |
 | 3 | `country` | 国家 | 客户主数据关联 |
-| 4 | `customerId` | 客户ID | 用户追加关系字段；业务表保存 `customer_id` |
+| 4 | `customerId` | 客户ID | 用户明确追加；TOB 保存 `customer_id` |
 | 5 | `customerName` | 客户名称 | 客户主数据关联 |
 
 TOB 不包含：
@@ -85,13 +145,13 @@ TOB 不包含：
 - 客户类别；
 - 行业。
 
-新增：保留现有地区部、代表处等联动，最终定位唯一客户并自动取得 `customer_id`；不允许手填客户ID。
+新增时复用现有地区部、代表处等联动，最终定位唯一客户并自动取得 `customer_id`；不允许手填客户ID。
 
-编辑：以上客户信息全部只读，编辑其他字段不得改变 `customer_id`。
+编辑时以上客户信息全部只读，编辑业务字段不得改变 `customer_id`。
 
-### 3.2 存量与份额（6—15）
+### 4.2 业务格局（6—21）
 
-| order | canonical key | 用户可见字段 | 数据类型 |
+| order | canonical key | 用户可见字段 | 类型/要求 |
 |---:|---|---|---|
 | 6 | `backboneMicrowaveLinkCount` | 大网微波链路数量 | number |
 | 7 | `tobInstalledMicrowaveLinkCount` | ToB微波链路数量-存量 | number |
@@ -103,32 +163,25 @@ TOB 不包含：
 | 13 | `tobInstalledSiaeShare` | ToB微波SIAE份额-存量 | percent |
 | 14 | `tobInstalledCeragonShare` | ToB微波Ceragon份额-存量 | percent |
 | 15 | `tobNewMicrowaveShareReference` | ToB微波份额（New，供参考） | percent |
+| 16 | `tobNetworkScenario` | ToB建网场景 | Excel Validation 决定控件 |
+| 17 | `tenderType` | 招标类型 | Excel Validation 决定控件 |
+| 18 | `solutionSelection` | 方案选择 | Excel Validation 决定控件 |
+| 19 | `deliveryMode` | 交付方式 | Excel Validation 决定控件 |
+| 20 | `customerVoice` | 客户声音（问题/需求） | textarea |
+| 21 | `orderAmount2025Musd` | 25年订货（M$） | number |
 
-第 10 项的用户口述为 `ToB微波XX份额-存量`，其中 `XX` 不是允许直接进入 UI 的最终文案。本地 Agent 必须直接读取 TOB Sheet 对应 Excel 列的 Row3 原文，并在实施前将：
+第 10 项用户曾以 `ToB微波XX份额-存量` 描述，`XX` 只是占位。实施前必须直接读取 TOB Sheet 的实际 Row3 原文并写入：
 
 - `label`；
 - `authority.column`；
 - `authority.row2Group`；
-- `authority.row3Label`
+- `authority.row3Label`。
 
-全部写实。不得把占位符 `XX` 提交到生产页面。
+禁止将 `XX` 提交到生产页面或数据库契约。
 
-份额字段统一按百分比语义处理；是否在 label 中显示 `%` 以 Excel 原文为准，显示格式由 formatter 统一处理，禁止把 `50%` 错存为 `50` 或 `0.5` 而不建立明确转换契约。
+百分比字段必须有明确存储语义。Contract 必须说明数据库保存的是 `0—1` 还是 `0—100`，UI formatter/parser 必须成对，禁止显示与存储口径漂移。
 
-### 3.3 建网与交付（16—21）
-
-| order | canonical key | 用户可见字段 | 推荐控件 |
-|---:|---|---|---|
-| 16 | `tobNetworkScenario` | ToB建网场景 | Excel Validation 决定 |
-| 17 | `tenderType` | 招标类型 | Excel Validation 决定 |
-| 18 | `solutionSelection` | 方案选择 | Excel Validation 决定 |
-| 19 | `deliveryMode` | 交付方式 | Excel Validation 决定 |
-| 20 | `customerVoice` | 客户声音（问题/需求） | textarea |
-| 21 | `orderAmount2025Musd` | 25年订货（M$） | number |
-
-固定下拉必须来自 TOB Sheet 的 Data Validation、明确输入说明或用户确认，不允许根据历史数据 distinct values 自动生成。
-
-### 3.4 作战情况（22—34）
+### 4.3 作战情况（22—34）
 
 | order | canonical key | 用户可见字段 |
 |---:|---|---|
@@ -146,57 +199,36 @@ TOB 不包含：
 | 33 | `frontlineContact` | 一线接口人 |
 | 34 | `battleProgress` | 作战进展 |
 
-确认规则：
+固定规则：
 
 - `整体空间`：肥肉 / 瘦肉 / 骨头；
 - `作战分类-是否重点项目`：是 / 否；
 - `空间洞察`：已孵化 / 孵化中；
 - `项目状态`：已签单 / 推进中 / 跟踪；
 - TOB 确认存在 `项目风险状态`；
-- `作战进展`固定为作战情况最后一项，并复用经 MOX 验证的特殊进展编辑机制；
-- `一线接口人`保留并验证保存与回填；
-- 不新增备注、服务接口人或其他无 Authority 字段。
+- `作战进展`固定为最后一项，复用 MOX 已验证的特殊新增、编辑、保存和回填交互；
+- `一线接口人`保留，禁止再增加“服务接口人”；
+- 不增加备注。
 
-`作战分类-是否重点项目` 是一个完整字段。页面现有重点项目筛选必须使用同一个 canonical `focusProject`，不得拆成两个业务字段。
-
----
-
-## 4. 新增与编辑分组
-
-新增/编辑使用以下区块：
-
-1. 客户信息；
-2. 存量与份额；
-3. 建网与交付；
-4. 作战情况。
-
-要求：
-
-- 分组与顺序来自 Contract；
-- 表格不显示组标题，但按 1—34 顺序展开；
-- `battleProgress`固定最后；
-- 新增和编辑不得另建完整字段数组；
-- 客户信息在编辑中全部只读；
-- `customerVoice`使用多行文本；
-- 数量、金额、份额必须使用对应数值控件和 formatter。
+`作战分类-是否重点项目`是一个完整字段，现有页面“重点项目”筛选必须直接使用 canonical `focusProject`，不得拆成两个字段。
 
 ---
 
-## 5. Field Contract 与 Excel Authority
+## 5. Excel Authority
 
-每个 source=excel 字段必须直接读取 TOB Sheet 并填写：
+Excel 是字段原始需求来源。本地实施必须逐项读取 TOB Sheet，并给每个 source=excel 字段填写：
 
 ```js
 authority: {
   source: 'excel',
-  sheet: '实际Sheet名',
+  sheet: '实际精确Sheet名',
   column: '实际列字母',
   row2Group: '实际Row2分类',
   row3Label: '实际Row3原文'
 }
 ```
 
-`customerId`：
+`customerId`使用：
 
 ```js
 authority: {
@@ -208,120 +240,201 @@ authority: {
 }
 ```
 
-Contract 中的规范化 `label` 与 Excel 原始 `row3Label`允许不同，但不得伪造 Excel 原文。
+本文件列出的 34 项是封闭目标集合。Excel 用于核实来源，不允许本地 Agent 从旧列、旧说明或旧数据中新增第 35 个业务字段。
 
-所有字段还必须明确：
-
-- canonical key；
-- data type / unit；
-- table/create/edit 投影；
-- create/edit 权限与控件；
-- API read/create/update 字段；
-- `database.js`映射；
-- SQLite 列和类型；
-- Validation；
-- 特殊 behavior。
+所有带单位的用户可见字段使用中文全角括号。Excel 原始表头可保留在 `authority.row3Label`，规范化页面名称写在 `label`。
 
 ---
 
-## 6. Metric Contract 与点击筛选
+## 6. 表格、新增与编辑
 
-TOB 使用共享 9 项规则：
-
-| metricKey | 显示 | where | aggregate |
-|---|---|---|---|
-| `insight.incubated` | 已孵化 | `spaceInsight=已孵化` | count |
-| `insight.incubating` | 孵化中 | `spaceInsight=孵化中` | count |
-| `annual.total` | 总项目数 | `projectStatus IN（已签单，推进中）` | count |
-| `annual.signed` | 已签单 | `projectStatus=已签单` | count |
-| `annual.inProgress` | 推进中 | `projectStatus=推进中` | count |
-| `annual.highRisk` | 高风险 | `projectStatus=推进中 AND projectRiskStatus=高风险` | count |
-| `expansion.availableSpace` | 可参与总空间 | `spaceInsight=已孵化 AND projectStatus=跟踪` | sum `overallSpaceMusd` |
-| `expansion.total` | 总项目 | `projectStatus=跟踪` | count |
-| `expansion.landed` | 已落地 | `spaceInsight=已孵化 AND projectStatus=跟踪` | count |
-
-同一 `where` 同时用于统计和点击筛选。九个指标全部可点击；点击只改变下方表格，不错误重算顶部统计。
-
----
-
-## 7. 页面与现有能力
-
-TOB 页面沿用：
+必须由同一 `TOB_FIELD_CONTRACT` 派生：
 
 ```text
-TOB专项
-→ 三个并列统计大模块
-→ Heatmap
-→ 新增/表格/编辑
+TOB_FIELD_CONTRACT
+├─ Table Projection
+├─ Create Projection
+└─ Edit Projection
 ```
 
 要求：
 
-- `TOB专项`保留现有成熟结构；
-- 三个统计大模块参考骨干页面，文字居中；
-- 不把九个指标拆成九张顶级卡；
-- Heatmap 真实规则未另行冻结前，只做字段兼容和回归保护；
-- 现有正确功能先映射到 Contract，不因契约化无理由重写。
+- 表格严格按 1—34 排序；
+- 新增和编辑使用“客户信息 / 业务格局 / 作战情况”三个分组；
+- 字段集合、label、顺序、类型、枚举和权限均来自 Contract；
+- 表格、新增、编辑不得保留完整独立字段数组；
+- 目标外业务字段数必须为 0；
+- 操作列和必要技术主键不计入 34 项；
+- `battleProgress`使用共享特殊进展编辑器；
+- 客户字段在编辑中全部只读。
 
 ---
 
-## 8. 数据库最终态
+## 7. API、database.js 与 SQLite
 
-TOB 业务表最终只保留：
+每个字段必须建立唯一链路：
 
-- 34 项目标业务的持久化列（客户展示字段通过关系读取，不重复存储）；
-- `customer_id`；
-- 项目记录主键；
-- 明确必要技术列。
+```text
+canonical key
+→ API read/create/update
+→ database.js mapping / CRUD / Validation
+→ SQLite column
+```
 
-旧字段处理：
+目标态：
 
-- 同义旧字段：一次性 Migration 搬迁数据后删除；
-- 无目标对应字段：删除；
-- Migration 后不保留 fallback、双读、双写和旧映射；
-- 任何结构修改走 `V*.sql + _migrations + database.js`；
-- 新建库与升级库最终 Schema 一致；
-- TOB 当前外键定义即使已存在，也必须检查运行时约束与 API 校验；不得只因 SQL 中写有 FOREIGN KEY 就宣布关系有效。
+- TOB 业务表保存 `customer_id`；
+- 地区部、代表处、国家、客户名称从客户关系读取，不作为 TOB 重复业务 Authority；
+- 目标持久化字段与 Contract 一一对应；
+- 不属于最终 34 项的旧 TOB 业务字段从 API、`database.js` 和最终 SQLite Schema 删除；
+- 同义旧字段只允许通过一次性 Migration 搬迁数据，迁移后不保留 fallback、双读或双写；
+- 数据库结构变更必须使用下一个未使用的 `V*.sql`，注册到 `database.js`，并由 `_migrations`记录；
+- 新建数据库与旧库升级后的最终 TOB Schema 必须一致；
+- 不得直接修改真实数据库代替 Migration。
 
-全局开启 SQLite foreign keys 属于单独治理范围；TOB 实施至少必须由 API 验证 `customer_id`存在，并确保业务写入不会产生新的无效引用。
+TOB 当前即使已有外键声明，也必须由 API 验证 `customer_id` 对应真实客户。全局开启 SQLite foreign key enforcement 属于独立治理范围，未经单独 Authority 不得在本轮顺手开启。
 
 ---
 
-## 9. Validator 门禁
+## 8. Metric Contract 与点击筛选
+
+TOB 复用共享 9 个指标语义，但必须维护独立 `TOB_METRIC_CONTRACT`：
+
+| metricKey | 显示 | where | aggregate |
+|---|---|---|---|
+| `insight.incubated` | 已孵化 | `spaceInsight = 已孵化` | count |
+| `insight.incubating` | 孵化中 | `spaceInsight = 孵化中` | count |
+| `annual.total` | 总项目数 | `projectStatus IN（已签单，推进中）` | count |
+| `annual.signed` | 已签单 | `projectStatus = 已签单` | count |
+| `annual.inProgress` | 推进中 | `projectStatus = 推进中` | count |
+| `annual.highRisk` | 高风险 | `projectStatus = 推进中 AND projectRiskStatus = 高风险` | count |
+| `expansion.availableSpace` | 可参与总空间 | `spaceInsight = 已孵化 AND projectStatus = 跟踪` | sum `overallSpaceMusd` |
+| `expansion.total` | 总项目 | `projectStatus = 跟踪` | count |
+| `expansion.landed` | 已落地 | `spaceInsight = 已孵化 AND projectStatus = 跟踪` | count |
+
+规则：
+
+- 同一 `where` 同时用于统计数值和点击后的表格筛选；
+- 九个指标全部可点击；
+- 点击只改变下方 TOB 表格，不使用筛选结果重新计算顶部统计；
+- `annual.total` 与 `expansion.total`必须使用不同 key 和不同条件；
+- 顶部只显示“空间洞察 / 当年项目 / 空间拓展”三个大模块，不能拆成九张顶级卡；
+- 文字与成熟页面样式保持一致并居中。
+
+---
+
+## 9. 页面骨架与 Heatmap
+
+TOB 页面顺序保持：
+
+```text
+TOB专项
+→ 三个并列统计模块
+→ Heatmap
+→ 新增入口和数据表格
+```
+
+本阶段：
+
+- 复用当前 TOB 专项结构；
+- 复用 MOX 已验证的统计模块结构；
+- Heatmap 暂不重构真实业务规则，只保证字段收敛后不回归；
+- 不因契约化无理由重写整个 TOB 页面。
+
+---
+
+## 10. Contract Validator
 
 至少验证：
 
-- 34 个 canonical key 唯一；
-- order 1—34 连续；
-- 每个字段有 Excel 或 requirement Authority；
-- 第 10 项 Excel 精确 label 已解析，不含占位 `XX`；
-- 客户类别、行业未进入 TOB Contract；
-- 份额字段类型与转换规则明确；
-- API/DB映射完整唯一；
-- 表格、新增、编辑没有 Contract 外业务字段；
-- `focusProject`直接驱动重点项目筛选；
-- `battleProgress`使用特殊编辑器；
-- 9 个 Metric key 唯一，统计与筛选共用 `where`；
-- 旧 `src/config` TOB Schema 无活动引用。
+1. 34 个 canonical key 唯一；
+2. order 为 1—34，连续、无重复、无缺号；
+3. group 只允许客户信息、业务格局、作战情况；
+4. 每个字段具备 Excel 或 requirement Authority；
+5. 第 10 项厂商字段已经解析真实 Row3 名称，不含 `XX`；
+6. TOB Contract 不包含客户类别或行业；
+7. 所有 select 字段具备 option set；
+8. 百分比 parser/formatter 与数据库口径一致；
+9. API、`database.js`、SQLite 映射完整且唯一；
+10. 表格、新增、编辑不存在 Contract 外业务字段；
+11. `focusProject`直接驱动现有重点项目筛选；
+12. `battleProgress`挂接共享特殊编辑器；
+13. 所有带单位 label 使用中文全角括号；
+14. `src/config`中不存在活动 TOB 字段 Authority；
+15. 旧 TOB Schema 不再被运行时引用。
+
+Validator 只在开发/测试门禁运行，不在每次 Vue render 中重复执行。
 
 ---
 
-## 10. 测试与完成门槛
+## 11. 自动测试与验证
 
-必须同步测试：
+实施必须同步覆盖：
 
-- 34 字段、分组和顺序；
-- Excel Authority 元数据；
-- 表格/新增/编辑消费同一 Contract；
+- 34 字段、三个分组和精确顺序；
+- Excel Authority 完整性；
+- 第 10 项真实厂商字段；
+- 表格、新增、编辑真实消费同一 Contract；
 - 目标外字段为 0；
-- 份额、金额、数量类型与格式；
-- customer_id 新增、保存、查询与编辑不变；
-- 一线接口人和作战进展；
-- 重点项目筛选；
-- 9 个统计和 9 个点击筛选；
-- Migration、新建库与升级库一致性；
-- 全量 Vitest、build、lint/typecheck（如配置）。
+- 客户数据与 `customer_id`；
+- 编辑客户信息只读；
+- 百分比字段读写一致；
+- `focusProject`和现有重点项目筛选；
+- `battleProgress`特殊交互；
+- API/DB保存和回填；
+- 新建库与迁移库最终 Schema 一致；
+- 9 个统计值；
+- 9 个点击筛选；
+- Heatmap无本阶段回归；
+- TOB专项和三卡布局无回归；
+- 全量 Vitest、build、lint/typecheck（如已配置）。
 
-人工页面验收由用户完成。
+不要求本地 Agent 做人工页面检查，用户自行验收页面效果。
 
-TOB 只有在代码、测试、验证、文档完成并经新 Agent 独立审查后，才能标记 VERIFIED。
+---
+
+## 12. WRITE_SCOPE 与禁止范围
+
+本轮允许处理：
+
+- TOB Field Contract；
+- TOB Metric Contract；
+- TOB 表格、新增、编辑；
+- TOB 客户关联；
+- TOB API、`database.js`、SQLite 与必要 Migration；
+- TOB统计、点击筛选；
+- TOB相关测试和状态更新。
+
+本轮禁止：
+
+- 修改 MOX 已验证字段和业务规则；
+- 修改 ISP、电力、大企字段；
+- 建设企业首页真实汇总；
+- 重构 Heatmap 业务规则；
+- 清理与 TOB 无关的死代码；
+- 构建全企业超级 Schema；
+- 保留旧 TOB 双轨兼容。
+
+---
+
+## 13. 完成门槛
+
+只有以下全部满足才能声明 TOB 实施完成：
+
+1. 34 项封闭字段集合准确；
+2. 三个分组和顺序准确；
+3. 第 10 项 Excel 厂商字段已写实；
+4. 表格、新增、编辑使用同一 Contract；
+5. 目标外业务字段为 0；
+6. `customer_id`链路正确；
+7. API、`database.js`和SQLite一一对应；
+8. 必要 Migration 正确注册并通过测试；
+9. `focusProject`筛选正确；
+10. `battleProgress`特殊交互正确；
+11. 9 个指标计算正确；
+12. 9 个指标点击筛选正确；
+13. TOB自动测试和全量测试通过；
+14. build通过；
+15. 无越界修改。
+
+完成后停止，下一步只能是 TOB 独立审查。
