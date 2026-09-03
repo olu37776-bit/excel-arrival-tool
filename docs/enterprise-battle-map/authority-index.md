@@ -12,7 +12,7 @@
 |---:|---|---|---|
 | 1 | `enterprise-contract-architecture-v3.md` | `src/config/enterprise`目录、Field/Metric Contract、三个同级Section、Projection、Validator、数据库和测试治理 | 所有企业任务必读 |
 | 2 | `mox-canonical-authority-v4.md` | MOX 41字段、三个Section、客户类别、进展、V34、UI/API/DB、统计与筛选 | 当前MOX唯一业务Authority |
-| 3 | `remediation/mox-post-manual-review-remediation-v1.md` | 当前人工审查后定向修复WRITE_SCOPE | 当前实施必读 |
+| 3 | `remediation/mox-post-manual-review-remediation-v2.md` | 当前人工审查后定向修复WRITE_SCOPE；新增与编辑必须成对完成 | 当前实施必读 |
 | 4 | `tob-canonical-authority-v2.md` | TOB字段和页面目标 | MOX VERIFIED后实施 |
 | 5 | `isp-canonical-authority-v2.md` | ISP字段和页面目标 | MOX VERIFIED后实施 |
 | 6 | `power-canonical-authority-v2.md` | 电力字段和页面目标 | MOX VERIFIED后实施 |
@@ -30,6 +30,7 @@
 - `enterprise-contract-architecture-v1.md`
 - `enterprise-contract-architecture-v2.md`
 - `mox-canonical-authority-v3.md`
+- `remediation/mox-post-manual-review-remediation-v1.md`
 - `tob-canonical-authority-v1.md`
 - `isp-canonical-authority-v1.md`
 - `power-canonical-authority-v1.md`
@@ -49,7 +50,7 @@
 
 1. `enterprise-contract-architecture-v3.md`；
 2. `mox-canonical-authority-v4.md`；
-3. 当前 remediation 或 review 规范；
+3. `remediation/mox-post-manual-review-remediation-v2.md`；
 4. 本地“企业作战地图基表”的 MOX Sheet；
 5. 当前真实代码、API、`database.js`、SQLite和测试。
 
@@ -60,6 +61,7 @@
 - 当前代码和数据库只用于判断差距；
 - 本地旧文档不得创造需求；
 - 表格、新增、编辑必须消费同一 Field Contract；
+- 新增与编辑必须成对完成，不允许只修编辑或只让新增能够打开；
 - 统计与点击筛选必须消费同一 Metric Contract 条件；
 - 代码、测试、自动验证和状态更新必须同轮完成；
 - 实施完成后停止，由新Agent独立审查；
@@ -91,6 +93,8 @@ MOX新增和编辑使用三个同级Section：
 
 无线与微波字段均属于“业务格局”，按MOX Field Contract顺序连续展示。不得再显示旧“客户信息/业务信息”二分结构，也不得渲染四个顶级Section。
 
+新增当前因“获取客户数据失败”无法打开，但修复后仍必须完成全字段、Section、顺序、控件、保存和回填；不能仅以“弹窗已能打开”作为完成标准。
+
 TOB、ISP、电力和大企后续同样使用：
 
 ```text
@@ -108,6 +112,8 @@ TOB、ISP、电力和大企后续同样使用：
 - Contract迁移到`src/config/enterprise`；
 - 清除重复Schema和旧活动引用；
 - 41字段、顺序和三个Section正确；
+- 新增能够正常打开，并完整按Contract对齐；
+- 编辑完整按Contract对齐；
 - 客户类别在新增/编辑可选：空值、核心NA、战略NA；
 - 点击新增不再报“获取客户数据失败”；
 - 作战进展复用TOB当前有效特殊交互；
@@ -176,10 +182,10 @@ MOX V4：
 https://raw.githubusercontent.com/olu37776-bit/excel-arrival-tool/enterprise-battle-map-authority/docs/enterprise-battle-map/mox-canonical-authority-v4.md
 ```
 
-当前MOX修复计划：
+当前MOX修复计划V2：
 
 ```text
-https://raw.githubusercontent.com/olu37776-bit/excel-arrival-tool/enterprise-battle-map-authority/docs/enterprise-battle-map/remediation/mox-post-manual-review-remediation-v1.md
+https://raw.githubusercontent.com/olu37776-bit/excel-arrival-tool/enterprise-battle-map-authority/docs/enterprise-battle-map/remediation/mox-post-manual-review-remediation-v2.md
 ```
 
 TOB V2：
