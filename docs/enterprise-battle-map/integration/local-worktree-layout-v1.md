@@ -15,13 +15,13 @@
 |---|---|---|
 | 长期建设与统一集成工作树 | `D:\BattleMap\battle-map` | `feature/enterprise-battle-map` |
 | TOB 任务 worktree | `D:\BattleMap\tob-worktree` | `task/enterprise-tob` |
-| ISP 任务 worktree | `D:\BattleMap\battle-mao-isp` | `task/enterprise-isp` |
+| ISP 任务 worktree | `D:\BattleMap\battle-map-isp` | `task/enterprise-isp` |
 | 电力 + 大企任务 worktree | `D:\BattleMap\power-large-task` | `task/enterprise-power-large` |
 
 特别注意：
 
-- ISP 当前真实目录名是 `battle-mao-isp`；
-- 不得擅自将其改成 `battle-map-isp`；
+- ISP 当前真实目录名是 `battle-map-isp`；
+- 不得再使用之前误记的 `battle-mao-isp` / `battle-mop-isp`；
 - 本地目录名与任务分支名不要求相同；
 - 所有路径都直接位于 `D:\BattleMap` 根目录下；
 - 统一集成只能在 `D:\BattleMap\battle-map` 中进行，不能在三个任务 worktree 中进行。
@@ -43,9 +43,9 @@ git -C "D:\BattleMap\tob-worktree" branch --show-current
 git -C "D:\BattleMap\tob-worktree" status --short
 git -C "D:\BattleMap\tob-worktree" log -1 --oneline
 
-git -C "D:\BattleMap\battle-mao-isp" branch --show-current
-git -C "D:\BattleMap\battle-mao-isp" status --short
-git -C "D:\BattleMap\battle-mao-isp" log -1 --oneline
+git -C "D:\BattleMap\battle-map-isp" branch --show-current
+git -C "D:\BattleMap\battle-map-isp" status --short
+git -C "D:\BattleMap\battle-map-isp" log -1 --oneline
 
 git -C "D:\BattleMap\power-large-task" branch --show-current
 git -C "D:\BattleMap\power-large-task" status --short
@@ -57,7 +57,7 @@ git -C "D:\BattleMap\power-large-task" log -1 --oneline
 ```text
 D:\BattleMap\battle-map          → feature/enterprise-battle-map
 D:\BattleMap\tob-worktree        → task/enterprise-tob
-D:\BattleMap\battle-mao-isp       → task/enterprise-isp
+D:\BattleMap\battle-map-isp       → task/enterprise-isp
 D:\BattleMap\power-large-task     → task/enterprise-power-large
 ```
 
@@ -92,7 +92,7 @@ D:\BattleMap\power-large-task     → task/enterprise-power-large
 分别只承载自己的任务分支和实施产物：
 
 - `tob-worktree`：TOB；
-- `battle-mao-isp`：ISP；
+- `battle-map-isp`：ISP；
 - `power-large-task`：电力和大企。
 
 禁止在任务 worktree 中：
@@ -131,7 +131,7 @@ TOB
 → 电力 + 大企
 ```
 
-不得在 `D:\BattleMap\tob-worktree`、`D:\BattleMap\battle-mao-isp` 或 `D:\BattleMap\power-large-task` 中运行上述 merge。
+不得在 `D:\BattleMap\tob-worktree`、`D:\BattleMap\battle-map-isp` 或 `D:\BattleMap\power-large-task` 中运行上述 merge。
 
 ---
 
@@ -191,7 +191,7 @@ git -C "D:\BattleMap\battle-map" merge-base --is-ancestor <BASE_HEAD> feature/en
 ```text
 INTEGRATION_WORKTREE=D:\BattleMap\battle-map
 TOB_WORKTREE=D:\BattleMap\tob-worktree
-ISP_WORKTREE=D:\BattleMap\battle-mao-isp
+ISP_WORKTREE=D:\BattleMap\battle-map-isp
 POWER_LARGE_WORKTREE=D:\BattleMap\power-large-task
 
 INTEGRATION_BRANCH=feature/enterprise-battle-map
