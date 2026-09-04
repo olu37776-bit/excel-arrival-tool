@@ -11,34 +11,36 @@
 | 顺序 | 文档 | 用途 | 当前门禁 |
 |---:|---|---|---|
 | 1 | `enterprise-contract-architecture-v3.md` | `src/config/enterprise`目录、Field/Metric Contract、三个同级Section、Projection、Validator、数据库和测试治理 | 所有企业任务必读 |
-| 2 | `implementation/parallel-module-execution-v1.md` | TOB、ISP、电力+大企并行分支/worktree、Migration预留、共享文件冲突和统一集成规则 | 所有并行任务必读 |
-| 3 | `mox-canonical-authority-v4.md` | MOX 41字段、三个Section、客户类别、进展、V34、UI/API/DB、统计与筛选 | MOX唯一业务Authority |
-| 4 | `remediation/mox-post-manual-review-remediation-v2.md` | MOX当前人工审查后定向修复WRITE_SCOPE | MOX修复必读 |
-| 5 | `tob-canonical-authority-v2.md` | TOB字段、页面、API/DB和统计目标 | TOB业务Authority |
-| 6 | `implementation/tob-parallel-implementation-plan-v1.md` | TOB并行实施范围、V35、测试和报告要求 | TOB任务必读 |
-| 7 | `isp-canonical-authority-v2.md` | ISP字段、页面、API/DB和统计目标 | ISP业务Authority |
-| 8 | `implementation/isp-parallel-implementation-plan-v1.md` | ISP并行实施范围、V36、测试和报告要求 | ISP任务必读 |
-| 9 | `power-canonical-authority-v2.md` | 电力字段、页面、API/DB和统计目标 | 电力业务Authority |
-| 10 | `large-enterprise-canonical-authority-v2.md` | 大企字段、页面、API/DB和统计目标 | 大企业务Authority |
-| 11 | `implementation/power-large-parallel-implementation-plan-v1.md` | 电力+大企并行实施范围、V37/V38、隔离和测试要求 | 电力+大企任务必读 |
-| 12 | `enterprise-home-canonical-authority-v2.md` | 企业首页历史设计 | DEFERRED；等待后续新版首页Authority |
+| 2 | `implementation/parallel-module-execution-v1.md` | TOB、ISP、电力+大企并行分支/worktree、Migration预留和共享文件纪律 | 所有并行任务必读 |
+| 3 | `integration/parallel-module-integration-plan-v1.md` | 三个任务分支按顺序合并、冲突解析、V35—V38联合验证、集成报告和状态门禁 | 三个任务完成后的唯一集成Authority |
+| 4 | `mox-canonical-authority-v4.md` | MOX 41字段、三个Section、客户类别、进展、V34、UI/API/DB、统计与筛选 | MOX唯一业务Authority |
+| 5 | `remediation/mox-post-manual-review-remediation-v2.md` | MOX当前人工审查后定向修复WRITE_SCOPE | MOX修复必读 |
+| 6 | `tob-canonical-authority-v2.md` | TOB字段、页面、API/DB和统计目标 | TOB业务Authority |
+| 7 | `implementation/tob-parallel-implementation-plan-v1.md` | TOB并行实施范围、V35、测试和报告要求 | TOB任务必读 |
+| 8 | `isp-canonical-authority-v2.md` | ISP字段、页面、API/DB和统计目标 | ISP业务Authority |
+| 9 | `implementation/isp-parallel-implementation-plan-v1.md` | ISP并行实施范围、V36、测试和报告要求 | ISP任务必读 |
+| 10 | `power-canonical-authority-v2.md` | 电力字段、页面、API/DB和统计目标 | 电力业务Authority |
+| 11 | `large-enterprise-canonical-authority-v2.md` | 大企字段、页面、API/DB和统计目标 | 大企业务Authority |
+| 12 | `implementation/power-large-parallel-implementation-plan-v1.md` | 电力+大企并行实施范围、V37/V38、隔离和测试要求 | 电力+大企任务必读 |
+| 13 | `enterprise-home-canonical-authority-v2.md` | 企业首页历史设计 | DEFERRED；等待后续新版首页Authority |
 
-当前允许并行执行：
+当前流程：
 
 ```text
-MOX V4定向修复
-task/enterprise-tob
-task/enterprise-isp
-task/enterprise-power-large
+三个任务分支并行实施
+→ 各分支 IMPLEMENTED_NOT_VERIFIED
+→ 按 integration/parallel-module-integration-plan-v1.md 统一合并
+→ 长期分支标记 INTEGRATED_NOT_VERIFIED
+→ 新 Agent 统一独立审查
 ```
 
-企业首页最终汇总和首页Heatmap仍不得实施。
+企业首页最终汇总和首页Heatmap仍不得在本阶段实施。
 
 ---
 
 ## 2. 已被取代或暂停使用的文档
 
-以下文件仅保留历史记录，不再作为当前实施或审查 Authority：
+以下文件仅保留历史记录，不再作为当前实施、集成或审查 Authority：
 
 - `enterprise-contract-architecture-v1.md`
 - `enterprise-contract-architecture-v2.md`
@@ -123,8 +125,6 @@ task/enterprise-isp
 task/enterprise-power-large
 ```
 
-长期集成分支在并行期间冻结。
-
 共享内核默认只读；确需共享修改时必须在模块实施报告中声明。架构级共享缺口不得由三个Agent分别实现。
 
 Migration预留：
@@ -136,11 +136,47 @@ ISP V36
 大企 V38
 ```
 
-各任务完成后只提交自己的任务分支，不合并、不审查、不开始下一模块。
+各任务完成后只提交自己的任务分支，不自行合并、不自行审查、不开始下一模块。
 
 ---
 
-## 7. 页面结构与Heatmap
+## 7. 统一集成纪律
+
+三个任务全部完成后，只使用：
+
+```text
+integration/parallel-module-integration-plan-v1.md
+```
+
+进行统一集成。
+
+固定顺序：
+
+```text
+TOB
+→ ISP
+→ 电力+大企
+```
+
+统一集成必须：
+
+- 在干净的 `feature/enterprise-battle-map` 工作树执行；
+- 核实三个任务使用相同 BASE_HEAD；
+- 不重置长期分支已批准的MOX进展；
+- 每次merge后立即执行该模块和关键回归测试；
+- 对`database.js`和共享Contract逐项合并，不使用整体ours/theirs；
+- 验证V35、V36、V37、V38的注册、顺序、事务、幂等和回滚；
+- 验证新库和旧库升级结果一致；
+- 验证模块Contract、API、数据库、状态和筛选互相隔离；
+- 创建统一集成报告；
+- 最终只标记 `INTEGRATED_NOT_VERIFIED`；
+- 停止后由新Agent做统一独立审查。
+
+不得在集成Agent中同时执行独立审查。
+
+---
+
+## 8. 页面结构与Heatmap
 
 业务子页面统一：
 
@@ -159,15 +195,16 @@ ISP V36
 
 ---
 
-## 8. 当前推进与统一门禁
+## 9. 当前推进与统一门禁
 
 ```text
 冻结共同BASE_HEAD
 → 三个任务分支并行实施
 → 每个分支完成代码、测试、数据库验证、全量测试、build和实施报告
-→ 统一Integration Agent合回feature/enterprise-battle-map
+→ Integration Agent按正式计划合回feature/enterprise-battle-map
 → 连续验证V35/V36/V37/V38
 → 企业模块统一自动验证
+→ 标记INTEGRATED_NOT_VERIFIED
 → 统一独立审查
 → 用户人工验收
 ```
@@ -178,13 +215,17 @@ ISP V36
 IMPLEMENTED_NOT_VERIFIED
 ```
 
-不得在独立任务分支上标记模块 VERIFIED。
+集成完成只允许标记：
 
-MOX完成后仍将发布 `mox-reference-implementation-v1.md`，用于总结经验证的共享机制；并行模块若与最终MOX参考实现存在差异，在统一集成阶段收敛。
+```text
+INTEGRATED_NOT_VERIFIED
+```
+
+不得在任务分支或集成阶段标记模块 VERIFIED。
 
 ---
 
-## 9. Raw地址
+## 10. Raw地址
 
 总索引：
 
@@ -202,6 +243,12 @@ https://raw.githubusercontent.com/olu37776-bit/excel-arrival-tool/enterprise-bat
 
 ```text
 https://raw.githubusercontent.com/olu37776-bit/excel-arrival-tool/enterprise-battle-map-authority/docs/enterprise-battle-map/implementation/parallel-module-execution-v1.md
+```
+
+统一集成计划：
+
+```text
+https://raw.githubusercontent.com/olu37776-bit/excel-arrival-tool/enterprise-battle-map-authority/docs/enterprise-battle-map/integration/parallel-module-integration-plan-v1.md
 ```
 
 TOB Authority：
@@ -248,11 +295,12 @@ https://raw.githubusercontent.com/olu37776-bit/excel-arrival-tool/enterprise-bat
 
 ---
 
-## 10. 文档维护规则
+## 11. 文档维护规则
 
 - 业务和架构修正由该Authority分支统一维护；
 - 本地实施分支不维护第二套长期设计Authority；
 - 新版本发布后旧版本自动superseded；
 - 字段变更必须同步字段表、Contract、Validator、数据库门禁和测试标准；
 - 实施状态和审查证据可以留在本地，但不得覆盖GitHub目标设计；
-- 三个并行任务全部完成后，再发布统一集成和独立审查规范。
+- 三个并行任务全部集成后，再发布统一独立审查规范；
+- 统一独立审查通过前不得删除任务分支或worktree。
