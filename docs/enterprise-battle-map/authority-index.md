@@ -12,100 +12,124 @@
 |---:|---|---|---|
 | 1 | `enterprise-contract-architecture-v5.md` | 端到端 canonical identity、真实 Runtime Projection、API canonical-only、Customer 主键贯穿、Heatmap canonical key、Progress 单一事实源、DB/Conformance Gate | 所有企业任务必读 |
 | 2 | `mox-canonical-authority-v6.md` | MOX 41字段、4 group、Create/Edit runtime、Heatmap、legacy key、Progress、Customer、DB/测试最终目标 | 当前 MOX 唯一业务 Authority |
-| 3 | `remediation/mox-4-group-render-chain-repair-v1.md` | 独立审查发现的 MOX 4-group runtime→renderer 断链定向修复 | **当前阻塞 remediation** |
-| 4 | `remediation/mox-end-to-end-canonical-convergence-v1.md` | Runtime Survey 后 MOX 端到端收敛实施计划 | 已实施，作为修复背景/回归基线 |
-| 5 | `reviews/mox-end-to-end-canonical-independent-review-v1.md` | 字段、Projection、Heatmap、legacy key、Customer、Progress popup/history、DB、隐藏消费者和测试可信度的独立审查规范 | 4-group 修复后重新执行 |
-| 6 | `investigation/enterprise-runtime-implementation-survey-v1.md` | 已完成的实际运行链调查规范 | 事实证据来源 |
-| 7 | `remediation/enterprise-customer-data-fetch-unification-v2.md` | Customer SQL/customer_id 贯穿修复及长期回归门禁 | 已修复项/回归 Authority |
-| 8 | `integration/parallel-module-integration-plan-v1.md` | TOB/ISP/电力+大企合并规则 | 集成历史/回归参考 |
-| 9 | `integration/local-worktree-layout-v1.md` | 本地真实 worktree 路径 | 本地执行必读 |
-| 10 | `tob-canonical-authority-v2.md` | TOB 字段和 3-group 目标 | 后续统一收敛 |
-| 11 | `isp-canonical-authority-v2.md` | ISP 字段和 3-group 目标 | 后续统一收敛 |
-| 12 | `power-canonical-authority-v2.md` | 电力字段和 3-group 目标 | 后续统一收敛 |
-| 13 | `large-enterprise-canonical-authority-v2.md` | 大企字段和 3-group 目标 | 后续统一收敛 |
-| 14 | `enterprise-home-canonical-authority-v2.md` | 企业首页旧阶段设计 | DEFERRED；最后重新冻结 |
+| 3 | `remediation/enterprise-form-options-and-group-spacing-remediation-v1.md` | 人工验收发现的四模块 `f.options is not iterable` 与共享 group 视觉间距修复 | **当前实施任务** |
+| 4 | `remediation/enterprise-customer-data-fetch-unification-v2.md` | Customer SQL/customer_id 贯穿修复及长期回归门禁 | 已修复，当前只做回归 |
+| 5 | `reviews/mox-end-to-end-canonical-independent-review-v1.md` | MOX 端到端独立审查规范 | 最新复审已 PASS |
+| 6 | `remediation/mox-4-group-render-chain-repair-v1.md` | MOX 4-group renderer 断链修复 | 已实施并通过复审 |
+| 7 | `remediation/mox-end-to-end-canonical-convergence-v1.md` | MOX 端到端 canonical 收敛 | 已实施，作为回归基线 |
+| 8 | `investigation/enterprise-runtime-implementation-survey-v1.md` | 已完成的实际运行链调查规范 | 事实证据来源 |
+| 9 | `integration/parallel-module-integration-plan-v1.md` | TOB/ISP/电力+大企合并规则 | 集成历史/回归参考 |
+| 10 | `integration/local-worktree-layout-v1.md` | 本地真实 worktree 路径 | 本地执行必读 |
+| 11 | `tob-canonical-authority-v2.md` | TOB 字段和 3-group 目标 | 当前业务 Authority |
+| 12 | `isp-canonical-authority-v2.md` | ISP 字段和 3-group 目标 | 当前业务 Authority |
+| 13 | `power-canonical-authority-v2.md` | 电力字段和 3-group 目标 | 当前业务 Authority |
+| 14 | `large-enterprise-canonical-authority-v2.md` | 大企字段和 3-group 目标 | 当前业务 Authority |
+| 15 | `enterprise-home-canonical-authority-v2.md` | 企业首页旧阶段设计 | DEFERRED；最后重新冻结 |
 
 ---
 
-## 2. 当前最新阻塞事实
+## 2. 当前阶段状态
 
-最新 MOX End-to-End Canonical Independent Review 已确认：
+MOX End-to-End Canonical Convergence、4-group render chain repair 和后续独立复审已经通过自动门禁。
 
-> MOX 4-group 从 runtime projection 到 Create/Edit renderer 的链路仍然断裂，导致“无线格局”和“微波格局”无法作为真实可见分组进入 Create/Edit 表单。
-
-这不是新的字段 Contract 设计问题。当前 Authority 保持：
+当前状态：
 
 ```text
-MOX Create/Edit 顶层 group：
-客户信息
-无线格局
-微波格局
-作战情况
+MOX AUTOMATED / INDEPENDENT REVIEW = PASS
+USER MANUAL ACCEPTANCE = PARTIAL / FAIL
 ```
 
-字段集合仍为 41 项；不得把 MOX 改回“客户信息 / 业务格局 / 作战情况”。
+最新人工验收确认两个真实缺口：
 
-当前唯一修复范围：
+### A. TOB / ISP / 电力 / 大企 Create options runtime 异常
+
+用户打开新增时仍看到“获取客户数据失败”，真实前端异常为：
 
 ```text
-Field Contract
-→ getCreateFields() / getEditFields() 或唯一公共底层实现
-→ group model
-→ Create/Edit renderer
+f.options is not iterable
 ```
 
-修复必须以本地最新 Review 报告中的具体断裂点为事实依据。
+当前不能重新假定是 customer SQL 问题。必须先证明：
+
+```text
+Customer API 是否成功
+→ customer_id 是否保留
+→ runtime field model
+→ options provider/enrichment
+→ renderer
+```
+
+然后定位具体 field / function / options value。
+
+当前禁止使用 `f.options || []` 等静默兜底作为根修复。
+
+### B. Create/Edit group 视觉间距不足
+
+MOX 4-group 结构已经正确，但人工验收确认相邻 group 尤其“无线格局”“微波格局”与上一组视觉粘连。
+
+目标是修共享 group renderer/CSS 的稳定垂直间距，不插空字段、不写 `<br>`、不为 MOX 复制独立样式。
 
 ---
 
-## 3. 已确认的其他端到端规则继续有效
+## 3. Customer 当前规则
 
-### Customer
+已确认并修复过的 Customer 根因：原 SQL 漏 `customer_id`。
 
-已修复 SQL 漏 `customer_id` 问题。长期必须保持：
+长期必须保持：
 
 ```text
 customers.customer_id
-→ query
+→ database query
 → API
 → frontend candidate
 → unique selection
 → business record.customer_id
 ```
 
-### Heatmap
+当前 `f.options is not iterable` 必须先证明发生在这条链的哪一层。
 
-字段 identity 必须使用 canonical key，中文 label 仅用于展示。
+如果 Customer API 已成功并带真实 `customer_id`，本轮不得再次修改 SQL/Customer Contract。
 
-### API legacy key
-
-活动 runtime 不得接受：
+错误边界必须区分：
 
 ```text
-office
-customer
-major_project
-progress
+CUSTOMER_FETCH_FAILED
+CUSTOMER_RESPONSE_CONTRACT_FAILED
+FORM_RUNTIME_FAILED
+OPTIONS_ENRICHMENT_FAILED
 ```
 
-### Progress
-
-```text
-Progress History = 唯一持久化 Authority
-battleProgress = latest/current canonical projection/editor binding
-```
-
-独立进展弹窗必须保留并只操作 Progress History，不允许 history + business text 双写或 fallback。
-
-### Metric / DB
-
-9 个 Metric 公式不变；API/database.js/SQLite/Migration/round-trip 继续按 `enterprise-contract-architecture-v5.md` 约束。
-
-本轮 4-group repair 不得顺带重构这些已收敛能力，只做回归保护。
+不能再把所有 Create 初始化异常统一包装成“获取客户数据失败”。
 
 ---
 
-## 4. group 规则
+## 4. Options Runtime 规则
+
+企业 Create/Edit 动态 options 属于 Field Contract 的运行时消费者。
+
+正确链：
+
+```text
+Field Contract
+→ Runtime Projection
+→ Runtime Field View Model
+→ Dynamic Options Provider
+→ Renderer
+```
+
+硬规则：
+
+- Contract 保持静态，不承载动态 customer/region/office 候选；
+- 只有 options-bearing control/editor 才进入 options 逻辑；
+- 需要 options 的 runtime field 最终必须是明确 Array contract；
+- 合法无候选用 `[]`；
+- API failure 不能伪装成 `[]`；
+- 非 options-bearing field 不应因为没有 `options` 而失败；
+- customer candidate 必须保留真实 `customer_id`。
+
+---
+
+## 5. Group 规则
 
 MOX：
 
@@ -124,37 +148,62 @@ TOB / ISP / 电力 / 大企：
 作战情况
 ```
 
-共享 renderer 必须根据 Contract group 动态渲染 group 数量，不得写死“三组”或为 MOX 复制第二套字段 Authority。
+结构 Authority 已冻结。
+
+当前只允许改共享视觉机制：
+
+- 非首 group 稳定顶部间距；
+- group title 与上一组字段明显分离；
+- Create/Edit 一致；
+- 优先复用 spacing token/CSS variable；
+- 不改变字段集合、顺序或 group 归属。
 
 ---
 
-## 5. 当前推进顺序
+## 6. Progress 当前规则
+
+本轮不重新设计 Progress。
+
+保持：
 
 ```text
-MOX End-to-End Canonical Independent Review 发现 4-group blocker
-→ 按 remediation/mox-4-group-render-chain-repair-v1.md 修复
-→ 本地 commit + 工作树干净
-→ 新 Agent 重新执行 reviews/mox-end-to-end-canonical-independent-review-v1.md
-→ 用户人工验收（Create/Edit 4-group、视觉分隔、进展弹窗、Heatmap）
-→ MOX REFERENCE_IMPLEMENTATION_V1
-→ 将相同 Conformance Gate 应用到 TOB/ISP/电力/大企
+Progress History table = 唯一持久化 Authority
+battleProgress = latest/current canonical projection
+独立进展弹窗 = Progress History 新增/编辑入口
+```
+
+“作战进展”是同一业务概念，但不得恢复 business table text 双写或 fallback。
+
+本轮只做回归验证：进展弹窗仍可用、History 单一事实源无回归。
+
+---
+
+## 7. 当前推进顺序
+
+```text
+人工验收发现 options runtime + group spacing
+→ 按 remediation/enterprise-form-options-and-group-spacing-remediation-v1.md 实施
+→ 本地 commit + 自动验证
+→ 用户重新人工验收：四模块新增客户链 + MOX/共享group视觉 + Progress popup回归
+→ 如人工 PASS，冻结 MOX REFERENCE_IMPLEMENTATION_V1
+→ 将已验证 Conformance Gate 应用到 TOB/ISP/电力/大企整体收敛
 → 企业模块统一审查
 → 企业首页最终建设
 ```
 
-当前 Repair Agent 必读：
+当前 Implementation Agent 必读：
 
 ```text
 enterprise-contract-architecture-v5.md
 mox-canonical-authority-v6.md
-remediation/mox-end-to-end-canonical-convergence-v1.md
-remediation/mox-4-group-render-chain-repair-v1.md
-本地最新 docs/enterprise/reviews/mox-end-to-end-canonical-independent-review.md
+remediation/enterprise-customer-data-fetch-unification-v2.md
+remediation/enterprise-form-options-and-group-spacing-remediation-v1.md
+TOB/ISP/Power/Large 当前 Canonical Authority
 ```
 
 ---
 
-## 6. 已被取代
+## 8. 已被取代/历史参考
 
 与当前版本冲突时不再作为 Authority：
 
@@ -168,13 +217,13 @@ remediation/mox-4-group-render-chain-repair-v1.md
 - `remediation/mox-post-manual-review-remediation-v1.md`
 - `remediation/mox-post-manual-review-remediation-v2.md`
 - `remediation/enterprise-customer-data-fetch-unification-v1.md`
-- 任何与 V5/V6 冲突的本地旧 Schema、Projection 测试、Review 结论或字段清单。
+- 任何与当前 V5/V6/最新 remediation 冲突的旧 Schema、Projection 测试、Review 结论或字段清单。
 
-旧文件仅保留历史证据，Agent 不得新旧折中。
+旧文件只保留历史证据，不允许新旧折中。
 
 ---
 
-## 7. 本地路径
+## 9. 本地路径
 
 Authority 镜像：
 
@@ -204,12 +253,11 @@ D:\BattleMap\power-large-task
 
 ---
 
-## 8. 文档维护规则
+## 10. 文档维护规则
 
-- 业务和架构修正统一进入 Authority 分支；
+- 业务/架构/人工验收 remediation 统一进入 Authority 分支；
 - 本地代码仓库不维护第二套长期设计 Authority；
-- 新版本发布后旧版本自动 superseded；
-- 实际实现发现必须先分类为 IMPLEMENTATION_NONCONFORMANCE / DOCUMENT_GAP / ARCHITECTURE_GAP / TEST_GAP；
-- 不确定事实标记 OPEN / NEED_USER_CONFIRMATION；
-- 不允许本地 Agent 自行扩字段、改业务规则或恢复 legacy compatibility；
-- 独立审查报告可以单独 commit，但必须记录其对应的代码 `REVIEWED_HEAD`。
+- 实施 Agent 同轮完成代码、测试、自动验证和 remediation report；
+- 不确定事实必须先通过真实调用栈证明，不得猜测；
+- 不允许为修复 runtime error 恢复 legacy key/fallback；
+- 人工视觉验收不由自动测试替代。
