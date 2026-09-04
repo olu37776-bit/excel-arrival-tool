@@ -12,16 +12,17 @@
 |---:|---|---|---|
 | 1 | `enterprise-contract-architecture-v5.md` | 端到端 canonical identity、真实 Runtime Projection、API canonical-only、Customer 主键贯穿、Heatmap canonical key、Progress 单一事实源、DB/Conformance Gate | 所有企业任务必读 |
 | 2 | `mox-canonical-authority-v6.md` | MOX 41字段、4 group、Create/Edit runtime、Heatmap、legacy key、Progress、Customer、DB/测试最终目标 | 当前 MOX 唯一业务 Authority |
-| 3 | `remediation/mox-end-to-end-canonical-convergence-v1.md` | Runtime Survey 后 MOX 端到端收敛实施计划 | 当前下一实施任务 |
-| 4 | `investigation/enterprise-runtime-implementation-survey-v1.md` | 已完成的实际运行链调查规范 | 事实证据来源 |
-| 5 | `remediation/enterprise-customer-data-fetch-unification-v2.md` | Customer SQL/customer_id 贯穿修复及长期回归门禁 | 已修复项/回归 Authority |
-| 6 | `integration/parallel-module-integration-plan-v1.md` | TOB/ISP/电力+大企合并规则 | 集成历史/回归参考 |
-| 7 | `integration/local-worktree-layout-v1.md` | 本地真实 worktree 路径 | 本地执行必读 |
-| 8 | `tob-canonical-authority-v2.md` | TOB 字段和 3-group 目标 | 后续统一收敛 |
-| 9 | `isp-canonical-authority-v2.md` | ISP 字段和 3-group 目标 | 后续统一收敛 |
-| 10 | `power-canonical-authority-v2.md` | 电力字段和 3-group 目标 | 后续统一收敛 |
-| 11 | `large-enterprise-canonical-authority-v2.md` | 大企字段和 3-group 目标 | 后续统一收敛 |
-| 12 | `enterprise-home-canonical-authority-v2.md` | 企业首页旧阶段设计 | DEFERRED；最后重新冻结 |
+| 3 | `remediation/mox-end-to-end-canonical-convergence-v1.md` | Runtime Survey 后 MOX 端到端收敛实施计划 | 当前实施任务 |
+| 4 | `reviews/mox-end-to-end-canonical-independent-review-v1.md` | 收敛后只读独立审查：字段、Projection、Heatmap、legacy key、Customer、Progress popup/history、DB、隐藏消费者和测试可信度 | Convergence commit 后的下一门禁 |
+| 5 | `investigation/enterprise-runtime-implementation-survey-v1.md` | 已完成的实际运行链调查规范 | 事实证据来源 |
+| 6 | `remediation/enterprise-customer-data-fetch-unification-v2.md` | Customer SQL/customer_id 贯穿修复及长期回归门禁 | 已修复项/回归 Authority |
+| 7 | `integration/parallel-module-integration-plan-v1.md` | TOB/ISP/电力+大企合并规则 | 集成历史/回归参考 |
+| 8 | `integration/local-worktree-layout-v1.md` | 本地真实 worktree 路径 | 本地执行必读 |
+| 9 | `tob-canonical-authority-v2.md` | TOB 字段和 3-group 目标 | 后续统一收敛 |
+| 10 | `isp-canonical-authority-v2.md` | ISP 字段和 3-group 目标 | 后续统一收敛 |
+| 11 | `power-canonical-authority-v2.md` | 电力字段和 3-group 目标 | 后续统一收敛 |
+| 12 | `large-enterprise-canonical-authority-v2.md` | 大企字段和 3-group 目标 | 后续统一收敛 |
+| 13 | `enterprise-home-canonical-authority-v2.md` | 企业首页旧阶段设计 | DEFERRED；最后重新冻结 |
 
 ---
 
@@ -32,7 +33,7 @@
 - 41 个 Field Contract 业务字段保持不变；
 - MOX 正确顶层 group：客户信息 / 无线格局 / 微波格局 / 作战情况；
 - MOX 不使用“业务格局”；
-- 真实 Create/Edit runtime 使用 `getCreateFields()` / `getEditFields()` 或其底层实现；
+- 真实 Create/Edit runtime 使用 `getCreateFields()` / `getEditFields()` 或其唯一公共底层实现；
 - 旧 `getCreateProjection()` / `getEditProjection()` 曾与真实 renderer 不一致；
 - `getMoxFromSections()` 已确认未被使用；
 - 原测试存在错误 Projection 路径、单向检查和 option-set 漏测。
@@ -58,14 +59,14 @@ customers.customer_id
 
 ### Heatmap
 
-- 当前存在使用中文 label 作为字段 identity 的实现；
+- 当前曾存在使用中文 label 作为字段 identity 的实现；
 - 目标必须使用 canonical key；
 - label 仅展示；
-- 本轮不改变未冻结的 Heatmap 业务规则。
+- 当前 convergence 不改变未冻结的 Heatmap 业务规则。
 
 ### Legacy API key
 
-`updateMoxNetwork()` 当前仍接受旧 key：
+`updateMoxNetwork()` 曾仍接受旧 key：
 
 ```text
 office
@@ -78,7 +79,7 @@ progress
 
 ### Progress
 
-当前存在：
+调查确认曾存在：
 
 ```text
 Progress history table
@@ -93,7 +94,7 @@ Progress history = 唯一持久化 Authority
 battleProgress = latest/current progress canonical projection/editor binding
 ```
 
-不得再双写或 fallback。
+独立进展录入/编辑弹窗必须保留；它只能写 Progress History，不得再写业务表第二份 progress text，也不得从 text fallback。
 
 ---
 
@@ -119,7 +120,9 @@ Canonical Authority
 - DB column 只用于持久化；
 - 不保留长期 legacy alias/fallback/双读/双写；
 - Production 和 tests 必须验证同一真实 runtime 路径；
-- Contract expected 与 actual runtime 必须双向相等。
+- Contract expected 与 actual runtime 必须双向相等；
+- Progress History 是唯一 Progress 持久化事实源；
+- Customer `customer_id` 必须贯穿数据库查询到业务保存。
 
 ---
 
@@ -146,16 +149,15 @@ Create/Edit 顶层 group 样式必须共享、清晰、有稳定间距和分隔�
 
 ---
 
-## 5. 当前下一步
+## 5. 当前推进顺序
 
 正式推进顺序：
 
 ```text
-确认当前写操作全部 commit
-→ MOX End-to-End Canonical Convergence
-→ 自动验证
-→ 新 Agent 独立 End-to-End Review
-→ 用户人工验收
+MOX End-to-End Canonical Convergence Agent 完成
+→ 本地 commit + 工作树干净
+→ 新 Agent 按 reviews/mox-end-to-end-canonical-independent-review-v1.md 独立审查固定 HEAD
+→ 用户人工验收（重点看4-group视觉、Create/Edit、进展弹窗、Heatmap）
 → MOX REFERENCE_IMPLEMENTATION_V1
 → 将相同 Conformance Gate 应用到 TOB/ISP/电力/大企
 → 企业模块统一审查
@@ -169,6 +171,17 @@ enterprise-contract-architecture-v5.md
 mox-canonical-authority-v6.md
 remediation/mox-end-to-end-canonical-convergence-v1.md
 ```
+
+当前独立审查必须读取：
+
+```text
+enterprise-contract-architecture-v5.md
+mox-canonical-authority-v6.md
+remediation/mox-end-to-end-canonical-convergence-v1.md
+reviews/mox-end-to-end-canonical-independent-review-v1.md
+```
+
+独立审查只针对 Convergence 完成后的固定 `REVIEWED_HEAD`，禁止审查期间继续修改代码。
 
 ---
 
@@ -229,4 +242,5 @@ D:\BattleMap\power-large-task
 - 新版本发布后旧版本自动 superseded；
 - 实际实现发现必须先分类为 IMPLEMENTATION_NONCONFORMANCE / DOCUMENT_GAP / ARCHITECTURE_GAP / TEST_GAP；
 - 不确定事实标记 OPEN / NEED_USER_CONFIRMATION；
-- 不允许本地 Agent 自行扩字段、改业务规则或恢复 legacy compatibility。
+- 不允许本地 Agent 自行扩字段、改业务规则或恢复 legacy compatibility；
+- 独立审查报告可以单独 commit，但必须记录其对应的代码 `REVIEWED_HEAD`。
