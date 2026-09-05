@@ -219,14 +219,18 @@ def _validate(raw: dict[str, Any]) -> None:
         "revenue_month_cpd",
         "revenue_segment",
         "manual_revenue_segment",
+        "final_revenue_segment",
         "manual_adjust_flag",
         "manual_revenue_forecast_rpd",
+        "final_revenue_month_rpd",
         "manual_revenue_forecast_cpd",
+        "final_revenue_month_cpd",
         "manual_revenue_month",
+        "final_revenue_forecast",
         "adjustment_note",
     ]
     if not _valid_columns(columns, expected_base_ids):
-        raise ValueError("基表 36 个稳定字段 ID、顺序和显示名必须符合契约")
+        raise ValueError("基表 40 个稳定字段 ID、顺序和显示名必须符合契约")
     expected_change_common = [
         "contract_no",
         "legacy_amount",
