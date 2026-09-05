@@ -79,11 +79,14 @@ def final_formulas(refs: dict[str, str]) -> dict[str, str]:
             result[final] = _month_formula(manual, automatic, refs[other])
         elif final == "final_revenue_forecast":
             amount = f'SUBSTITUTE({_trim(manual)},",","")'
+            remainder = amount
+            for character in "0123456789.+-eE()":
+                remainder = f'SUBSTITUTE({remainder},{_quote(character)},"")'
             numeric = (f'IF(AND(LEFT({amount},1)="(",RIGHT({amount},1)=")"),'
                        f'-VALUE(MID({amount},2,LEN({amount})-2)),VALUE({amount}))')
             result[final] = (
                 f'=IF({_blank(manual)},{_fallback(automatic)},'
-                f'IFERROR(IF(ISLOGICAL({manual}),{_quote(INVALID_AMOUNT_HINT)},'
+                f'IFERROR(IF(OR(ISLOGICAL({manual}),{remainder}<>""),{_quote(INVALID_AMOUNT_HINT)},'
                 f'ROUND({numeric},2)),{_quote(INVALID_AMOUNT_HINT)}))'
             )
         else:

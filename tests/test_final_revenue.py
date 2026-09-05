@@ -38,7 +38,8 @@ def formula_cases():
     for value in (None, "", "   ", "(空白)", "VALUE", "#VALUE", "#VALUE!",
                   "特殊处理", "9月确认", 0, False, True, 123, "Y", "N"):
         cases.append(dict(base, manual_revenue_segment=value))
-    for value in (None, 0, 20.125, -20.125, "123.456", "(123.45)", "(12x", "abc", False):
+    for value in (None, 0, 20.125, -20.125, "123.456", "(123.45)", "(12x", "abc", False,
+                  "9/10", "12:30", "$10", "10%", "1e2", "1,234.565"):
         cases.append(dict(base, manual_revenue_month=value, manual_adjust_flag="N"))
     for mode in ("rpd", "cpd"):
         field = f"manual_revenue_forecast_{mode}"

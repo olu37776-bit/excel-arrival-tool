@@ -32,7 +32,7 @@ Excel开启auto/fullCalcOnLoad/forceFullCalc；最终列非黄色，月份`@`、
 
 ## 验证证据
 
-新增5个测试方法，独立LibreOffice重算362组虚构输入，分别编辑和清空四个人工源字段，逐项比较4个最终值：共2,896次Python/公式结果比较。含两个口径12个参考月份×12个人工月份、跨年、并列、无参考、回退、金额正负和0、分段0/False、业务空白、非法值、半年边界。布尔输入fixture使用General格式，防止LibreOffice导入数值格式时预先把布尔转为数字；不是忽略差异。
+新增5个测试方法，独立LibreOffice重算368组虚构输入，分别编辑和清空四个人工源字段，逐项比较4个最终值：共2,944次Python/公式结果比较。含两个口径12个参考月份×12个人工月份、跨年、并列、无参考、回退、金额正负和0、分段0/False、业务空白、非法值、半年边界。文本金额额外拒绝日期、时间、货币符号、百分号被Excel VALUE误识别为数值，保留科学计数和逗号金额。布尔输入fixture使用General格式，防止LibreOffice导入数值格式时预先把布尔转为数字；不是忽略差异。
 
 实际xlsx往返覆盖旧36列、新40列无公式缓存、新最终值被改写、旧32/35列、metadata显示名变更和列移动；明确0/False保留，原始人工值继承正确，跨月变化不因最终列变化而增加。
 
@@ -49,7 +49,7 @@ PYTHONPATH=src python -m revenue_tool.gui --smoke-test
 
 本地结果：全量116项通过（包含真实公式引擎测试，无跳过），compileall、diff check、wheel与GUI smoke通过。`REQUIRE_FORMULA_ENGINE=1`确保缺少独立重算引擎时失败，不静默跳过。Windows构建环境可跳过独立LibreOffice测试，由并行Linux作业强制承担该门禁。
 
-标准wheel命令在改版本号前通过；最终0.8.7重建时依赖联网授权取消，因此使用已安装构建依赖执行上述无网络命令成功，未绕过授权。最终wheel SHA-256：`ed34e4df6727704d54fa47998db223dd1bbc69d2af5199872a555e6f98319871`。PR Linux作业仍执行标准隔离构建命令。
+标准wheel命令在改版本号前通过；最终0.8.7重建时依赖联网授权取消，因此使用已安装构建依赖执行上述无网络命令成功，未绕过授权。最终wheel SHA-256：`450a3db677759548c88d9d5e3e9bb0553b60e5f66760051c0b39ea17c5bde482`。PR Linux作业仍执行标准隔离构建命令。
 
 GitHub Actions和Windows EXE：提交后由PR运行Linux全量/重算与Windows全量/EXE smoke；运行链接与最终状态在PR验证记录更新，未运行前不视为通过。测试Artifact带版本及提交SHA，不冒充正式发布。
 
