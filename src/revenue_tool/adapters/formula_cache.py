@@ -14,7 +14,7 @@ from zipfile import ZipFile
 from openpyxl import Workbook
 
 
-_CELL = re.compile(rb'<c\b(?P<attrs>[^>]*)>(?P<body>.*?)</c>', re.DOTALL)
+_CELL = re.compile(rb'<c\b(?P<attrs>[^>]*)(?<!/)>(?P<body>.*?)</c>', re.DOTALL)
 _ADDRESS = re.compile(rb'\br="([A-Z]+[0-9]+)"')
 _TYPE = re.compile(rb'\s+t="[^"]*"')
 _VALUE = re.compile(rb'<v(?:\s[^>]*)?>.*?</v>|<v\s*/>', re.DOTALL)

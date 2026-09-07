@@ -6,6 +6,7 @@ import unittest
 from openpyxl import load_workbook
 
 from revenue_tool.adapters.excel_writer import ExcelOutputAdapter
+from revenue_tool.adapters.formula_cache import _patch
 from revenue_tool.config import load_config
 from revenue_tool.domain.models import BaseRow, IssueLog
 from revenue_tool.services.final_revenue import FINAL_FIELD_SOURCES, calculate_final_values
@@ -17,6 +18,14 @@ from tests.test_pipeline import CONFIG, _base_rows, _run, _write_sources
 
 
 class PreviousUpgradeTest(unittest.TestCase):
+    def test_empty_self_closing_cell_does_not_consume_next_formula(self):
+        # ElementTree emits <c ... />, whereas lxml emits <c ...></c>.
+        for empty in (b'<c r="A1" />', b'<c r="A1"></c>'):
+            xml = b'<row>' + empty + b'<c r="B1"><f>1+1</f><v /></c></row>'
+            result = _patch(xml, {'B1': 2})
+            self.assertIn(empty, result)
+            self.assertIn(b'<c r="B1" t="n"><f>1+1</f><v>2</v></c>', result)
+
     def test_old_layouts_generate_values_without_opening_excel(self):
         for removed in (POST_32_FIELD_IDS, tuple(FINAL_FIELD_SOURCES)):
             with self.subTest(removed=removed), TemporaryDirectory() as tmp:
