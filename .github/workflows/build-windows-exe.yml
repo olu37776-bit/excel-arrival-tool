@@ -16,6 +16,22 @@ permissions:
   contents: write
 
 jobs:
+  ooxml-verification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Validate generated packages with Microsoft Open XML SDK
+        run: |
+          python -m pip install .
+          python -m tests.support.generate_compatibility_workbooks "${RUNNER_TEMP}/xlsx-validation"
+          dotnet run --project tests/support/ooxml-validator -- "${RUNNER_TEMP}/xlsx-validation/"*.xlsx
+
   formula-verification:
     runs-on: ubuntu-latest
     steps:
@@ -38,7 +54,7 @@ jobs:
           python -m pip wheel . --no-deps --wheel-dir "${RUNNER_TEMP}/wheel"
 
   build:
-    needs: formula-verification
+    needs: [formula-verification, ooxml-verification]
     runs-on: windows-latest
     steps:
       - name: Check out source
