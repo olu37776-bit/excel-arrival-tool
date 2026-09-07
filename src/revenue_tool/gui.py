@@ -55,6 +55,15 @@ def main(argv: list[str] | None = None) -> int:
                         raise RuntimeError("Windows EXE透视工作簿自检失败")
             finally:
                 workbook.close()
+            workbook = load_workbook(path, data_only=True)
+            try:
+                base = workbook[config.output["sheets"]["base"]]
+                indexes = {c["id"]: i for i, c in enumerate(config.base_columns, 1)}
+                for field, expected in calculate_final_values(values).items():
+                    if base.cell(2, indexes[field]).value != expected:
+                        raise RuntimeError("Windows EXE最终字段计算值自检失败")
+            finally:
+                workbook.close()
         return 0
 
     try:
