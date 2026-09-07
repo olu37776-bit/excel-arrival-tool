@@ -582,3 +582,72 @@ BLOCKERS=NONE或具体项
 NEXT=HOME_V4_INDEPENDENT_REVIEW/CONTINUE_IMPLEMENTATION
 
 无需上传本地代码、报告或业务数据。
+
+---
+
+## 17. V4 实施后独立核验与人工验收
+
+用户已报告首页V4实施完成，当前为 IMPLEMENTED_REPORTED / PENDING_INDEPENDENT_REVIEW。新独立 Agent 负责本节；实施报告的 PASS 不是审查事实。此次只审查本轮首页范围与实际受影响消费者，不机械重跑无关五模块整改。
+
+### 17.1 输入和固定状态
+
+在第16节固定目录更新 Authority 并记录 AUTHORITY_HEAD。读取本V4全部要求、本地 enterprise-home-polish-v4-plan.md、enterprise-home-polish-v4-report.md、对应证据、当前真实代码及必要字段/Metric Contract。
+核对 feature/enterprise-battle-map、工作树状态、BASE_HEAD/IMPLEMENTATION_HEAD/FINAL_HEAD，固定新的 REVIEWED_HEAD。报告提交与实现提交不同时确认 docs-only 差异。
+受审代码/配置/测试必须已提交且无并发写入；识别并保留已知报告产物，不覆盖其他修改。审查期间不修改生产代码、测试、Migration、业务数据或Authority，不提交、不push。
+若Authority拉取失败，核实实际文件版本和缺少的要求；不能把网络失败当业务缺陷，也不能把未知版本称为最新。缺失内容无法取得时只标记对应证据缺口，继续可完成项。
+
+### 17.2 核验顺序
+
+1. 布局与样式：真实企业首页专项文案自然撑高，与三卡、空间拓展有间隔；桌面与窄窗口、长数字/换行文案不重叠。确认三卡及空间拓展消费全局首页场景卡/数字的实际共享组件或token，非仅复制近似CSS。核查全局其他场景未回归。
+2. 金额：从真实首页请求追到API与数据库，独立核实“已下单金额”canonical key/DB列及M$单位；MOX、TOB分别求和，ISP&大企等于ISP+电力+大企。以非零且各模块不同的隔离测试数据或已有可信fixture核对，不以全部0证明正确。排查错字段、遗漏、join倍增、重复单位换算和未授权过滤。
+3. 空间拓展：严格执行第7节的整体空间求和、跟踪项目数和已孵化AND跟踪计数，不能误用已下单金额。
+4. 路由：通过真实点击和当前router核实全局企业场景→企业首页；MOX→MOX、TOB→TOB、ISP&大企→ISP；数字区域点击同目标，键盘操作及返回导航正常。不凭字符串搜索或未被页面调用的helper作结论。
+5. 页面状态：目标可为xx M$，实时不为xx/随机值；加载、0、失败有区分，API失败不伪装0；子页金额变更后返回首页汇总更新。不得读取五份完整明细在前端求和。
+6. 证据与测试：重新运行本轮金额/API/路由测试及被修改共享组件的受影响回归，检查测试是否验证真实实现。核对实施阶段full Vitest/build及已有lint/typecheck的命令、退出码和对应代码快照；证据完整且对应同一实现时无需仅因报告提交或本次只读审查重复全量。缺失、失败、源码变化或实际影响无法排除时，再重跑必要范围。保留作出取舍的依据。
+
+使用项目现有浏览器能力观察实际页面，并保存截图/尺寸。无法进行视觉检查时标记 VISUAL_CHECK=NOT_RUN，转入明确的人工检查项；不能声称布局已验证。用户最终视觉确认仍单独记账。测试/API写入只使用隔离数据，不修改真实业务库。
+
+### 17.3 报告与判定
+
+唯一最终报告：
+D:\BattleMap\battle-map\docs\enterprise\reviews\enterprise-home-v4-independent-review.md
+证据：
+D:\BattleMap\battle-map\docs\enterprise\reviews\evidence\enterprise-home-v4\<REVIEWED_HEAD>\
+
+已有报告先原样保存至 reviews/history/enterprise-home-v4-independent-review-before-<REVIEWED_HEAD>.md，同名不同内容不得覆盖。
+报告包含版本/HEAD、需求逐项矩阵、实际共享组件来源、金额/空间字段和汇总对照、路由表、页面截图/尺寸、测试日志、未运行项及finding。
+每个finding记录ID、严重度、实际位置/生产路径、违反的V4条款、复现证据、影响及修复方向。审查中不修复，发现一项缺陷后继续其他独立检查。
+结束复核HEAD和受审文件稳定；只允许上述报告/证据变更和已识别的临时输出。
+
+判定：
+- PASS：本轮必需核验完成，无blocking finding，受审HEAD/代码稳定；人工最终确认仍PENDING。
+- FAIL：确认违反本V4的阻塞实现/测试缺陷，NEXT=HOME_V4_REMEDIATION。
+- PARTIAL：必要证据/执行条件缺失，明确缺项，NEXT=COMPLETE_HOME_V4_REVIEW。仅最终人工视觉确认未进行，不把已完成的独立技术核验判失败。
+
+最终短回执：
+RESULT=PASS/FAIL/PARTIAL
+REVIEWED_HEAD=
+AUTHORITY_HEAD=
+SPACING_AND_STYLE=PASS/FAIL/NOT_RUN
+REALTIME_ORDERED_AMOUNT=PASS/FAIL/NOT_RUN
+EXPANSION_METRICS=PASS/FAIL/NOT_RUN
+ROUTES=PASS/FAIL/NOT_RUN
+LOADING_ZERO_ERROR_REFRESH=PASS/FAIL/NOT_RUN
+AFFECTED_REGRESSION=PASS/FAIL/NOT_RUN
+FULL_TEST_BUILD_EVIDENCE=VALID/INVALID/MISSING
+HEAD_AND_SOURCE_UNCHANGED=YES/NO
+BLOCKING_FINDINGS=NONE或ID
+REMAINING_CHECKS=NONE或具体项
+REPORT_PATH=
+MANUAL_ACCEPTANCE=PENDING
+NEXT=USER_MANUAL_ACCEPTANCE/HOME_V4_REMEDIATION/COMPLETE_HOME_V4_REVIEW
+
+### 17.4 用户人工确认
+
+独立核验完成后，让用户在实际页面确认：
+- 企业专项、三卡和空间拓展的间距、数字样式；
+- 目标占位与真实实时金额显示；
+- 全局企业场景和三卡点击跳转；
+- 返回首页后金额刷新。
+
+人工确认结果记录到同一报告，不替用户声称通过。用户确认无问题后首页V4完成，再按Authority推进剩余业务需求；不自动假设Excel V0.2调查或首页外任务已完成。

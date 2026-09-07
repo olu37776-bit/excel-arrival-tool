@@ -35,7 +35,7 @@
 | 21 | `isp-canonical-authority-v2.md` | ISP当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
 | 22 | `power-canonical-authority-v2.md` | 电力当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
 | 23 | `large-enterprise-canonical-authority-v2.md` | 大企当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
-| 24 | `enterprise-home-canonical-authority-v4.md` | 首页间距、全局场景卡样式/数字、已下单金额实时汇总、空间拓展及双层导航；含本地实施步骤/产物 | **当前执行 Authority** |
+| 24 | `enterprise-home-canonical-authority-v4.md` | 首页间距、全局场景卡样式/数字、已下单金额实时汇总、空间拓展及双层导航；含本地实施步骤/产物 | **本轮实施基线；当前执行第17节独立核验** |
 
 ---
 
@@ -48,12 +48,12 @@
 ```text
 PREVIOUS_REVIEW = USER_REPORTED_NO_BLOCKERS
 PREVIOUS_MANUAL_CHECK = BASICALLY_ACCEPTABLE_WITH_HOME_ISSUES
-CURRENT_TASK = ENTERPRISE_HOME_POLISH_V4
-HOME_V4_IMPLEMENTATION = PENDING
-NEXT_GATE = HOME_V4_INDEPENDENT_REVIEW
+CURRENT_TASK = HOME_V4_INDEPENDENT_REVIEW
+HOME_V4_IMPLEMENTATION = IMPLEMENTED_REPORTED
+MANUAL_ACCEPTANCE_V4 = PENDING
 ```
 
-执行 `enterprise-home-canonical-authority-v4.md`。本轮不重新实施已修复的五模块共享表单和其他操作链；保持其规则与必要回归。
+用户现已报告首页V4实施完成，尚无本轮独立核验结果。执行 `enterprise-home-canonical-authority-v4.md` 第17节。本轮不重新实施已修复的五模块共享表单和其他操作链；保持其规则与必要回归。
 
 ---
 
@@ -255,11 +255,11 @@ BLOCKED_BY_V0_2_AUTHORITY
 
 ## 10. 当前推进顺序
 
-1. 更新 Authority 镜像，读取首页V4及其引用的业务Contract，恢复真实全局首页/企业首页/汇总/路由实现。
-2. 在V4指定路径写最小实施计划、实际映射和WRITE_SCOPE，直接实施本轮首页调整。
-3. 完成金额/API/路由测试与布局视觉检查，回归实际受影响消费者，同步报告与证据并本地提交。
-4. 新HEAD按首页V4做独立核验，随后由用户人工确认本轮页面调整。
-5. Excel V0.2等其他需求继续按各自Authority推进，不混入本轮。
+1. 新独立 Agent 更新Authority，读取首页V4及本地实施计划/报告，固定新REVIEWED_HEAD。
+2. 按V4第17节核验布局/共享样式、真实金额与空间指标、路由和状态刷新；验证本轮实际受影响范围。
+3. 保存指定独立报告与证据，保留历史记录；不现场修复。
+4. PASS后由用户人工确认首页；FAIL进入首页修复；PARTIAL补齐具体缺项。
+5. 首页V4独立及人工确认完成后，再恢复Excel V0.2等其他待办的真实进度。
 
 ---
 
