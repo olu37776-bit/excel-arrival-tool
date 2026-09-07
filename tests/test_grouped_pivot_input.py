@@ -77,6 +77,8 @@ class GroupedPivotInputTest(unittest.TestCase):
             source = load_workbook(source_path)
             try:
                 pivot = donor['RPD地区收入汇总']._pivots[0]
+                # Keep the unrelated pivot outside the source business cells.
+                pivot.location.ref = 'AS6:BX20'
                 source.active.add_pivot(pivot)
                 auxiliary = source.create_sheet('_summary_source')
                 for row in donor['_summary_source'].iter_rows():

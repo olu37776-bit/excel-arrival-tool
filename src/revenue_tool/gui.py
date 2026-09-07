@@ -63,6 +63,25 @@ def main(argv: list[str] | None = None) -> int:
                         raise RuntimeError("Windows EXE最终字段计算值自检失败")
             finally:
                 workbook.close()
+            # Simulate a user pivot beside the base with a duplicate header.
+            from copy import deepcopy
+            workbook = load_workbook(path)
+            try:
+                user_pivot = deepcopy(workbook[SUMMARY_SHEETS['rpd']]._pivots[0])
+                user_pivot.name = 'UserPivotSmoke'
+                user_pivot.location.ref = 'AS1:AT3'
+                user_pivot.location.firstHeaderRow = 0
+                user_pivot.location.firstDataRow = 1
+                user_pivot.location.rowPageCount = 0
+                user_pivot.location.colPageCount = 0
+                user_pivot.pageFields = []
+                base = workbook[config.output['sheets']['base']]
+                base.add_pivot(user_pivot)
+                base['AS1'], base['AT1'] = '合同号', '金额'
+                base['AS2'], base['AT2'] = 'PIVOT-ONLY', 999
+                workbook.save(path)
+            finally:
+                workbook.close()
             # The packaged EXE must read grouped legacy pivot caches too.
             # This temporary fixture reproduces openpyxl 3.1.5's Nested error.
             from zipfile import ZipFile, ZIP_DEFLATED
