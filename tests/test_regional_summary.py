@@ -176,6 +176,7 @@ class RegionalSummaryTest(unittest.TestCase):
             plan = [[], [edit("manual_revenue_forecast_rpd", "9月"),
                          edit("manual_revenue_forecast_cpd", "8月"),
                          edit("manual_revenue_segment", "特殊处理"), edit("manual_revenue_month", -10)],
+                    [edit("manual_revenue_month", 0)],
                     [edit(field, None) for field in ("manual_revenue_forecast_rpd", "manual_revenue_forecast_cpd", "manual_revenue_segment", "manual_revenue_month")]]
             (root / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
             command = [str(uno_python), str(Path(__file__).parent / "support" / "verify_native_pivot.py"),
@@ -185,13 +186,14 @@ class RegionalSummaryTest(unittest.TestCase):
             snapshots = json.loads((root / "result.json").read_text())
             for stage, snapshot in enumerate(snapshots):
                 current_rows = deepcopy(rows)
-                if stage == 1:
+                if stage in (1, 2):
                     current_rows[0].values.update(manual_revenue_forecast_rpd="9月",
-                        manual_revenue_forecast_cpd="8月", manual_revenue_segment="特殊处理", manual_revenue_month=-10)
+                        manual_revenue_forecast_cpd="8月", manual_revenue_segment="特殊处理", manual_revenue_month=-10 if stage == 1 else 0)
                     current_rows[0].values.update(calculate_final_values(current_rows[0].values))
                 for mode, title in SUMMARY_SHEETS.items():
                     summary = build_regional_summary(current_rows, "2026-09", mode)
                     actual = snapshot[title]
+                    self.assertIn(actual["total_caption"], ("Total Result", "小计"))
                     self.assertEqual(["地区部", *summary.labels], actual["headers"], (stage, mode, actual))
                     for region in [*summary.regions, "小计"]:
                         for label in summary.labels:

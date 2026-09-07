@@ -27,7 +27,7 @@ RPD/CPD分别使用final_revenue_month_rpd/cpd。共同使用final_revenue_segme
 
 - services/regional_summary.py：纯投影及Decimal汇总，不依赖Excel。
 - adapters/regional_pivot.py：源单元格公式、原生缓存、透视结构、初始显示与样式。
-- 两口径共享一个隐藏源_summary_source及同一份缓存；前40列通过公式引用基表，4个辅助字段用于地区、汇总项目、基表行号及RPD/CPD口径。每张透视以原生报表筛选器固定默认口径。
+- 两口径共享一个隐藏源_summary_source及同一份缓存；前40列通过公式引用基表（源中原地区列标为“原始地区部”，分组列名为“地区部”），4个辅助字段用于地区、汇总项目、基表行号及RPD/CPD口径。每张透视以原生报表筛选器固定默认口径。
 - 每条基表记录保留两条源投影：分类记录，以及仅当月有效的小计记录。其余投影归入隐藏的“未纳入汇总”项。每口径2N行、合计固定4N行确保编辑月份或金额后刷新无需重建源范围。
 - 每个可见汇总列有互斥的汇总项目筛选，同一格的基表行号唯一。最后一列为显式当月小计桶；禁用跨列grand total，保留底部grand total并命名“小计”。避免把累计和当月加总，也避免六个条件金额字段透视导致Show Details混入整地区记录。
 - 辅助源不是事实表，不能直接总计所有源记录。用户应使用基表或可见汇总列。原基表保持40列不变，metadata不将辅助字段加入人工继承集合。
@@ -45,3 +45,7 @@ Linux门禁使用真实LibreOffice UNO API：打开生成xlsx、编辑人工月�
 真实Windows桌面Excel交互需本地复核；自动验证不能冒充Excel实机验证。仅使用虚构测试数据。
 
 参考：[Excel查看透视明细](https://support.microsoft.com/en-us/excel/expand-collapse-or-show-details-in-a-pivottable-or-pivotchart)、[openpyxl透视支持边界](https://openpyxl.readthedocs.io/en/stable/pivot.html)、[LibreOffice原生明细API](https://api.libreoffice.org/docs/idl/ref/interfacecom_1_1sun_1_1star_1_1sheet_1_1XDataPilotTable2.html)。
+
+## 办公软件兼容边界
+
+Excel工作簿底部单元格和标准OOXML grandTotalCaption均明确为“小计”。实际LibreOffice导入会忽略该自定义标题并用英文环境的Total Result。独立引擎验证记录原始标题，仅将末行该已知标签映射后比较金额与明细；不改工作簿、不跳过金额/明细断言，也不将LibreOffice标签行为冒充Excel结果。Microsoft定义见https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.pivottabledefinition.grandtotalcaption 。

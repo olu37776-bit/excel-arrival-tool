@@ -71,9 +71,17 @@ def main():
                 header_offset = next(i for i, r in enumerate(grid) if "9月小计" in r)
                 headers = list(grid[header_offset])
                 cells = {}
+                total_caption = None
                 for row_offset in range(header_offset + 1, len(grid)):
                     values = grid[row_offset]
                     region = str(values[0])
+                    if row_offset == len(grid) - 1:
+                        # Calc drops OOXML grandTotalCaption on import and uses
+                        # its localized total label. Record it; normalize only
+                        # this last total row for numeric/drill-through checks.
+                        total_caption = region
+                        if region in ("Total Result", "小计"):
+                            region = "小计"
                     cells[region] = {}
                     for col_offset in range(1, len(headers)):
                         address = CellAddress(area.Sheet, area.StartColumn + col_offset, area.StartRow + row_offset)
@@ -83,7 +91,7 @@ def main():
                             contract_column = list(detail[0]).index("合同号")
                             contracts = [str(r[contract_column]) for r in detail[1:]]
                         cells[region][headers[col_offset]] = {"value": values[col_offset] or 0, "contracts": contracts}
-                snapshot[name] = {"headers": headers, "cells": cells}
+                snapshot[name] = {"headers": headers, "cells": cells, "total_caption": total_caption}
             snapshots.append(snapshot)
         Path(output).write_text(json.dumps(snapshots, ensure_ascii=False), encoding="utf-8")
     finally:
