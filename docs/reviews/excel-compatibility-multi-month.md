@@ -38,3 +38,14 @@ Linux真实重算/原生透视使用LibreOffice；Windows验证对象是生成�
 用户实际报错工作簿、Excel版本和修复日志尚未提供，桌面Excel打开不再提示修复仍需实机确认；不能把这些自动检查描述为Excel实机验证。
 
 参考：[Microsoft PivotTableDefinition](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.pivottabledefinition?view=openxml-3.0.1)、[Microsoft Font](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.font?view=openxml-3.0.1)。
+
+## 正式发布验证
+
+- 最终代码：`991aecc5bcd8639d29fd7fc247e3d3e994fa9533`；合并提交：`7586920e421070b284c893d01fa8fb98075daaef`。
+- PR工作流34079505868：Microsoft SDK四类工作簿零错误；Linux 129项无跳过通过；Windows 129项测试通过（3项LibreOffice测试由Linux覆盖），EXE构建与GUI/多月文件运行自检通过。
+- 正式发布工作流[34079856268](https://github.com/olu37776-bit/excel-arrival-tool/actions/runs/34079856268)：所有任务成功；Linux 129项无跳过通过（98.906秒），Windows全部必需步骤成功。
+- 初次打开的缓存也逐月验证：预设records._id与cacheId一致，防止openpyxl在赋值前构造关系导致第二个月指向第一个月的记录；8月/9月两口径小计合同集合及金额均按字面量预期核对。
+- GUI关闭时撤销计时回调，最终日志无残留poll错误。
+- v0.10.0于2026-09-07 03:35:00 UTC发布；EXE 12,847,295字节。
+- SHA256：`b989994115abc2eda78aed11e8a16388d8ef3cccd017bb895fd96b69b5617468`。
+- [下载ExcelRevenueTool-v0.10.0.exe](https://github.com/olu37776-bit/excel-arrival-tool/releases/download/v0.10.0/ExcelRevenueTool-v0.10.0.exe)。
