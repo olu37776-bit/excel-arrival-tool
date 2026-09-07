@@ -111,8 +111,8 @@ class RegionalSummaryTest(unittest.TestCase):
                         self.assertEqual(1, len(sheet._pivots))
                         p = sheet._pivots[0]
                         self.assertTrue(p.enableDrill)
-                        self.assertFalse(p.rowGrandTotals)
-                        self.assertTrue(p.colGrandTotals)
+                        self.assertTrue(p.rowGrandTotals)
+                        self.assertFalse(p.colGrandTotals)
                         self.assertEqual("小计", p.grandTotalCaption)
                         self.assertEqual("sum", p.dataFields[0].subtotal)
                         self.assertTrue(p.cache.saveData)

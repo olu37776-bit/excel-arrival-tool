@@ -32,8 +32,29 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.smoke_test:
         import tkinter  # noqa: F401 - verifies the frozen GUI runtime
+        from tempfile import TemporaryDirectory
+        from openpyxl import load_workbook
+        from revenue_tool.adapters.excel_writer import ExcelOutputAdapter
+        from revenue_tool.adapters.regional_pivot import SUMMARY_SHEETS
+        from revenue_tool.domain.models import BaseRow, IssueLog
+        from revenue_tool.services.final_revenue import calculate_final_values
 
-        load_config(args.config)
+        config = load_config(args.config)
+        values = dict(contract_no="SMOKE", region="测试地区", supply_center="深供",
+                      revenue_month_rpd="2026-09", revenue_month_cpd="2026-09",
+                      revenue_segment="订未发", revenue_forecast=1)
+        values.update(calculate_final_values(values))
+        with TemporaryDirectory() as temporary:
+            path = Path(temporary) / "smoke.xlsx"
+            ExcelOutputAdapter().write(path, [BaseRow(values)], [], [], [], IssueLog(), config, "2026-09")
+            workbook = load_workbook(path)
+            try:
+                for name in SUMMARY_SHEETS.values():
+                    sheet = workbook[name]
+                    if len(sheet._pivots) != 1 or sheet["G9"].value != 1:
+                        raise RuntimeError("Windows EXE透视工作簿自检失败")
+            finally:
+                workbook.close()
         return 0
 
     try:

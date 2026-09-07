@@ -67,7 +67,8 @@ def write_regional_pivots(workbook, rows, config, month):
     base = workbook[config.output["sheets"]["base"]]
     columns = config.base_columns
     ids = [c["id"] for c in columns]
-    headers = [c["name"] for c in columns] + ["汇总地区部", "汇总项目", "基表行号", "收入口径"]
+    headers = ["原始地区部" if c["id"] == "region" else c["name"] for c in columns]
+    headers += ["地区部", "汇总项目", "基表行号", "收入口径"]
     count = len(columns)
     if 4 * len(rows) + 1 > 1048576:
         raise ValueError("基表超过262143行，双口径明细源超出Excel工作表行数限制")
@@ -133,7 +134,7 @@ def write_regional_pivots(workbook, rows, config, month):
             rowItems=[RowColItem(x=[Index(v=i)]) for i in range(len(regions))] + [RowColItem(t="grand", x=[Index(v=0)])],
             colItems=[RowColItem(x=[Index(v=i)]) for i in range(6)],
             dataFields=[DataField(name="最终收入预测汇总", fld=amount_index, subtotal="sum", numFmtId=4)],
-            rowGrandTotals=False, colGrandTotals=True, enableDrill=True,
+            rowGrandTotals=True, colGrandTotals=False, enableDrill=True,
             subtotalHiddenItems=False, showHeaders=True, compact=False, compactData=False,
             outline=False, gridDropZones=False, showDrill=False, showEmptyRow=True,
             showEmptyCol=True, missingCaption="0.00", showMissing=True,
