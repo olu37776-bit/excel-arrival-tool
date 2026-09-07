@@ -92,8 +92,8 @@ def main():
                             contracts = [str(r[contract_column]) for r in detail[1:]]
                         cells[region][headers[col_offset]] = {"value": values[col_offset] or 0, "contracts": contracts}
                 snapshot[name] = {"headers": headers, "cells": cells, "total_caption": total_caption,
-                    "month": sheet.getCellRangeByName("C6").getString(),
-                    "cumulative_caption": sheet.getCellRangeByName("B7").getString()}
+                    "month": sheet.getCellRangeByName("C4").getString(),
+                    "cumulative_caption": sheet.getCellRangeByName("B5").getString()}
             snapshots.append(snapshot)
         Path(output).write_text(json.dumps(snapshots, ensure_ascii=False), encoding="utf-8")
     finally:

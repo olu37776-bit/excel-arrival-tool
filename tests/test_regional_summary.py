@@ -105,10 +105,10 @@ class RegionalSummaryTest(unittest.TestCase):
                         sheet = wb[SUMMARY_SHEETS[mode]]
                         self.assertEqual("小计", sheet["A13"].value)
                         self.assertEqual(29 if mode == "rpd" else 159, sheet["G13"].value)
-                        self.assertEqual("小计", sheet["G7"].value)
-                        self.assertEqual("2026-09", sheet["C6"].value)
-                        self.assertIn("C6:G6", {str(r) for r in sheet.merged_cells.ranges})
-                        self.assertEqual("f", sheet["B7"].data_type)
+                        self.assertEqual("小计", sheet["G5"].value)
+                        self.assertEqual("2026-09", sheet["C4"].value)
+                        self.assertIn("C4:G4", {str(r) for r in sheet.merged_cells.ranges})
+                        self.assertEqual("f", sheet["B5"].data_type)
                         self.assertTrue(sheet.row_dimensions[8].hidden)
                         self.assertTrue(sheet.row_dimensions[9].hidden)
                         self.assertEqual("#,##0.00", sheet["G13"].number_format)
@@ -184,8 +184,8 @@ class RegionalSummaryTest(unittest.TestCase):
                          edit("manual_revenue_segment", "特殊处理"), edit("manual_revenue_month", -10)],
                     [edit("manual_revenue_month", 0)],
                     [edit(field, None) for field in ("manual_revenue_forecast_rpd", "manual_revenue_forecast_cpd", "manual_revenue_segment", "manual_revenue_month")],
-                    [[SUMMARY_SHEETS["rpd"], "C6", "2026-06"], [SUMMARY_SHEETS["cpd"], "C6", "2026-12"]],
-                    [[SUMMARY_SHEETS["rpd"], "C6", "2026-01"], [SUMMARY_SHEETS["cpd"], "C6", "2027-01"]]]
+                    [[SUMMARY_SHEETS["rpd"], "C4", "2026-06"], [SUMMARY_SHEETS["cpd"], "C4", "2026-12"]],
+                    [[SUMMARY_SHEETS["rpd"], "C4", "2026-01"], [SUMMARY_SHEETS["cpd"], "C4", "2027-01"]]]
             (root / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
             command = [str(uno_python), str(Path(__file__).parent / "support" / "verify_native_pivot.py"),
                        office, str(source), str(root / "plan.json"), str(root / "result.json")]

@@ -1,7 +1,7 @@
 """Native OOXML pivots with saved caches and formula-backed drill-through sources.
 
 One pivot column = one bucket. Current rows also have a subtotal bucket copy;
-row grand totals are disabled, so they cannot accidentally sum both copies.
+cross-column grand totals are disabled, so they cannot accidentally sum both copies.
 Never use six conditional measures: their Show Details would include unrelated
 months/segments from the entire region. Source sheets are not business facts.
 """
@@ -50,7 +50,7 @@ def _bucket_formula(refs, summary, subtotal):
     month, amount, segment = (refs[f"final_revenue_month_{summary.mode}"],
                               refs["final_revenue_forecast"], refs["final_revenue_segment"])
     labels = summary.labels
-    selected = f'{quote_sheetname(SUMMARY_SHEETS[summary.mode])}!$C$6'
+    selected = f'{quote_sheetname(SUMMARY_SHEETS[summary.mode])}!$C$4'
     other = _q(labels[4])
     for position in range(2, -1, -1):
         other = f'IF({segment}={_q(SEGMENTS[position])},{_q(labels[position + 1])},{other})'
@@ -167,7 +167,7 @@ def write_regional_pivots(workbook, rows, config, month):
         mode_range = f'{quote_sheetname(source.title)}!$AR$2:$AR${last_source}'
         omitted = (f'COUNTIFS({bucket_range},{_q(EXCLUDED)},{mode_range},{_q(mode.upper())})'
                    f'-{len(rows)}+COUNTIFS({bucket_range},"小计",{mode_range},{_q(mode.upper())})')
-        sheet["A3"] = (f'=IF({_valid_month("C6")},"统计年份："&LEFT(C6,4)&"；未纳入："&({omitted})&'
+        sheet["A3"] = (f'=IF({_valid_month("C4")},"统计年份："&LEFT(C4,4)&"；未纳入："&({omitted})&'
                        '"条（月份不在范围、空白或金额无效）。辅助源请勿直接求和。",'
                        '"请修正黄色年月：填写YYYY-MM，然后重算并刷新。")')
         sheet["A3"].alignment = Alignment(wrap_text=True, vertical="center")
@@ -175,26 +175,26 @@ def write_regional_pivots(workbook, rows, config, month):
         sheet.row_dimensions[3].height = 30
         sheet["A6"] = "收入口径"
         sheet["B6"] = mode.upper()
-        sheet.merge_cells("C6:G6")
-        sheet["C6"] = month
-        sheet["C6"].number_format = "@"
-        sheet["C6"].fill = PatternFill("solid", fgColor="FFF2CC")
-        sheet["C6"].font = Font(size=13, bold=True)
-        sheet["C6"].alignment = Alignment(horizontal="center", vertical="center")
-        sheet.row_dimensions[6].height = 28
-        validation = DataValidation(type="custom", formula1=_valid_month("C6"), allow_blank=False,
+        sheet.merge_cells("C4:G4")
+        sheet["C4"] = month
+        sheet["C4"].number_format = "@"
+        sheet["C4"].fill = PatternFill("solid", fgColor="FFF2CC")
+        sheet["C4"].font = Font(size=13, bold=True)
+        sheet["C4"].alignment = Alignment(horizontal="center", vertical="center")
+        sheet.row_dimensions[4].height = 28
+        validation = DataValidation(type="custom", formula1=_valid_month("C4"), allow_blank=False,
             showErrorMessage=True, errorStyle="stop", errorTitle="统计年月格式不正确",
             error="请填写完整年月，例如2026-09。", showInputMessage=True,
             promptTitle="统计年月", prompt="例如2026-09；修改后重算并刷新透视。")
         sheet.add_data_validation(validation)
-        validation.add(sheet["C6"])
+        validation.add(sheet["C4"])
         sheet["A8"] = "最终收入预测"
         sheet["B8"] = "汇总项目"
         for index, label in enumerate(["地区部", *summary.labels], 1):
             sheet.cell(9, index, label)
-            sheet.cell(7, index, label)
-        sheet["B7"] = (f'=IF({_valid_month("C6")},IF(RIGHT(C6,2)="01","前期累计（无）",'
-                       '"1—"&(VALUE(RIGHT(C6,2))-1)&"月累计"),"请修正统计年月")')
+            sheet.cell(5, index, label)
+        sheet["B5"] = (f'=IF({_valid_month("C4")},IF(RIGHT(C4,2)="01","前期累计（无）",'
+                       '"1—"&(VALUE(RIGHT(C4,2))-1)&"月累计"),"请修正统计年月")')
         for number, region in enumerate(regions, 10):
             sheet.cell(number, 1, region)
             for column, value in enumerate(summary.totals[region], 2):
@@ -203,10 +203,10 @@ def write_regional_pivots(workbook, rows, config, month):
         sheet.cell(last, 1, "小计")
         for column in range(6):
             sheet.cell(last, column + 2, float(sum((v[column] for v in summary.totals.values()), Decimal("0.00"))))
-        for row in sheet.iter_rows(min_row=7, max_row=last, max_col=7):
+        for row in sheet.iter_rows(min_row=5, max_row=last, max_col=7):
             for cell in row:
                 cell.alignment = Alignment(vertical="center", horizontal="left" if cell.column == 1 else "right")
-                if cell.row in (7, 8, 9):
+                if cell.row in (5, 8, 9):
                     cell.fill = PatternFill("solid", fgColor="1F4E78")
                     cell.font = Font(bold=True, color="FFFFFF")
                 else:
@@ -221,6 +221,8 @@ def write_regional_pivots(workbook, rows, config, month):
             sheet.column_dimensions[column].width = 19
         # Keep dynamic presentation headers outside the native pivot area;
         # Excel refresh must never overwrite the month input or cumulative formula.
+        sheet.row_dimensions[6].hidden = True
+        sheet.row_dimensions[7].hidden = True
         sheet.row_dimensions[8].hidden = True
         sheet.row_dimensions[9].hidden = True
         sheet.freeze_panes = "B10"
