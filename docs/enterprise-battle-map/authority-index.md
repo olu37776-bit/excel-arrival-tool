@@ -13,43 +13,44 @@
 | 1 | `enterprise-contract-architecture-v5.md` | 端到端 canonical identity、真实 Runtime Projection、API canonical-only、Customer 主键贯穿、Heatmap canonical key、Progress 单一事实源、DB/Conformance Gate | 所有企业任务必读 |
 | 2 | `architecture/enterprise-runtime-field-options-contract-v1.md` | Runtime Field View Model、select/options 判定、动态 options 生命周期、错误边界与五模块回归门禁 | 长期 Runtime Options Authority |
 | 3 | `mox-canonical-authority-v6.md` | MOX 41字段、4 group、Create/Edit runtime、Heatmap、legacy key、Progress、Customer、DB/测试最终目标 | 当前已验证参考实现业务 Authority |
-| 4 | `remediation/non-mox-modules-mox-reference-alignment-v1.md` | TOB/ISP/电力/大企全面向 MOX 已验证机制对齐：Runtime、Create/Edit、Customer、Progress、Heatmap、Metric、API/DB、隐藏消费者 | **当前下一实施阶段** |
-| 5 | `investigation/enterprise-excel-v0.1-v0.2-diff-survey-v1.md` | 企业作战地图基表 V0.1→V0.2 Schema/Contract 差异调查 | 可与 Gap Matrix 并行；业务字段变化需先 Authority Review |
-| 6 | `remediation/enterprise-form-options-root-cause-remediation-v2.md` | `f.options is not iterable` 根因级修复 | 已实施并经用户确认 Create/Edit 可打开 |
-| 7 | `remediation/enterprise-form-options-and-group-spacing-remediation-v1.md` | options runtime 与共享 group 视觉间距第一轮修复 | options部分被V2取代；spacing为历史/回归参考 |
-| 8 | `remediation/enterprise-customer-data-fetch-unification-v2.md` | Customer SQL/customer_id 贯穿修复及长期回归门禁 | 已修复，统一机制回归项 |
-| 9 | `reviews/mox-end-to-end-canonical-independent-review-v1.md` | MOX 端到端独立审查规范 | 最新复审 PASS |
-| 10 | `remediation/mox-4-group-render-chain-repair-v1.md` | MOX 4-group renderer 断链修复 | 已实施并通过复审 |
-| 11 | `remediation/mox-end-to-end-canonical-convergence-v1.md` | MOX 端到端 canonical 收敛 | 已实施，作为 Reference baseline |
-| 12 | `investigation/enterprise-runtime-implementation-survey-v1.md` | 已完成的实际运行链调查规范 | 事实证据来源 |
-| 13 | `integration/parallel-module-integration-plan-v1.md` | TOB/ISP/电力+大企合并规则 | 集成历史/回归参考 |
-| 14 | `integration/local-worktree-layout-v1.md` | 本地真实 worktree 路径 | 本地执行必读 |
-| 15 | `tob-canonical-authority-v2.md` | TOB 当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
-| 16 | `isp-canonical-authority-v2.md` | ISP 当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
-| 17 | `power-canonical-authority-v2.md` | 电力当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
-| 18 | `large-enterprise-canonical-authority-v2.md` | 大企当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
-| 19 | `enterprise-home-canonical-authority-v2.md` | 企业首页旧阶段设计 | DEFERRED；最后重新冻结 |
+| 4 | `reviews/non-mox-modules-mox-reference-independent-review-v1.md` | TOB/ISP/电力/大企对齐后的固定HEAD独立审查：shared runtime、Create/Edit、Customer、Progress、Heatmap、Metric、API/DB、重复机制和隐藏消费者 | **当前下一门禁** |
+| 5 | `remediation/non-mox-modules-mox-reference-alignment-v1.md` | TOB/ISP/电力/大企全面向 MOX 已验证机制对齐 | 已实施，作为独立审查基线 |
+| 6 | `investigation/enterprise-excel-v0.1-v0.2-diff-survey-v1.md` | 企业作战地图基表 V0.1→V0.2 Schema/Contract 差异调查 | 可并行只读；业务字段变化需先 Authority Review |
+| 7 | `remediation/enterprise-form-options-root-cause-remediation-v2.md` | `f.options is not iterable` 根因级修复 | 已实施并经用户确认 Create/Edit 可打开 |
+| 8 | `remediation/enterprise-form-options-and-group-spacing-remediation-v1.md` | options runtime 与共享 group 视觉间距第一轮修复 | options部分被V2取代；spacing为历史/回归参考 |
+| 9 | `remediation/enterprise-customer-data-fetch-unification-v2.md` | Customer SQL/customer_id 贯穿修复及长期回归门禁 | 已修复，统一机制回归项 |
+| 10 | `reviews/mox-end-to-end-canonical-independent-review-v1.md` | MOX 端到端独立审查规范 | 最新复审 PASS |
+| 11 | `remediation/mox-4-group-render-chain-repair-v1.md` | MOX 4-group renderer 断链修复 | 已实施并通过复审 |
+| 12 | `remediation/mox-end-to-end-canonical-convergence-v1.md` | MOX 端到端 canonical 收敛 | 已实施，作为 Reference baseline |
+| 13 | `investigation/enterprise-runtime-implementation-survey-v1.md` | 已完成的实际运行链调查规范 | 事实证据来源 |
+| 14 | `integration/parallel-module-integration-plan-v1.md` | TOB/ISP/电力+大企合并规则 | 集成历史/回归参考 |
+| 15 | `integration/local-worktree-layout-v1.md` | 本地真实 worktree 路径 | 本地执行必读 |
+| 16 | `tob-canonical-authority-v2.md` | TOB 当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
+| 17 | `isp-canonical-authority-v2.md` | ISP 当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
+| 18 | `power-canonical-authority-v2.md` | 电力当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
+| 19 | `large-enterprise-canonical-authority-v2.md` | 大企当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
+| 20 | `enterprise-home-canonical-authority-v2.md` | 企业首页旧阶段设计 | DEFERRED；最后重新冻结 |
 
 ---
 
 ## 2. 当前阶段判断
 
-用户人工确认：MOX 当前整体实现机制基本正确；TOB / ISP / 电力 / 大企虽然已能打开 Create/Edit，但页面与运行实现整体仍存在明显问题，不能继续按“局部 bug 修复”推进。
+TOB / ISP / 电力 / 大企向 MOX Reference Implementation 的机制对齐已经完成并提交。
 
-因此当前正式判断：
+当前状态：
 
 ```text
 MOX = VERIFIED REFERENCE CANDIDATE
-TOB / ISP / POWER / LARGE = MECHANISM NOT ALIGNED
+TOB / ISP / POWER / LARGE = ALIGNMENT IMPLEMENTED / INDEPENDENT REVIEW PENDING
 ```
 
-四模块下一步必须全面向 MOX 已验证后的机制收敛，但不得复制 MOX 业务字段。
+因此当前禁止继续无审查地修改 shared runtime。下一门禁是对本次 alignment commit 做固定 HEAD 的只读独立审查。
 
 ---
 
-## 3. 当前 Reference Alignment 原则
+## 3. 当前独立审查目标
 
-共享的是：
+独立审查不是只确认页面能打开，而是重新证明四模块真正共享 MOX 已验证机制：
 
 ```text
 Field Contract machinery
@@ -66,17 +67,22 @@ Persistence mapping / DB conformance
 Tests / hidden-consumer gates
 ```
 
-不共享/不复制的是：
+必须特别检查：
 
 ```text
-MOX 41字段
-MOX 4-group业务结构
-MOX专属无线/微波字段
-MOX专属Heatmap业务规则
-MOX数据库业务列
+DUPLICATE_PROJECTION_IMPLEMENTATIONS
+MODULE_LOCAL_FORM_SCHEMAS
+PRIVATE_CUSTOMER_FETCH_IMPLEMENTATIONS
+PROGRESS_DOUBLE_WRITE_PATHS
+LABEL_IDENTITY_LOOKUPS
+ACTIVE_LEGACY_KEYS
+MODULE_LOCAL_METRIC_LOGIC
+UNDECLARED_CANONICAL_CONSUMERS
 ```
 
-TOB / ISP / 电力 / 大企继续使用自己的 Canonical Contract 和 3-group：
+目标 blocking 数量为 0。
+
+四模块仍使用自己的业务 Field Contract，不复制 MOX 字段；正确 group 均为：
 
 ```text
 客户信息
@@ -88,7 +94,7 @@ TOB / ISP / 电力 / 大企继续使用自己的 Canonical Contract 和 3-group�
 
 ## 4. `f.options` 根因已闭合
 
-最新根因：
+已确认根因：
 
 ```text
 fieldDef.type = 'select'
@@ -135,20 +141,13 @@ battleProgress = latest/current canonical projection
 
 ---
 
-## 6. Excel V0.2 与 Reference Alignment 协调
+## 6. Excel V0.2 与当前独立审查协调
 
-V0.1→V0.2 Excel Diff Survey 可以与四模块 Gap Matrix 并行。
+V0.1→V0.2 Excel Diff Survey 可以与本轮独立审查并行。
 
-允许先做：
+本轮独立审查判断的是**机制是否对齐**，不是提前实施 V0.2 业务字段变化。
 
-- shared runtime alignment；
-- renderer alignment；
-- customer/progress/heatmap/metric/API/DB mechanism alignment；
-- hidden consumer cleanup。
-
-暂不允许 Agent 自行依据 V0.2 改业务字段。
-
-如果 V0.2 导致：
+如果审查发现差异明显来自 V0.2 尚未 Authority 化的：
 
 ```text
 field added/removed/renamed
@@ -157,25 +156,29 @@ option-set changed
 semantic changed
 ```
 
-必须先经过 Authority Review，发布对应模块新的 Canonical Authority，再实施字段变化。
+标记：
+
+```text
+BLOCKED_BY_V0_2_AUTHORITY
+```
+
+不得在审查中修复或自行解释。
 
 ---
 
 ## 7. 当前推进顺序
 
 ```text
-1. 更新Authority镜像
-2. 运行 non-mox-modules-mox-reference-alignment-v1.md
-   - 先建 Gap Matrix
-   - 再收敛 shared runtime
-   - TOB → ISP → Power → Large 逐模块接入
-3. 同时运行 Excel V0.1→V0.2 Diff Survey（只读）
-4. V0.2 Authority Review
-5. 如V0.2有业务字段变化，发布模块新Authority并补实施
-6. Non-MOX Independent Review
-7. 用户逐模块人工验收
-8. 企业模块统一 VERIFIED
-9. 企业首页最终建设
+1. alignment implementation 已完成并commit
+2. 固定当前代码HEAD
+3. 执行 reviews/non-mox-modules-mox-reference-independent-review-v1.md
+4. 同时完成 Excel V0.1→V0.2 Diff Survey（只读）
+5. 若独立审查 FAIL → 仅修 blocking implementation/test findings → 复审
+6. 若独立审查 PASS → 用户逐模块人工验收
+7. 对 Excel V0.2 结果做 Authority Review
+8. 如 V0.2 有业务字段变化，发布 TOB/ISP/Power/Large 新 Canonical Authority 并实施 delta
+9. 最终企业模块统一审查 / VERIFIED
+10. 企业首页最后建设
 ```
 
 ---
@@ -208,7 +211,7 @@ D:\BattleMap\battle-map-isp
 D:\BattleMap\power-large-task
 ```
 
-当前 Reference Alignment 应在主工作树统一实施，禁止多个写 Agent 同时操作该 worktree。
+当前独立审查必须只针对主工作树固定 `REVIEWED_HEAD`，审查期间禁止任何写 Agent 修改该 worktree。
 
 ---
 
@@ -234,5 +237,6 @@ D:\BattleMap\power-large-task
 - Runtime View Model 不得重新创造静态 Field metadata Authority；
 - 不保留长期 legacy alias/fallback/双写；
 - 每次实现必须有真实 Production-path test；
+- 独立审查必须固定 HEAD，只读执行；
 - 人工视觉/交互验收由用户执行；
 - 不确定的 V0.2 业务变化必须标记 `BLOCKED_BY_V0_2_AUTHORITY`，不得猜测。
