@@ -68,7 +68,7 @@ def main():
                 area = table.getOutputRange()
                 # Discover positions after native refresh; also detect shifted or extra columns.
                 grid = sheet.getCellRangeByPosition(area.StartColumn, area.StartRow, area.EndColumn, area.EndRow).getDataArray()
-                header_offset = next(i for i, r in enumerate(grid) if "9月小计" in r)
+                header_offset = next(i for i, r in enumerate(grid) if "前期累计" in r and "小计" in r)
                 headers = list(grid[header_offset])
                 cells = {}
                 total_caption = None
@@ -91,7 +91,9 @@ def main():
                             contract_column = list(detail[0]).index("合同号")
                             contracts = [str(r[contract_column]) for r in detail[1:]]
                         cells[region][headers[col_offset]] = {"value": values[col_offset] or 0, "contracts": contracts}
-                snapshot[name] = {"headers": headers, "cells": cells, "total_caption": total_caption}
+                snapshot[name] = {"headers": headers, "cells": cells, "total_caption": total_caption,
+                    "month": sheet.getCellRangeByName("C6").getString(),
+                    "cumulative_caption": sheet.getCellRangeByName("B7").getString()}
             snapshots.append(snapshot)
         Path(output).write_text(json.dumps(snapshots, ensure_ascii=False), encoding="utf-8")
     finally:

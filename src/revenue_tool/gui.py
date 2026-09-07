@@ -51,7 +51,7 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 for name in SUMMARY_SHEETS.values():
                     sheet = workbook[name]
-                    if len(sheet._pivots) != 1 or sheet["G9"].value != 1:
+                    if len(sheet._pivots) != 1 or sheet["G11"].value != 1:
                         raise RuntimeError("Windows EXE透视工作簿自检失败")
             finally:
                 workbook.close()

@@ -24,9 +24,13 @@ def report_month(value: str | None = None) -> str:
 
 
 def summary_labels(month: str) -> tuple[str, ...]:
-    number = int(month[-2:])
-    cumulative = f"1—{number - 1}月累计" if number > 1 else "前期累计（无）"
-    return (cumulative, *(f"{number}月{x}" for x in SEGMENTS), f"{number}月小计")
+    # Stable cache members: month changes must never reorder/drop pivot columns.
+    return ("前期累计", *SEGMENTS, "小计")
+
+
+def cumulative_caption(month: str) -> str:
+    number = int(report_month(month)[-2:])
+    return f"1—{number - 1}月累计" if number > 1 else "前期累计（无）"
 
 
 def region_label(value) -> str:

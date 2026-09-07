@@ -20,6 +20,7 @@ from openpyxl.pivot.table import (
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter, quote_sheetname
 from openpyxl.utils.datetime import to_excel
+from openpyxl.worksheet.datavalidation import DataValidation
 
 from revenue_tool.services.regional_summary import (
     EMPTY_REGION, EXCLUDED, SEGMENTS, build_regional_summary,
@@ -49,18 +50,26 @@ def _bucket_formula(refs, summary, subtotal):
     month, amount, segment = (refs[f"final_revenue_month_{summary.mode}"],
                               refs["final_revenue_forecast"], refs["final_revenue_segment"])
     labels = summary.labels
+    selected = f'{quote_sheetname(SUMMARY_SHEETS[summary.mode])}!$C$6'
     other = _q(labels[4])
     for position in range(2, -1, -1):
         other = f'IF({segment}={_q(SEGMENTS[position])},{_q(labels[position + 1])},{other})'
-    valid = (f'AND(ISNUMBER({amount}),ISTEXT({month}),LEN({month})=7,'
-             f'LEFT({month},5)={_q(summary.month[:4] + "-")},'
+    valid = (f'AND({_valid_month(selected)},ISNUMBER({amount}),ISTEXT({month}),LEN({month})=7,'
+             f'LEFT({month},5)=LEFT({selected},5),'
              f'IFERROR(TEXT(VALUE(RIGHT({month},2)),"00")=RIGHT({month},2),FALSE),'
              f'RIGHT({month},2)>="01",RIGHT({month},2)<="12")')
     current = _q(labels[5]) if subtotal else other
     earlier = _q(EXCLUDED) if subtotal else _q(labels[0])
-    return (f'=IFERROR(IF({valid},IF({month}={_q(summary.month)},{current},'
-            f'IF({month}<{_q(summary.month)},{earlier},{_q(EXCLUDED)})),'
+    return (f'=IFERROR(IF({valid},IF({month}={selected},{current},'
+            f'IF({month}<{selected},{earlier},{_q(EXCLUDED)})),'
             f'{_q(EXCLUDED)}),{_q(EXCLUDED)})')
+
+
+def _valid_month(ref):
+    return (f'IFERROR(AND(ISTEXT({ref}),LEN({ref})=7,MID({ref},5,1)="-",'
+            f'TEXT(VALUE(LEFT({ref},4)),"0000")=LEFT({ref},4),VALUE(LEFT({ref},4))>=1,'
+            f'TEXT(VALUE(RIGHT({ref},2)),"00")=RIGHT({ref},2),'
+            f'VALUE(RIGHT({ref},2))>=1,VALUE(RIGHT({ref},2))<=12),FALSE)')
 
 
 def write_regional_pivots(workbook, rows, config, month):
@@ -70,8 +79,8 @@ def write_regional_pivots(workbook, rows, config, month):
     headers = ["原始地区部" if c["id"] == "region" else c["name"] for c in columns]
     headers += ["地区部", "汇总项目", "基表行号", "收入口径"]
     count = len(columns)
-    if 4 * len(rows) + 1 > 1048576:
-        raise ValueError("基表超过262143行，双口径明细源超出Excel工作表行数限制")
+    if 4 * len(rows) + 7 > 1048576:
+        raise ValueError("基表超过262142行，双口径明细源超出Excel工作表行数限制")
     report_sheets = {mode: workbook.create_sheet(title) for mode, title in SUMMARY_SHEETS.items()}
     source = workbook.create_sheet("_summary_source")
     source.append(headers)
@@ -85,11 +94,11 @@ def write_regional_pivots(workbook, rows, config, month):
     fields = [CacheField(name=name, sharedItems=SharedItems()) for name in headers]
     fields[count].sharedItems = SharedItems(_fields=[Text(v=x) for x in regions], containsString=True)
     fields[count + 1].sharedItems = SharedItems(_fields=[Text(v=x) for x in buckets], containsString=True)
-    fields[count + 3].sharedItems = SharedItems(_fields=[Text(v=x) for x in ("RPD", "CPD")], containsString=True)
+    fields[count + 3].sharedItems = SharedItems(_fields=[Text(v=x) for x in ("RPD", "CPD", "__SCHEMA__")], containsString=True)
     cache = CacheDefinition(
         cacheSource=CacheSource(type="worksheet", worksheetSource=WorksheetSource(
-            ref=f"A1:{get_column_letter(len(headers))}{max(1, 4 * len(rows) + 1)}", sheet=source.title)),
-        cacheFields=fields, recordCount=4 * len(rows), saveData=True,
+            ref=f"A1:{get_column_letter(len(headers))}{4 * len(rows) + 7}", sheet=source.title)),
+        cacheFields=fields, recordCount=4 * len(rows) + 6, saveData=True,
         refreshOnLoad=False, enableRefresh=True, backgroundQuery=False,
         createdVersion=6, refreshedVersion=6, minRefreshableVersion=3,
     )
@@ -122,13 +131,13 @@ def write_regional_pivots(workbook, rows, config, month):
         pivot_fields[count + 1] = PivotField(axis="axisCol", defaultSubtotal=False,
             showAll=True, sortType="manual", items=[FieldItem(x=i, h=(i == 6)) for i in range(7)])
         pivot_fields[count + 3] = PivotField(axis="axisPage", defaultSubtotal=False,
-            items=[FieldItem(x=0), FieldItem(x=1)])
+            items=[FieldItem(x=0), FieldItem(x=1), FieldItem(x=2, h=True)])
         amount_index = ids.index("final_revenue_forecast")
         pivot_fields[amount_index].dataField = True
         pivot = TableDefinition(
             name=f"RegionalRevenue{mode.upper()}", cacheId=1, dataCaption="最终收入预测",
             grandTotalCaption="小计", rowHeaderCaption="地区部", colHeaderCaption="汇总项目",
-            location=Location(ref=f"A6:G{8 + len(regions)}", firstHeaderRow=1, firstDataRow=2, firstDataCol=1, rowPageCount=1, colPageCount=1),
+            location=Location(ref=f"A8:G{10 + len(regions)}", firstHeaderRow=1, firstDataRow=2, firstDataCol=1, rowPageCount=1, colPageCount=1),
             pivotFields=pivot_fields, rowFields=[RowColField(x=count)], colFields=[RowColField(x=count + 1)],
             pageFields=[PageField(fld=count + 3, item=mode_index)],
             rowItems=[RowColItem(x=[Index(v=i)]) for i in range(len(regions))] + [RowColItem(t="grand", x=[Index(v=0)])],
@@ -145,36 +154,59 @@ def write_regional_pivots(workbook, rows, config, month):
         pivot.cache = cache
         sheet.add_pivot(pivot)
         sheet.merge_cells("A1:G1")
-        sheet["A1"] = f"{month} {mode.upper()}地区收入汇总"
+        sheet["A1"] = f"{mode.upper()}地区收入汇总"
         sheet["A1"].font = Font(size=16, bold=True, color="1F4E78")
         sheet.row_dimensions[1].height = 29
         sheet.merge_cells("A2:G2")
-        sheet["A2"] = "双击金额查看明细。修改黄色人工字段后，先按Ctrl+Alt+F9重算，再点“数据→全部刷新”。"
+        sheet["A2"] = "黄色区域可修改统计年月（YYYY-MM）。改月份或人工字段后，先Ctrl+Alt+F9重算，再“数据→全部刷新”。双击金额查看明细。"
         sheet["A2"].alignment = Alignment(wrap_text=True, vertical="center")
         sheet.row_dimensions[2].height = 32
         sheet.merge_cells("A3:G3")
-        sheet["A3"] = f"统计月份：{month}；仅汇总本年截至当月。初次生成未纳入：{summary.excluded_count}条（月份不在范围、空白或金额无效）；辅助源请勿直接求和。"
+        last_source = 4 * len(rows) + 7
+        bucket_range = f'{quote_sheetname(source.title)}!$AP$2:$AP${last_source}'
+        mode_range = f'{quote_sheetname(source.title)}!$AR$2:$AR${last_source}'
+        omitted = (f'COUNTIFS({bucket_range},{_q(EXCLUDED)},{mode_range},{_q(mode.upper())})'
+                   f'-{len(rows)}+COUNTIFS({bucket_range},"小计",{mode_range},{_q(mode.upper())})')
+        sheet["A3"] = (f'=IF({_valid_month("C6")},"统计年份："&LEFT(C6,4)&"；未纳入："&({omitted})&'
+                       '"条（月份不在范围、空白或金额无效）。辅助源请勿直接求和。",'
+                       '"请修正黄色年月：填写YYYY-MM，然后重算并刷新。")')
         sheet["A3"].alignment = Alignment(wrap_text=True, vertical="center")
         sheet["A3"].font = Font(size=10, color="666666")
         sheet.row_dimensions[3].height = 30
-        sheet["A4"] = "收入口径"
-        sheet["B4"] = mode.upper()
-        sheet["A6"] = "最终收入预测"
-        sheet["B6"] = "汇总项目"
+        sheet["A6"] = "收入口径"
+        sheet["B6"] = mode.upper()
+        sheet.merge_cells("C6:G6")
+        sheet["C6"] = month
+        sheet["C6"].number_format = "@"
+        sheet["C6"].fill = PatternFill("solid", fgColor="FFF2CC")
+        sheet["C6"].font = Font(size=13, bold=True)
+        sheet["C6"].alignment = Alignment(horizontal="center", vertical="center")
+        sheet.row_dimensions[6].height = 28
+        validation = DataValidation(type="custom", formula1=_valid_month("C6"), allow_blank=False,
+            showErrorMessage=True, errorStyle="stop", errorTitle="统计年月格式不正确",
+            error="请填写完整年月，例如2026-09。", showInputMessage=True,
+            promptTitle="统计年月", prompt="例如2026-09；修改后重算并刷新透视。")
+        sheet.add_data_validation(validation)
+        validation.add(sheet["C6"])
+        sheet["A8"] = "最终收入预测"
+        sheet["B8"] = "汇总项目"
         for index, label in enumerate(["地区部", *summary.labels], 1):
+            sheet.cell(9, index, label)
             sheet.cell(7, index, label)
-        for number, region in enumerate(regions, 8):
+        sheet["B7"] = (f'=IF({_valid_month("C6")},IF(RIGHT(C6,2)="01","前期累计（无）",'
+                       '"1—"&(VALUE(RIGHT(C6,2))-1)&"月累计"),"请修正统计年月")')
+        for number, region in enumerate(regions, 10):
             sheet.cell(number, 1, region)
             for column, value in enumerate(summary.totals[region], 2):
                 sheet.cell(number, column, float(value))
-        last = 8 + len(regions)
+        last = 10 + len(regions)
         sheet.cell(last, 1, "小计")
         for column in range(6):
             sheet.cell(last, column + 2, float(sum((v[column] for v in summary.totals.values()), Decimal("0.00"))))
-        for row in sheet.iter_rows(min_row=6, max_row=last, max_col=7):
+        for row in sheet.iter_rows(min_row=7, max_row=last, max_col=7):
             for cell in row:
                 cell.alignment = Alignment(vertical="center", horizontal="left" if cell.column == 1 else "right")
-                if cell.row in (6, 7):
+                if cell.row in (7, 8, 9):
                     cell.fill = PatternFill("solid", fgColor="1F4E78")
                     cell.font = Font(bold=True, color="FFFFFF")
                 else:
@@ -187,7 +219,11 @@ def write_regional_pivots(workbook, rows, config, month):
         sheet.column_dimensions["A"].width = 26
         for column in "BCDEFG":
             sheet.column_dimensions[column].width = 19
-        sheet.freeze_panes = "B8"
+        # Keep dynamic presentation headers outside the native pivot area;
+        # Excel refresh must never overwrite the month input or cumulative formula.
+        sheet.row_dimensions[8].hidden = True
+        sheet.row_dimensions[9].hidden = True
+        sheet.freeze_panes = "B10"
         sheet.sheet_view.showGridLines = False
         sheet.print_options.horizontalCentered = True
         sheet.print_area = f"A1:G{last}"
@@ -196,3 +232,13 @@ def write_regional_pivots(workbook, rows, config, month):
         sheet.page_setup.paperSize = sheet.PAPERSIZE_A4
         sheet.page_setup.fitToWidth = 1
         sheet.page_setup.fitToHeight = 0
+    # Filtered schema members keep all six columns in a fixed order even when
+    # the selected period has no matching data. They can never enter totals or
+    # native Show Details because their mode is neither RPD nor CPD.
+    for index, bucket in enumerate(first.labels):
+        number = len(records) + 2
+        region = regions[0] if regions else None
+        source.append([None] * count + [region, bucket, None, "__SCHEMA__"])
+        records.append(Record(_fields=[Missing() for _ in ids] +
+            [Index(v=0) if regions else Missing(), Index(v=index), Missing(), Index(v=2)]))
+    source.auto_filter.ref = source.dimensions

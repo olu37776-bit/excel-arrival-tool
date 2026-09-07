@@ -20,7 +20,7 @@ from revenue_tool.config import load_config
 from revenue_tool.domain.models import BaseRow, IssueLog
 from revenue_tool.services.final_revenue import calculate_final_values
 from revenue_tool.services.regional_summary import (
-    build_regional_summary, EMPTY_REGION, EXCLUDED, report_month,
+    build_regional_summary, EMPTY_REGION, EXCLUDED, report_month, cumulative_caption,
 )
 from tests.test_pipeline import CONFIG
 
@@ -103,10 +103,15 @@ class RegionalSummaryTest(unittest.TestCase):
                 try:
                     for mode in ("rpd", "cpd"):
                         sheet = wb[SUMMARY_SHEETS[mode]]
-                        self.assertEqual("小计", sheet["A11"].value)
-                        self.assertEqual(29 if mode == "rpd" else 159, sheet["G11"].value)
-                        self.assertEqual("9月小计", sheet["G7"].value)
-                        self.assertEqual("#,##0.00", sheet["G11"].number_format)
+                        self.assertEqual("小计", sheet["A13"].value)
+                        self.assertEqual(29 if mode == "rpd" else 159, sheet["G13"].value)
+                        self.assertEqual("小计", sheet["G7"].value)
+                        self.assertEqual("2026-09", sheet["C6"].value)
+                        self.assertIn("C6:G6", {str(r) for r in sheet.merged_cells.ranges})
+                        self.assertEqual("f", sheet["B7"].data_type)
+                        self.assertTrue(sheet.row_dimensions[8].hidden)
+                        self.assertTrue(sheet.row_dimensions[9].hidden)
+                        self.assertEqual("#,##0.00", sheet["G13"].number_format)
                         self.assertFalse(sheet.protection.sheet)
                         self.assertEqual(1, len(sheet._pivots))
                         p = sheet._pivots[0]
@@ -117,7 +122,7 @@ class RegionalSummaryTest(unittest.TestCase):
                         self.assertEqual("sum", p.dataFields[0].subtotal)
                         self.assertTrue(p.cache.saveData)
                         self.assertFalse(p.cache.refreshOnLoad)
-                        self.assertEqual(4 * len(rows), len(p.cache.records.r))
+                        self.assertEqual(4 * len(rows) + 6, len(p.cache.records.r))
                         self.assertEqual(SOURCE_SHEETS[mode], p.cache.cacheSource.worksheetSource.sheet)
                         source = wb[SOURCE_SHEETS[mode]]
                         self.assertEqual("hidden", source.sheet_state)
@@ -133,7 +138,7 @@ class RegionalSummaryTest(unittest.TestCase):
                                     and r._fields[43].v == (0 if mode == "rpd" else 1)]
                                 self.assertEqual(len(matching), len({r[42].v for r in matching}))
                                 amount_index = [c["id"] for c in config.base_columns].index("final_revenue_forecast")
-                                self.assertEqual(sheet.cell(8 + region_index, col).value,
+                                self.assertEqual(sheet.cell(10 + region_index, col).value,
                                                  sum(r[amount_index].v for r in matching))
                     wb.save(path)
                 finally:
@@ -149,9 +154,10 @@ class RegionalSummaryTest(unittest.TestCase):
             try:
                 for title in SUMMARY_SHEETS.values():
                     sheet = wb[title]
-                    self.assertEqual("小计", sheet["A8"].value)
-                    self.assertEqual([0] * 6, [c.value for c in sheet[8]][1:])
-                    self.assertEqual(0, len(sheet._pivots[0].cache.records.r))
+                    self.assertEqual("小计", sheet["A10"].value)
+                    self.assertEqual([0] * 6, [c.value for c in sheet[10]][1:])
+                    self.assertEqual(6, len(sheet._pivots[0].cache.records.r))
+                    self.assertTrue(all(r._fields[43].v == 2 for r in sheet._pivots[0].cache.records.r))
             finally:
                 wb.close()
 
@@ -177,7 +183,9 @@ class RegionalSummaryTest(unittest.TestCase):
                          edit("manual_revenue_forecast_cpd", "8月"),
                          edit("manual_revenue_segment", "特殊处理"), edit("manual_revenue_month", -10)],
                     [edit("manual_revenue_month", 0)],
-                    [edit(field, None) for field in ("manual_revenue_forecast_rpd", "manual_revenue_forecast_cpd", "manual_revenue_segment", "manual_revenue_month")]]
+                    [edit(field, None) for field in ("manual_revenue_forecast_rpd", "manual_revenue_forecast_cpd", "manual_revenue_segment", "manual_revenue_month")],
+                    [[SUMMARY_SHEETS["rpd"], "C6", "2026-06"], [SUMMARY_SHEETS["cpd"], "C6", "2026-12"]],
+                    [[SUMMARY_SHEETS["rpd"], "C6", "2026-01"], [SUMMARY_SHEETS["cpd"], "C6", "2027-01"]]]
             (root / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
             command = [str(uno_python), str(Path(__file__).parent / "support" / "verify_native_pivot.py"),
                        office, str(source), str(root / "plan.json"), str(root / "result.json")]
@@ -191,8 +199,9 @@ class RegionalSummaryTest(unittest.TestCase):
                         manual_revenue_forecast_cpd="8月", manual_revenue_segment="特殊处理", manual_revenue_month=-10 if stage == 1 else 0)
                     current_rows[0].values.update(calculate_final_values(current_rows[0].values))
                 for mode, title in SUMMARY_SHEETS.items():
-                    summary = build_regional_summary(current_rows, "2026-09", mode)
                     actual = snapshot[title]
+                    summary = build_regional_summary(current_rows, actual["month"], mode)
+                    self.assertEqual(cumulative_caption(actual["month"]), actual["cumulative_caption"])
                     self.assertIn(actual["total_caption"], ("Total Result", "小计"))
                     self.assertEqual(["地区部", *summary.labels], actual["headers"], (stage, mode, actual))
                     for region in [*summary.regions, "小计"]:
