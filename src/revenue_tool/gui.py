@@ -79,6 +79,9 @@ def main(argv: list[str] | None = None) -> int:
                 base.add_pivot(user_pivot)
                 base['AS1'], base['AT1'] = '合同号', '金额'
                 base['AS2'], base['AT2'] = 'PIVOT-ONLY', 999
+                # Empty user sheets must not break dimension recovery/import.
+                for state in ('visible', 'hidden', 'veryHidden'):
+                    workbook.create_sheet('Empty-' + state).sheet_state = state
                 workbook.save(path)
             finally:
                 workbook.close()
