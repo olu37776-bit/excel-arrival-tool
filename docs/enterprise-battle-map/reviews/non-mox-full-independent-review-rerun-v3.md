@@ -2,7 +2,7 @@
 
 **状态：CURRENT REVIEW RERUN AUTHORITY**  
 **适用模块：MOX、TOB、ISP、电力、大企；五模块均验证真实 Create/Edit 生产路径**  
-**前置：`remediation/five-module-shared-form-renderer-convergence-v3.md` 已实施并提交；本地审查者核实报告与实际 HEAD**  
+**前置：共享表单 V3 与 `remediation/five-module-shared-operation-convergence-v1.md` 修复已实施并提交；本地审查者核实报告与实际 HEAD**  
 **阶段：用户已报告实施完成，当前为 IMPLEMENTED_REPORTED / PENDING_INDEPENDENT_REVIEW，尚未 VERIFIED**  
 **基础审查 Authority：`reviews/non-mox-modules-mox-reference-independent-review-v1.md`**
 
@@ -53,7 +53,7 @@ git log -1 --oneline
 要求：
 
 - 分支：`feature/enterprise-battle-map`；
-- 共享表单 V3 remediation 已 commit；
+- 共享表单 V3 和共享操作链 V1 remediation 均已 commit；
 - 工作树干净；
 - 无写 Agent 并发修改。
 
@@ -85,6 +85,7 @@ remediation/non-mox-modules-mox-reference-alignment-v1.md
 reviews/non-mox-modules-mox-reference-independent-review-v1.md
 remediation/non-mox-alignment-independent-review-findings-remediation-v2.md
 remediation/five-module-shared-form-renderer-convergence-v3.md
+remediation/five-module-shared-operation-convergence-v1.md
 reviews/non-mox-full-independent-review-rerun-v3.md
 ```
 
@@ -103,7 +104,10 @@ large-enterprise-canonical-authority-v2.md
 上一轮 independent review report（覆盖更新前先归档）
 历史 7-finding closure matrix 与后续新增 findings
 历史 remediation report V2
-本轮 docs/enterprise/remediations/five-module-shared-form-renderer-convergence-report-v3.md
+历史 docs/enterprise/remediations/five-module-shared-form-renderer-convergence-report-v3.md
+本轮 docs/enterprise/remediations/five-module-shared-operation-convergence-plan-v1.md
+本轮 docs/enterprise/remediations/five-module-shared-operation-convergence-report-v1.md
+本轮 docs/enterprise/remediations/five-module-shared-operation-convergence-findings-v1.md
 当前真实代码
 当前测试
 database.js
@@ -590,3 +594,49 @@ NEXT=USER_MANUAL_ACCEPTANCE/REMEDIATION/V0_2_AUTHORITY_REVIEW
 - 必需验证未运行、证据不足或环境阻塞时 RESULT=PARTIAL，相关项使用 NOT_RUN/BLOCKED，不可记 PASS；已确认阻塞缺陷时 RESULT=FAIL。仅记录纯 Excel V0.2 未来需求差异不影响当前冻结基线的机制结论，但不得声称 V0.2 已验收。
 - 只有全部审查和必要自动验证通过、无 blocking finding、HEAD/受审文件未变时 RESULT=PASS，NEXT=USER_MANUAL_ACCEPTANCE；人工验收仍为 PENDING。发现实现/测试缺陷则 NEXT=REMEDIATION；仅证据不足则 NEXT=COMPLETE_REVIEW_EVIDENCE。
 - 最终回执在第12节基础上附 AUTHORITY_HEAD、HEAD_UNCHANGED、REVIEWED_SOURCE_UNCHANGED、REPORT_PATH、EVIDENCE_DIR、MANUAL_ACCEPTANCE=PENDING。不要求上传本地代码或报告；用户可直接复制短回执。
+
+## 14. 共享操作链修复后的必检项
+
+用户已报告 Shared Operation Convergence V1 修复完成。本轮是新 HEAD 的完整独立复审，不能沿用前次 PASS，也不能仅检查本轮修复文件。
+
+### 14.1 恢复本轮身份与声明
+
+读取第3节新增的计划、实施报告、finding 矩阵和其引用的原始证据；核对 REVIEWED_HEAD（前次）、BASE_HEAD、IMPLEMENTATION_HEAD、FINAL_HEAD 的祖先关系与差异。当前审查固定新的 REVIEWED_HEAD。
+若 IMPLEMENTATION_HEAD 后有仅报告/证据提交，记录 docs-only 关系；如还有受审源码/测试/配置变更，必须重新检查这些变化，不将旧测试结果作为新 HEAD 证据。
+
+### 14.2 五模块真实操作路径
+
+从前次阻塞报告恢复全部受影响操作，独立核实计划的操作清单是否遗漏同根因消费者。逐操作、逐模块追踪：
+真实 UI/事件入口 → handler → Contract/config → 共享机制 → 模块 adapter → API/持久化（如适用）→ 结果与页面状态刷新。
+
+对实际存在的表格加载/刷新、搜索/筛选/排序、指标计算与点击筛选、Heatmap交互、客户关联、Progress弹窗及报告涉及的其他操作执行检查。不要求新增不存在的操作。
+
+每条路径记录 file:function/component、生产消费者、可信测试与实际行为。明确区分共性机制和合法业务差异，不把模块 Contract、薄 adapter 或独立状态实例误算为重复机制。
+判定失败的情形包括：仅提取 helper 但主路径仍重复、共享外壳加本地完整处理链、shared 文件内五套完整业务分支、生产路径绕过共享实现、测试 mock 掉待验证机制。
+
+### 14.3 行为与回归
+
+除共享结构，还要核实操作结果：筛选/重置/刷新状态正确；指标点击不会反向重算顶部统计；customer_id 不丢失；Progress History 单一事实源且写后读一致；模块状态隔离。根据真实异步风险检查旧响应覆盖、重复提交等已有场景。
+保持各模块业务字段、Metric/Heatmap口径和必要 adapter 边界。完整回归五模块 V3 Create/Edit、Customer/Progress/Heatmap/Metric/API/DB 与原始审查全部门禁。
+
+### 14.4 Finding 闭环与结果
+
+本轮 finding 矩阵中的 IMPLEMENTED_PENDING_REVIEW 只是待核实声明。恢复全部历史问题，逐项以新 HEAD 的生产路径与测试证据决定 CLOSED/OPEN；REVIEW_REQUIRED 不能静默撤销。
+任何新的 blocking finding、漏掉的生产消费者、实现与报告不一致、关键 production-path TEST_GAP 都阻止整体 PASS。
+
+在完整审查报告中增加：
+- 五模块共享操作路径矩阵；
+- 本轮修复声明与独立核验对照；
+- 活动重复操作机制及合法差异清单；
+- 新旧 findings 与实际证据；
+- 本轮测试命令、退出码和日志位置。
+
+新增 PASS 条件：
+SHARED_OPERATION_PRODUCTION_PATHS=PASS
+DUPLICATE_ACTIVE_OPERATION_MECHANISMS=0
+OPERATION_BEHAVIOR_REGRESSION=PASS
+MODULE_STATE_ISOLATION=PASS
+值必须来自独立证据；数量只统计违反既有共享要求的活动重复机制，不能机械计算全部模块 handler。
+
+最终短回执附上述四项和 V3_CREATE_EDIT_REGRESSION。所有必检项通过才 NEXT=USER_MANUAL_ACCEPTANCE；存在缺陷则 NEXT=REMEDIATION；缺验证证据则 NEXT=COMPLETE_REVIEW_EVIDENCE。
+本轮只读审查，沿用第10/13节的固定报告/证据路径、旧报告归档和 HEAD/受审文件稳定性规则；不要现场修复或提交代码。
