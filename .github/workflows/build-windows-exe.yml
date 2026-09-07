@@ -42,13 +42,13 @@ jobs:
       - name: Install independent formula engine and project
         run: |
           sudo apt-get update
-          sudo apt-get install -y libreoffice-calc python3-uno
+          sudo apt-get install -y libreoffice-calc python3-uno xvfb
           python -m pip install .
       - name: Full suite including real XLSX formula recalculation
         env:
           REQUIRE_FORMULA_ENGINE: "1"
         run: |
-          python -m unittest discover -s tests
+          xvfb-run -a python -m unittest discover -s tests
           python -m compileall -q src tests
           git diff --check
           python -m pip wheel . --no-deps --wheel-dir "${RUNNER_TEMP}/wheel"

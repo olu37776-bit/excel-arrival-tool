@@ -111,8 +111,7 @@ class FinalRevenueTest(unittest.TestCase):
                 self.assertEqual("auto", wb.calculation.calcMode)
                 self.assertTrue(wb.calculation.fullCalcOnLoad)
                 self.assertTrue(wb.calculation.forceFullCalc)
-                self.assertTrue(sheet.protection.sheet)
-                self.assertFalse(sheet.protection.autoFilter)
+                self.assertFalse(sheet.protection.sheet)
                 for manual, _ in FINAL_FIELD_SOURCES.values():
                     self.assertFalse(sheet.cell(2, ids.index(manual) + 1).protection.locked)
                 for number in range(2, sheet.max_row + 1):

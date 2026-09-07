@@ -12,11 +12,15 @@ from tests.test_regional_summary import example_rows
 def main():
     root = Path(sys.argv[1])
     root.mkdir(parents=True, exist_ok=True)
-    sources = _write_sources(root, 'source', variant='first')
+    source_dir = root / 'inputs'
+    source_dir.mkdir(exist_ok=True)
+    sources = _write_sources(source_dir, 'source', variant='first')
     _run(sources, root / 'pipeline.xlsx')
     config = load_config(CONFIG)
     for name, rows in [('edge-cases', example_rows()), ('empty', [])]:
         ExcelOutputAdapter().write(root / f'{name}.xlsx', rows, [], [], [], IssueLog(), config, '2026-09')
+    ExcelOutputAdapter().write(root / 'multi-month.xlsx', example_rows(), [], [], [], IssueLog(), config,
+                               ['2026-08', '2026-09', '2027-01'])
 
 
 if __name__ == '__main__':
