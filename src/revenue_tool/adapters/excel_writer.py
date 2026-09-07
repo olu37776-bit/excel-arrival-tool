@@ -13,7 +13,8 @@ from openpyxl.styles import Protection
 from openpyxl.workbook.properties import CalcProperties
 
 from revenue_tool.adapters.final_revenue_formulas import final_formulas
-from revenue_tool.services.final_revenue import FINAL_FIELD_SOURCES
+from revenue_tool.services.final_revenue import FINAL_FIELD_SOURCES, calculate_final_values
+from revenue_tool.adapters.formula_cache import save_with_formula_cache
 from revenue_tool.adapters.regional_pivot import write_regional_pivots
 from revenue_tool.services.regional_summary import report_month as validate_report_month
 
@@ -95,6 +96,7 @@ class ExcelOutputAdapter:
         )
         base_sheet = workbook[sheets["base"]]
         indexes = {c["id"]: i for i, c in enumerate(base_columns, 1)}
+        cached_values = {}
         for row_number in range(2, base_sheet.max_row + 1):
             refs = {
                 field: f"{get_column_letter(index)}{row_number}"
@@ -102,6 +104,8 @@ class ExcelOutputAdapter:
             }
             for field, formula in final_formulas(refs).items():
                 base_sheet.cell(row_number, indexes[field]).value = formula
+            for field, value in calculate_final_values(base_rows[row_number - 2].values).items():
+                cached_values[refs[field]] = value
         for field in FINAL_FIELD_SOURCES:
             base_sheet.cell(1, indexes[field]).comment = Comment(
                 "系统公式列，请勿编辑。对应黄色人工字段有值即生效，"
@@ -159,8 +163,10 @@ class ExcelOutputAdapter:
 
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        workbook.save(path)
-        workbook.close()
+        try:
+            save_with_formula_cache(workbook, path, {base_sheet.title: cached_values})
+        finally:
+            workbook.close()
         return path
 
     def _write_metadata_sheet(
