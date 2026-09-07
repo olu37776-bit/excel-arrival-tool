@@ -5,7 +5,7 @@
 - 实施基线：main `ffb0e00c560eb5dda56275e14c795a5ab58dd878`。
 - 修复分支：`fix/issue-36`；最终提交由本报告所在PR的提交记录确定（不写自引用SHA）。
 - 依据：Issue #36正文及实时更新补充、`manual-revenue-month-normalization.md`；未读取或修改冻结重构分支。
-- 版本预置0.8.7，避免未来合并后覆盖已发布的0.8.6；本次不合并、不发布正式Release。README下载仍指向实际已发布版本。
+- 初次实施预置0.8.7，仅提交PR；2026-09-07按用户继续完成并提供最新EXE的要求合并PR #37并发布v0.8.7。
 
 ## 实施结果
 
@@ -60,3 +60,13 @@ GitHub Actions和Windows EXE：提交后由PR运行Linux全量/重算与Windows�
 - Windows桌面Excel实时编辑、工作表保护交互、撤销保护后的筛选清除及透视刷新：PENDING_LOCAL_EXCEL_VALIDATION。LibreOffice重算不能冒充Windows桌面Excel验收。
 - 真实业务源文件需本地复核。本次只使用虚构fixture，不上传真实业务数据。
 - 未修改或合并冻结的收入分配重构分支；未实现额外月度汇总、金额分配或GUI重构。
+
+## 2026-09-07 合并与正式发布完成
+
+- PR #37已合并，Issue #36自动关闭；合并提交：`add17e51e1393b19f001b8f121da6348caaae400`。
+- 合并后验证：[GitHub Actions #34072882685](https://github.com/olu37776-bit/excel-arrival-tool/actions/runs/34072882685)，Linux与Windows作业均成功。
+- Linux全量116项测试通过，无跳过，包含独立公式重算；compileall、diff check和标准wheel构建通过。
+- Windows全量测试、EXE构建、实际EXE启动自检、校验和生成及正式Release上传均成功。
+- 正式制品：[ExcelRevenueTool-v0.8.7.exe](https://github.com/olu37776-bit/excel-arrival-tool/releases/download/v0.8.7/ExcelRevenueTool-v0.8.7.exe)，12,791,393字节。
+- EXE SHA-256：`ae6da9b0ae30deec29758e002f7035db4184b934c900919a5a2fef9715b23a32`。
+- README下载链接同步到v0.8.7。Windows桌面Excel交互与真实业务文件复核仍保留上述待实机验证状态，未以自动测试代替。
