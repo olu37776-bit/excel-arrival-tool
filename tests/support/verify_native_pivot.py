@@ -58,7 +58,9 @@ def main():
                     cell.setString(value)
             doc.calculateAll()
             snapshot = {}
-            for name in ("RPD地区收入汇总", "CPD地区收入汇总"):
+            for name in doc.Sheets.getElementNames():
+                if not name.startswith(("RPD地区收入汇总", "CPD地区收入汇总")):
+                    continue
                 sheet = doc.Sheets.getByName(name)
                 tables = sheet.getDataPilotTables()
                 if tables.getCount() != 1:

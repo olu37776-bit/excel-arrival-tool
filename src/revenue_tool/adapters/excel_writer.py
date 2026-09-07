@@ -16,7 +16,7 @@ from revenue_tool.adapters.final_revenue_formulas import final_formulas
 from revenue_tool.services.final_revenue import FINAL_FIELD_SOURCES, calculate_final_values
 from revenue_tool.adapters.formula_cache import save_with_formula_cache
 from revenue_tool.adapters.regional_pivot import write_regional_pivots
-from revenue_tool.services.regional_summary import report_month as validate_report_month
+from revenue_tool.services.regional_summary import report_months
 
 from revenue_tool.config import ToolConfig
 from revenue_tool.domain.models import (
@@ -43,9 +43,9 @@ class ExcelOutputAdapter:
         supply_pull_rows: list[ComparisonRow],
         issues: IssueLog,
         config: ToolConfig,
-        report_month: str | None = None,
+        report_month: str | list[str] | tuple[str, ...] | None = None,
     ) -> Path:
-        report_month = validate_report_month(report_month)
+        report_month = report_months(report_month)
         workbook = Workbook()
         workbook.calculation = CalcProperties(
             calcMode="auto", fullCalcOnLoad=True, forceFullCalc=True,
@@ -113,10 +113,9 @@ class ExcelOutputAdapter:
                 "待修正提示请改填完整YYYY-MM。透视表需手动刷新。",
                 "ExcelRevenueTool",
             )
-        # Protect system formulas from ordinary editing, while allowing the
-        # existing AutoFilter and yellow inputs. No password: deliberate layout
-        # edits can use Review > Unprotect Sheet before moving columns.
-        base_sheet.protection.sheet = True
+        # Users must be able to create their own PivotTables and change layout.
+        # Yellow fills/comments distinguish inputs without restricting Excel.
+        base_sheet.protection.sheet = False
         base_sheet.protection.autoFilter = False
         base_sheet.protection.sort = False
         for column in base_columns:

@@ -1,7 +1,7 @@
 """Save initial formula results without removing live Excel formulas.
 
 openpyxl intentionally emits empty formula caches. Patch only the generated
-cells, leaving every other XLSX part (including native pivots) byte-identical.
+cells. Apply targeted Excel package normalization at the same save boundary.
 Excel still recalculates on opening and after manual edits.
 """
 from decimal import Decimal
@@ -12,6 +12,7 @@ from xml.sax.saxutils import escape
 from zipfile import ZipFile
 
 from openpyxl import Workbook
+from revenue_tool.adapters.excel_package import normalize_excel_part
 
 
 _CELL = re.compile(rb'<c\b(?P<attrs>[^>]*)(?<!/)>(?P<body>.*?)</c>', re.DOTALL)
@@ -63,5 +64,6 @@ def save_with_formula_cache(
                 data = source.read(info.filename)
                 if info.filename in parts:
                     data = _patch(data, parts[info.filename])
+                data = normalize_excel_part(info.filename, data)
                 target.writestr(info, data)
         finished.replace(path)

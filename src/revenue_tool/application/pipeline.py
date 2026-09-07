@@ -12,7 +12,7 @@ from revenue_tool.domain.models import (
     SourceFiles,
 )
 from revenue_tool.services.calculation import RevenueEngine
-from revenue_tool.services.regional_summary import report_month as validate_report_month
+from revenue_tool.services.regional_summary import report_months
 from revenue_tool.services.comparison import (
     build_supply_pull_rows,
     compare_revenue_months,
@@ -31,9 +31,9 @@ def run_pipeline(
     output_path: str | Path,
     config_path: str | Path,
     previous_path: str | Path | None = None,
-    report_month: str | None = None,
+    report_month: str | list[str] | tuple[str, ...] | None = None,
 ) -> PipelineResult:
-    report_month = validate_report_month(report_month)
+    report_month = report_months(report_month)
     source_files = SourceFiles(
         legacy=Path(legacy_path),
         monthly_order=(

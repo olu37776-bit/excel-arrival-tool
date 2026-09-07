@@ -23,6 +23,20 @@ def report_month(value: str | None = None) -> str:
     return value
 
 
+def report_months(value=None) -> tuple[str, ...]:
+    """One shared selection contract for the GUI, CLI and workbook writer."""
+    if value is None or isinstance(value, str):
+        return (report_month(value),)
+    if not isinstance(value, (list, tuple)) or not value:
+        raise ValueError("请至少选择一个汇总月份")
+    if any(not isinstance(item, str) for item in value):
+        raise ValueError("每个汇总月份必须为完整年月YYYY-MM")
+    months = tuple(sorted({report_month(item) for item in value}))
+    if len(months) > 12:
+        raise ValueError("一次最多选择12个汇总月份")
+    return months
+
+
 def summary_labels(month: str) -> tuple[str, ...]:
     # Stable cache members: month changes must never reorder/drop pivot columns.
     return ("前期累计", *SEGMENTS, "小计")

@@ -23,7 +23,7 @@ from openpyxl.utils.datetime import to_excel
 from openpyxl.worksheet.datavalidation import DataValidation
 
 from revenue_tool.services.regional_summary import (
-    EMPTY_REGION, EXCLUDED, SEGMENTS, build_regional_summary,
+    EMPTY_REGION, EXCLUDED, SEGMENTS, build_regional_summary, report_months,
 )
 
 SUMMARY_SHEETS = {"rpd": "RPD地区收入汇总", "cpd": "CPD地区收入汇总"}
@@ -46,11 +46,11 @@ def _cache_value(value):
     return Text(v=str(value))
 
 
-def _bucket_formula(refs, summary, subtotal):
+def _bucket_formula(refs, summary, subtotal, sheet_title):
     month, amount, segment = (refs[f"final_revenue_month_{summary.mode}"],
                               refs["final_revenue_forecast"], refs["final_revenue_segment"])
     labels = summary.labels
-    selected = f'{quote_sheetname(SUMMARY_SHEETS[summary.mode])}!$C$4'
+    selected = f'{quote_sheetname(sheet_title)}!$C$4'
     other = _q(labels[4])
     for position in range(2, -1, -1):
         other = f'IF({segment}={_q(SEGMENTS[position])},{_q(labels[position + 1])},{other})'
@@ -73,6 +73,15 @@ def _valid_month(ref):
 
 
 def write_regional_pivots(workbook, rows, config, month):
+    months = report_months(month)
+    for cache_id, selected in enumerate(months, 1):
+        titles = {mode: f'{title}-{selected}' if len(months) > 1 else title
+                  for mode, title in SUMMARY_SHEETS.items()}
+        source_title = f'_summary_{selected.replace("-", "_")}' if len(months) > 1 else '_summary_source'
+        _write_month_pivots(workbook, rows, config, selected, titles, source_title, cache_id)
+
+
+def _write_month_pivots(workbook, rows, config, month, titles, source_title, cache_id):
     base = workbook[config.output["sheets"]["base"]]
     columns = config.base_columns
     ids = [c["id"] for c in columns]
@@ -81,8 +90,8 @@ def write_regional_pivots(workbook, rows, config, month):
     count = len(columns)
     if 4 * len(rows) + 7 > 1048576:
         raise ValueError("基表超过262142行，双口径明细源超出Excel工作表行数限制")
-    report_sheets = {mode: workbook.create_sheet(title) for mode, title in SUMMARY_SHEETS.items()}
-    source = workbook.create_sheet("_summary_source")
+    report_sheets = {mode: workbook.create_sheet(title) for mode, title in titles.items()}
+    source = workbook.create_sheet(source_title)
     source.append(headers)
     source.sheet_state = "hidden"
     source.freeze_panes = "A2"
@@ -103,6 +112,9 @@ def write_regional_pivots(workbook, rows, config, month):
         createdVersion=6, refreshedVersion=6, minRefreshableVersion=3,
     )
     cache.records = RecordList()
+    # openpyxl constructs the records relationship before assigning records._id.
+    # Seed it now so cache 2+ cannot accidentally point to cache 1's records.
+    cache.records._id = cache_id
     records = cache.records.r
     for mode in ("rpd", "cpd"):
         summary = build_regional_summary(rows, month, mode)
@@ -118,7 +130,7 @@ def write_regional_pivots(workbook, rows, config, month):
             region = refs["region"]
             source.cell(source_number, count + 1,
                         f'=IF(LEN(TRIM({region}&""))=0,{_q(EMPTY_REGION)},{region}&"")')
-            source.cell(source_number, count + 2, _bucket_formula(refs, summary, entry.subtotal_copy))
+            source.cell(source_number, count + 2, _bucket_formula(refs, summary, entry.subtotal_copy, sheet.title))
             source.cell(source_number, count + 3, entry.base_row)
             source.cell(source_number, count + 4, mode.upper())
             records.append(Record(_fields=[*(_cache_value(values.get(f)) for f in ids),
@@ -127,7 +139,7 @@ def write_regional_pivots(workbook, rows, config, month):
         source.auto_filter.ref = source.dimensions
         pivot_fields = [PivotField(defaultSubtotal=False) for _ in headers]
         pivot_fields[count] = PivotField(axis="axisRow", defaultSubtotal=False, showAll=True,
-            name="地区部", items=[FieldItem(x=i) for i in range(len(regions))] + [FieldItem(t="grand")])
+            name="地区部", items=[FieldItem(x=i) for i in range(len(regions))])
         pivot_fields[count + 1] = PivotField(axis="axisCol", defaultSubtotal=False,
             showAll=True, sortType="manual", items=[FieldItem(x=i, h=(i == 6)) for i in range(7)])
         pivot_fields[count + 3] = PivotField(axis="axisPage", defaultSubtotal=False,
@@ -135,7 +147,7 @@ def write_regional_pivots(workbook, rows, config, month):
         amount_index = ids.index("final_revenue_forecast")
         pivot_fields[amount_index].dataField = True
         pivot = TableDefinition(
-            name=f"RegionalRevenue{mode.upper()}", cacheId=1, dataCaption="最终收入预测",
+            name=f"RegionalRevenue{mode.upper()}{month.replace('-', '')}", cacheId=cache_id, dataCaption="最终收入预测",
             grandTotalCaption="小计", rowHeaderCaption="地区部", colHeaderCaption="汇总项目",
             location=Location(ref=f"A8:G{10 + len(regions)}", firstHeaderRow=1, firstDataRow=2, firstDataCol=1, rowPageCount=1, colPageCount=1),
             pivotFields=pivot_fields, rowFields=[RowColField(x=count)], colFields=[RowColField(x=count + 1)],
@@ -158,7 +170,7 @@ def write_regional_pivots(workbook, rows, config, month):
         sheet["A1"].font = Font(size=16, bold=True, color="1F4E78")
         sheet.row_dimensions[1].height = 29
         sheet.merge_cells("A2:G2")
-        sheet["A2"] = "黄色区域可修改统计年月（YYYY-MM）。改月份或人工字段后，先Ctrl+Alt+F9重算，再“数据→全部刷新”。双击金额查看明细。"
+        sheet["A2"] = "黄色年月格可下拉选择。改月份或人工字段后，先Ctrl+Alt+F9重算，再“数据→全部刷新”。双击金额查看明细。"
         sheet["A2"].alignment = Alignment(wrap_text=True, vertical="center")
         sheet.row_dimensions[2].height = 32
         sheet.merge_cells("A3:G3")
@@ -182,10 +194,11 @@ def write_regional_pivots(workbook, rows, config, month):
         sheet["C4"].font = Font(size=13, bold=True)
         sheet["C4"].alignment = Alignment(horizontal="center", vertical="center")
         sheet.row_dimensions[4].height = 28
-        validation = DataValidation(type="custom", formula1=_valid_month("C4"), allow_blank=False,
-            showErrorMessage=True, errorStyle="stop", errorTitle="统计年月格式不正确",
-            error="请填写完整年月，例如2026-09。", showInputMessage=True,
-            promptTitle="统计年月", prompt="例如2026-09；修改后重算并刷新透视。")
+        choices = ','.join(f'{month[:4]}-{number:02d}' for number in range(1, 13))
+        validation = DataValidation(type="list", formula1=_q(choices), allow_blank=False,
+            showDropDown=False, showErrorMessage=True, errorStyle="warning", errorTitle="确认统计年月",
+            error="下拉列出生成时年份；跨年可填写完整YYYY-MM并确认。", showInputMessage=True,
+            promptTitle="统计年月", prompt="下拉选择月份；修改后重算并刷新透视。")
         sheet.add_data_validation(validation)
         validation.add(sheet["C4"])
         sheet["A8"] = "最终收入预测"
