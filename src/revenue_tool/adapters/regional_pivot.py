@@ -112,6 +112,9 @@ def _write_month_pivots(workbook, rows, config, month, titles, source_title, cac
         createdVersion=6, refreshedVersion=6, minRefreshableVersion=3,
     )
     cache.records = RecordList()
+    # openpyxl constructs the records relationship before assigning records._id.
+    # Seed it now so cache 2+ cannot accidentally point to cache 1's records.
+    cache.records._id = cache_id
     records = cache.records.r
     for mode in ("rpd", "cpd"):
         summary = build_regional_summary(rows, month, mode)

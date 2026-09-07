@@ -53,6 +53,13 @@ class MultiMonthTest(unittest.TestCase):
                         self.assertIn(sheet.title, source.cell(number, 42).value)
                         expected = (100 if mode == 'RPD' else 20) if month == '2026-08' else (29 if mode == 'RPD' else 159)
                         self.assertEqual(expected, sheet['G13'].value)
+                        details = [r._fields for r in pivot.cache.records.r
+                                   if r._fields[41].v == 5 and r._fields[43].v == (0 if mode == 'RPD' else 1)]
+                        expected_ids = {('2026-08', 'RPD'): {'A1'}, ('2026-08', 'CPD'): {'A2'},
+                            ('2026-09', 'RPD'): {'A2', 'A3', 'A4', 'A5', 'B2', 'EMPTY'},
+                            ('2026-09', 'CPD'): {'A1', 'A3', 'A4', 'A5', 'B1', 'B2', 'EMPTY'}}
+                        self.assertEqual(expected_ids[(month, mode)], {r[0].v for r in details})
+                        self.assertEqual(expected, sum(r[38].v for r in details))
                 self.assertEqual(2, len(caches))
                 self.assertEqual(4, len(names))
             finally:
