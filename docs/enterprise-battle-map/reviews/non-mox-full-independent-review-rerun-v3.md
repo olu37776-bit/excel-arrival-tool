@@ -1,8 +1,9 @@
-# Non-MOX → MOX Reference Full Independent Review Rerun V3
+# 企业五模块：完整独立审查重跑 V3
 
 **状态：CURRENT REVIEW RERUN AUTHORITY**  
-**适用模块：TOB、ISP、电力、大企**  
-**前置：`remediation/non-mox-alignment-independent-review-findings-remediation-v2.md` 已实施并提交**  
+**适用模块：MOX、TOB、ISP、电力、大企；五模块均验证真实 Create/Edit 生产路径**  
+**前置：`remediation/five-module-shared-form-renderer-convergence-v3.md` 已实施并提交；本地审查者核实报告与实际 HEAD**  
+**阶段：用户已报告实施完成，当前为 IMPLEMENTED_REPORTED / PENDING_INDEPENDENT_REVIEW，尚未 VERIFIED**  
 **基础审查 Authority：`reviews/non-mox-modules-mox-reference-independent-review-v1.md`**
 
 ---
@@ -13,7 +14,7 @@
 
 修复后的代码 HEAD 发生了实质变化，因此必须把新 HEAD 当成新的审查对象，**从头完整重新执行 `non-mox-modules-mox-reference-independent-review-v1.md` 的全部审查范围**。
 
-上一轮 7 个 blocking finding 仅作为：
+历史 7 个 blocking finding，加上后续完整审查发现的 module-local form builders 等全部未关闭问题，共同作为：
 
 ```text
 KNOWN_FINDINGS_REGRESSION_SET
@@ -26,7 +27,7 @@ KNOWN_FINDINGS_REGRESSION_SET
 ```text
 FULL ORIGINAL INDEPENDENT REVIEW
 +
-KNOWN 7 FINDINGS CLOSURE CHECK
+ALL KNOWN FINDINGS CLOSURE CHECK
 +
 NEW REGRESSION / NEW FINDING DISCOVERY
 ```
@@ -52,7 +53,7 @@ git log -1 --oneline
 要求：
 
 - 分支：`feature/enterprise-battle-map`；
-- remediation 已 commit；
+- 共享表单 V3 remediation 已 commit；
 - 工作树干净；
 - 无写 Agent 并发修改。
 
@@ -83,6 +84,7 @@ mox-canonical-authority-v6.md
 remediation/non-mox-modules-mox-reference-alignment-v1.md
 reviews/non-mox-modules-mox-reference-independent-review-v1.md
 remediation/non-mox-alignment-independent-review-findings-remediation-v2.md
+remediation/five-module-shared-form-renderer-convergence-v3.md
 reviews/non-mox-full-independent-review-rerun-v3.md
 ```
 
@@ -98,9 +100,10 @@ large-enterprise-canonical-authority-v2.md
 以及本地：
 
 ```text
-上一轮 independent review report
-7-finding closure matrix
-本轮 remediation report V2
+上一轮 independent review report（覆盖更新前先归档）
+历史 7-finding closure matrix 与后续新增 findings
+历史 remediation report V2
+本轮 docs/enterprise/remediations/five-module-shared-form-renderer-convergence-report-v3.md
 当前真实代码
 当前测试
 database.js
@@ -144,7 +147,7 @@ UNUSED_PARALLEL_PROJECTION_APIS
 
 ### 4.2 Table / Create / Edit Conformance
 
-四模块分别重新验证：
+五模块分别重新验证：
 
 ```text
 Contract expected keys == actual Production renderer keys
@@ -176,17 +179,26 @@ runtime错误检查f.type
 
 ### 4.4 Create / Edit Shared UI Mechanism
 
-重新确认四模块真正使用 shared modal shell、shared group renderer、shared spacing、shared validation presentation。
+重新确认五模块真正使用同一个 shared form shell、shared group renderer、shared field renderer、shared control/editor registry 和 shared validation presentation，逐模块覆盖 Create 与 Edit 共十条真实入口。
 
-正确 group：
+正确 group：MOX 为客户信息、无线格局、微波格局、作战情况四组；TOB/ISP/Power/Large 为客户信息、业务格局、作战情况三组。
+
+业务字段总数基线分别为 MOX 41、TOB 34、ISP 25、Power 28、Large 26。各视图 expected keys 必须依据 Contract 的 visibility/mode 派生，不能把总字段数直接当成 Create/Edit 可见字段数。
+
+检查任何 module-local section schema / renderer / alias。必须追到 actual Vue render tree；shared shell 内的 module-local body、shared 文件中的五套完整模板、只 import 不消费、测试 mock 掉 renderer 均不能证明共享。
+
+每模块记录 page/action → Contract → Projection → Runtime Field → Options → Shell → Group → Field → actual render tree 的 file:function/component 和测试证据。独立重算以下数量：
 
 ```text
-客户信息
-业务格局
-作战情况
+MODULE_LOCAL_FORM_HTML_BUILDERS=0
+MODULE_LOCAL_SECTION_SCHEMAS=0
+DUPLICATE_SECTION_RENDER_PATHS=0
+DUPLICATE_FIELD_RENDERERS=0
+DUPLICATE_FORM_SHELLS=0
+DUPLICATE_VALIDATION_RENDERERS=0
 ```
 
-检查任何 module-local section schema / renderer / alias。
+静态搜索结果必须逐项分类，不能把不同模块合法的业务 Contract、adapter 或展示 label 误报成重复机制。
 
 ### 4.5 Customer Relation
 
@@ -341,9 +353,9 @@ MODULE_LOCAL_SECTION_SCHEMAS
 
 ---
 
-## 5. 7 个已知 Finding 是额外必检项
+## 5. 全部历史 Finding 是额外必检项
 
-在完整原始审查之外，必须从上一轮 report 恢复全部 7 个 finding，并逐项检查：
+在完整原始审查之外，必须从覆盖更新前的历史 report、closure matrix 和后续完整复审恢复全部 finding，保留原 ID。历史 7 个与后续 renderer findings 均不得漏项；逐项检查：
 
 ```text
 FINDING_ID
@@ -359,10 +371,12 @@ STATUS=CLOSED/OPEN
 要求：
 
 ```text
-KNOWN_FINDINGS_CLOSED=7/7
+KNOWN_FINDINGS_CLOSED=N/N
 ```
 
-但即使 7/7 CLOSED，只要本轮全量重新审查发现新的 blocking finding，整体仍然 FAIL。
+N 是实际恢复出的全部必检历史 finding 数量，至少包含原 7 个及后续 renderer finding；不得虚构 ID 或以固定 7 为上限。历史记录缺失时标记 EVIDENCE_GAP，继续可完成的审查，但不能声称全部关闭或整体 PASS。
+
+即使 N/N CLOSED，只要新审查发现 blocking finding，整体仍然 FAIL。
 
 ---
 
@@ -413,6 +427,9 @@ IMPLEMENTATION_REPORT_INTEGRITY=FAIL
 至少重新执行：
 
 ```text
+shared form renderer tests
+architecture/static duplicate gates
+MOX Create/Edit production-path suite
 TOB production-path suite
 ISP production-path suite
 Power production-path suite
@@ -449,7 +466,7 @@ BLOCKED_BY_V0_2_AUTHORITY
 
 ## 10. 报告
 
-覆盖更新：
+先把原报告逐字归档至 `docs/enterprise/reviews/history/non-mox-modules-mox-reference-independent-review-before-<REVIEWED_HEAD>.md`（使用完整40位 SHA）。若同名归档已存在，校验内容一致后复用，不覆盖不同内容。然后覆盖更新：
 
 ```text
 D:\BattleMap\battle-map\docs\enterprise\reviews\non-mox-modules-mox-reference-independent-review.md
@@ -461,7 +478,7 @@ D:\BattleMap\battle-map\docs\enterprise\reviews\non-mox-modules-mox-reference-in
 
 - REVIEWED_HEAD；
 - full shared runtime call graph；
-- 四模块全量 conformance；
+- 五模块全量 conformance；
 - Customer；
 - Progress；
 - Heatmap；
@@ -470,7 +487,7 @@ D:\BattleMap\battle-map\docs\enterprise\reviews\non-mox-modules-mox-reference-in
 - hidden consumers；
 - duplicate mechanisms；
 - test credibility；
-- known 7 finding closure table；
+- 全部历史 finding closure table（含原 7 个和后续 renderer finding）；
 - NEW findings；
 - implementation report integrity；
 - tests/build；
@@ -484,10 +501,16 @@ D:\BattleMap\battle-map\docs\enterprise\reviews\non-mox-modules-mox-reference-in
 
 ```text
 FULL_ORIGINAL_REVIEW_COMPLETED=YES
-KNOWN_FINDINGS_CLOSED=7/7
+KNOWN_FINDINGS_CLOSED=N/N
 NEW_BLOCKING_FINDINGS=0
 DUPLICATE_PROJECTION_IMPLEMENTATIONS=0
 MODULE_LOCAL_FORM_SCHEMAS=0
+MODULE_LOCAL_FORM_HTML_BUILDERS=0
+MODULE_LOCAL_SECTION_SCHEMAS=0
+DUPLICATE_FIELD_RENDERERS=0
+DUPLICATE_FORM_SHELLS=0
+DUPLICATE_VALIDATION_RENDERERS=0
+FIVE_MODULE_CREATE_EDIT_RENDER_PATHS=PASS
 DUPLICATE_SECTION_RENDER_PATHS=0
 PRIVATE_CUSTOMER_FETCH_IMPLEMENTATIONS=0
 PROGRESS_DOUBLE_WRITE_PATHS=0
@@ -512,10 +535,13 @@ NON-MOX → MOX FULL INDEPENDENT REVIEW RERUN V3
 RESULT=PASS/FAIL/PARTIAL
 REVIEWED_HEAD=
 FULL_ORIGINAL_REVIEW_COMPLETED=YES/NO
-KNOWN_FINDINGS_CLOSED=x/7
+KNOWN_FINDINGS_CLOSED=x/N
+KNOWN_FINDINGS_TOTAL=N
 NEW_BLOCKING_FINDINGS=数量
 OPEN_FINDINGS=NONE或ID列表
 SHARED_RUNTIME=PASS/FAIL
+MOX=PASS/FAIL
+FIVE_MODULE_CREATE_EDIT_RENDER_PATHS=PASS/FAIL/NOT_RUN
 TOB=PASS/FAIL/BLOCKED_V0_2
 ISP=PASS/FAIL/BLOCKED_V0_2
 POWER=PASS/FAIL/BLOCKED_V0_2
@@ -545,3 +571,22 @@ V0_2_BLOCKERS=NONE或内容
 BLOCKING_FINDINGS=NONE或内容
 NEXT=USER_MANUAL_ACCEPTANCE/REMEDIATION/V0_2_AUTHORITY_REVIEW
 ```
+
+
+## 13. 本轮执行边界与证据完整性
+
+本节补充并优先于基础 V1 中与本轮五模块范围、历史 finding 数量或报告写入边界冲突的旧表述；其余原始审查域全部保留。
+
+- 使用新的独立 Agent 会话审查。实施报告是待验证声明，不能替代独立读取生产代码。
+- Authority 镜像固定为 `D:\BattleMap\BattleMapenterprise-authority`，先在该目录执行 `git pull --ff-only origin enterprise-battle-map-authority`；记录 AUTHORITY_HEAD。更新失败时报告，不 reset/rebase/clean 或用旧规范冒充已更新。
+- 代码工作树固定为 `D:\BattleMap\battle-map`，分支必须为 `feature/enterprise-battle-map`。记录完整 REVIEWED_HEAD、工作树状态，并核对 V3 报告的 BASE_HEAD / FINAL_HEAD 与 Git 历史。不在审查中代替实施者提交未完成代码。
+- 若报告 FINAL_HEAD 为报告提交之前的实现 SHA，必须证明它是 REVIEWED_HEAD 的祖先，且其后差异仅为报告/证据文件；若含生产代码、测试、配置或 Migration 变更，不得按同一实现宣称匹配。
+- 审查只允许写本节指定的报告、历史归档和证据目录。不得修改生产代码、现有测试、Migration、业务 Authority；不执行 git commit、merge 或 push。
+- 证据目录固定为 `docs/enterprise/reviews/evidence/five-module-full-review/<REVIEWED_HEAD>/`，保存 commands.md（命令、工作目录、退出码、时间）、测试/build日志和扫描结果。不得依赖聊天中不可追溯的 PASS。
+- 从 package.json 和现有测试配置确定真实命令，不编造 suite 名称或补写测试。缺少必要 production-path 测试记为 BLOCKING_TEST_GAP。
+- 测试与迁移使用隔离临时数据库/副本，不连接或改写用户业务数据库。启动应用仅使用隔离测试数据。无法安全隔离时记录该验证 NOT_RUN 和具体原因。
+- HEAD 固定期间完成整个审查；结束重新检查 HEAD 和 git diff。允许上述报告/证据路径变更及已识别的忽略态测试/build临时输出；其他受审源码/测试/配置变化即使 HEAD 未变也使审查失效，记录 REVIEW_INVALIDATED_WORKTREE_CHANGED。
+- 每条 finding 附 ID、严重度、file:function/行号、违反的 Authority 条款、实际生产路径、复现或测试证据、影响和修复方向；不得现场修复。
+- 必需验证未运行、证据不足或环境阻塞时 RESULT=PARTIAL，相关项使用 NOT_RUN/BLOCKED，不可记 PASS；已确认阻塞缺陷时 RESULT=FAIL。仅记录纯 Excel V0.2 未来需求差异不影响当前冻结基线的机制结论，但不得声称 V0.2 已验收。
+- 只有全部审查和必要自动验证通过、无 blocking finding、HEAD/受审文件未变时 RESULT=PASS，NEXT=USER_MANUAL_ACCEPTANCE；人工验收仍为 PENDING。发现实现/测试缺陷则 NEXT=REMEDIATION；仅证据不足则 NEXT=COMPLETE_REVIEW_EVIDENCE。
+- 最终回执在第12节基础上附 AUTHORITY_HEAD、HEAD_UNCHANGED、REVIEWED_SOURCE_UNCHANGED、REPORT_PATH、EVIDENCE_DIR、MANUAL_ACCEPTANCE=PENDING。不要求上传本地代码或报告；用户可直接复制短回执。

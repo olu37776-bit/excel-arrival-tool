@@ -13,9 +13,9 @@
 | 1 | `enterprise-contract-architecture-v5.md` | 端到端 canonical identity、真实 Runtime Projection、API canonical-only、Customer 主键贯穿、Heatmap canonical key、Progress 单一事实源、DB/Conformance Gate | 所有企业任务必读 |
 | 2 | `architecture/enterprise-runtime-field-options-contract-v1.md` | Runtime Field View Model、select/options 判定、动态 options 生命周期、错误边界与五模块回归门禁 | 长期 Runtime Options Authority |
 | 3 | `mox-canonical-authority-v6.md` | MOX 41字段、4 group、Create/Edit runtime、Heatmap、legacy key、Progress、Customer、DB/测试最终目标 | 已验证业务 Reference baseline |
-| 4 | `remediation/five-module-shared-form-renderer-convergence-v2.md` | 验证 MOX 是否也存在 local form builder；从 MOX 已验证行为提炼唯一 shared form renderer，并让 MOX/TOB/ISP/Power/Large 全部消费同一真实生产 render path | **当前阻塞 remediation** |
-| 5 | `remediation/non-mox-shared-form-renderer-convergence-v1.md` | 仅针对 4x non-MOX module-local form builders 的第一版方案 | **SUPERSEDED BY V2** |
-| 6 | `reviews/non-mox-full-independent-review-rerun-v3.md` | 每个修复后新 HEAD 必须完整重跑原始 Non-MOX Independent Review，同时回归历史 findings 并主动发现新 finding | V2 remediation 完成后的下一门禁 |
+| 4 | `remediation/five-module-shared-form-renderer-convergence-v3.md` | 验证 MOX 是否也存在 local form builder；从 MOX 已验证行为提炼唯一 shared form renderer，并让 MOX/TOB/ISP/Power/Large 全部消费同一真实生产 render path | 用户报告已实施；待独立核验 |
+| 5 | `remediation/non-mox-shared-form-renderer-convergence-v1.md` | 仅针对 4x non-MOX module-local form builders 的第一版方案 | **SUPERSEDED BY FIVE-MODULE V3** |
+| 6 | `reviews/non-mox-full-independent-review-rerun-v3.md` | 固定新 HEAD，完整重跑原始审查；覆盖五模块真实渲染链、全部历史 findings 和新增问题 | **当前执行门禁：五模块完整独立审查** |
 | 7 | `reviews/non-mox-modules-mox-reference-independent-review-v1.md` | 原始全量 Independent Review Authority：shared runtime、Create/Edit、Customer、Progress、Heatmap、Metric、API/DB、重复机制、hidden consumers、测试可信度 | 每个新 HEAD 必须完整重跑 |
 | 8 | `remediation/non-mox-alignment-independent-review-findings-remediation-v2.md` | 关闭前次独立审查 7 个 blocking findings | 已实施；历史回归集 |
 | 9 | `reviews/non-mox-alignment-independent-rereview-v2.md` | 仅围绕7个finding的定向复核草案 | SUPERSEDED BY V3 |
@@ -39,16 +39,17 @@
 
 ## 2. 当前阶段判断
 
-最新完整 Independent Review 已确认：TOB / ISP / Power / Large 仍存在 4 套 module-local form HTML builders。它们可能共享部分 Contract、Projection 和 Runtime Field，但最终 Create/Edit Vue render tree 仍由模块本地 builder 解释。
+修复前的完整 Independent Review 曾确认：TOB / ISP / Power / Large 仍存在 4 套 module-local form HTML builders。它们可能共享部分 Contract、Projection 和 Runtime Field，但最终 Create/Edit Vue render tree 仍由模块本地 builder 解释。
 
 同时，`4x` finding 只证明四个 non-MOX builder 存在，**不能证明 MOX 自己已经是 shared form renderer consumer**。
 
-因此当前正式状态：
+2026-09-07 用户报告 Five-Module Shared Form Renderer Convergence V3 已完成。当前会话尚未读取本地实施报告/代码，不能把用户完成回执升级为独立 VERIFIED。当前状态：
 
 ```text
 MOX = VERIFIED BUSINESS/BEHAVIOR REFERENCE
-FIVE-MODULE FORM RENDERER SHARING = NOT VERIFIED
-CURRENT BLOCKER = ACTUAL FORM RENDER TREE NOT PROVEN SHARED
+V3 IMPLEMENTATION = IMPLEMENTED_REPORTED
+FIVE-MODULE FORM RENDERER SHARING = PENDING_INDEPENDENT_REVIEW
+CURRENT_GATE = FULL_INDEPENDENT_REVIEW_RERUN_V3
 ```
 
 MOX 的“已验证”表示其行为/字段/端到端结果可作为提炼 shared renderer 的参考，不表示 MOX 可以永久保留一套私有 form builder。
@@ -95,7 +96,7 @@ DUPLICATE_VALIDATION_RENDERERS=0
 
 ## 4. MOX 的特殊处理规则
 
-当前 Implementation Agent 必须先恢复 MOX 的真实 Create/Edit production render path。
+以下为 V3 已要求的实施路径，独立审查需核对 Inventory、真实代码与回归证据；不得因 MOX 先前通过业务审查而豁免本轮渲染链验证。
 
 如果：
 
@@ -152,17 +153,17 @@ renderer 必须根据 Contract 自然产生 4-group 或 3-group，不允许通�
 
 ---
 
-## 6. 当前 Remediation
+## 6. 本轮实施基线与当前审查
 
-当前唯一实施 Authority：
+本轮实施依据：
 
 ```text
-remediation/five-module-shared-form-renderer-convergence-v2.md
+remediation/five-module-shared-form-renderer-convergence-v3.md
 ```
 
-V1 已被取代，不得再假设“MOX 已天然走 shared renderer”。
+Five-Module V3 取代 V2 的执行规范，V2 仅保留设计背景；Non-MOX V1 不再是当前执行入口。
 
-Implementation Agent 必须先建立 Five-Module Form Render Inventory，追到真实 production render tree 后才能改代码。
+用户报告 V3 已实施完成。下一步读取本地 `docs/enterprise/remediations/five-module-shared-form-renderer-convergence-report-v3.md`，按 `reviews/non-mox-full-independent-review-rerun-v3.md` 完整执行独立审查；审查中不实施修复。
 
 ---
 
@@ -252,24 +253,15 @@ BLOCKED_BY_V0_2_AUTHORITY
 
 ## 10. 当前推进顺序
 
-```text
-1. 更新 Authority 镜像
-2. 读取最新完整 Independent Review report
-3. 执行 five-module-shared-form-renderer-convergence-v2.md
-4. 建立 Five-Module Form Render Inventory
-5. 判定 MOX_LOCAL_FORM_BUILDER=YES/NO
-6. 提炼/确认唯一 shared renderer
-7. 让五模块全部进入同一 production render path
-8. module-local form builders 归零
-9. 本地 commit 新 HEAD
-10. 新 Agent 完整重跑 Non-MOX Independent Review V1 + Full Rerun V3
-11. 主动发现新 finding
-12. 只有 BLOCKING_FINDINGS=NONE 才进入用户人工验收
-13. 完成 Excel V0.2 Authority Review
-14. 发布必要的新模块 Canonical Authority并只实施 V0.2 delta
-15. 企业模块统一 VERIFIED
-16. 企业首页最后建设
-```
+1. 更新 Authority 镜像，记录 AUTHORITY_HEAD。
+2. 读取 V3 实施报告、历史完整审查与全部 finding；核对本地分支、干净工作树、无并发写入并固定 REVIEWED_HEAD。
+3. 独立执行原始 Review V1 全部审查域 + Full Rerun V3 的五模块当前门禁。
+4. 核实五模块真实 Create/Edit render tree、全部历史 finding 关闭情况，主动发现新问题；重跑必要测试/build。
+5. 保留旧报告，在固定路径写完整新报告、原始证据和简短回执。
+6. FAIL：进入有证据的 remediation；PARTIAL：补足未完成验证；不直接人工验收。
+7. PASS 且无 blocking finding：进入用户人工视觉/交互验收。
+8. 完成 Excel V0.2 Authority Review，必要时发布新模块 Canonical Authority，只实施 V0.2 delta。
+9. 企业模块统一验证与人工验收完成后，再建设企业首页。
 
 ---
 
