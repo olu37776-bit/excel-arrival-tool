@@ -10,7 +10,10 @@ openpyxl 3.1.5中FieldGroup.discretePr使用NestedInteger作为NestedSequence的
 
 ## 验证范围
 
-新增真实XLSX分组缓存重现、上期继承和源文件读取、原文件SHA256不变、单元格类型/格式及dimension、损坏ZIP明确失败。打包EXE的smoke也加入分组缓存读取及False/0继承，不再只验证新生成文件可回读。等待完整测试和发布证据。
+新增真实XLSX分组缓存重现、上期继承和源文件读取、原文件SHA256不变、单元格类型/格式及dimension、损坏ZIP明确失败。打包EXE的smoke也加入分组缓存读取及False/0继承，不再只验证新生成文件可回读。新增4项专项回归本地通过，修正测试夹具的源路径索引后PR工作流34104261464中Linux任务101685531843完整130项测试通过，无跳过，117.745秒。Microsoft SDK任务101685531537通过。Windows任务101686341305共130项测试通过（2项Linux引擎测试跳过），93.028秒；EXE构建与包含分组透视读取的smoke通过。PR #48合并为2fbea89d1c26ac7d07031754cb5b9cdaa28cc2dd，正式发布工作流34104827669：Microsoft SDK任务101687333833通过；Linux任务101687334115共130项全通过、无跳过，145.308秒。Windows任务101688497777共130项通过（2项仅Linux引擎跳过），98.111秒；EXE构建、分组缓存读取、人工字段继承及GUI smoke通过。
+
+v0.11.1于2026-09-07 09:20:11 UTC发布，EXE 12,843,409字节，SHA256：3b520afd0e2b3eafa6ca52fbc246bafb535077601f147eb87fef6e7e1f10861d。
+[下载修复版EXE](https://github.com/olu37776-bit/excel-arrival-tool/releases/download/v0.11.1/ExcelRevenueTool-v0.11.1.exe)。
 
 ## 尚未确认的问题
 
