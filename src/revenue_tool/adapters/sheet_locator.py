@@ -95,10 +95,10 @@ def _fingerprint_sheet(
     best_row: int | None = None
     best_fields: tuple[str, ...] = ()
     best_score = (-1, -1, 0)
-    for row_number in row_numbers:
-        if row_number > sheet.max_row:
-            continue
-        headers = [normalize_text(cell.value) for cell in sheet[row_number]]
+    first = min(row_numbers, default=1)
+    last = min(max(row_numbers, default=0), sheet.max_row)
+    for row_number, cells in enumerate(sheet.iter_rows(min_row=first, max_row=last), first):
+        headers = [normalize_text(cell.value) for cell in cells]
         matched = _matched_fields(headers, fields, config)
         matched_set = set(matched)
         score = (

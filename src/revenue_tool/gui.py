@@ -40,7 +40,8 @@ def main(argv: list[str] | None = None) -> int:
         config = load_config(args.config)
         values = dict(contract_no="SMOKE", region="测试地区", supply_center="深供",
                       revenue_month_rpd="2026-09", revenue_month_cpd="2026-09",
-                      revenue_segment="订未发", revenue_forecast=1)
+                      revenue_segment="订未发", revenue_forecast=1,
+                      manual_revenue_segment=False, manual_revenue_month=0)
         values.update(calculate_final_values(values))
         with TemporaryDirectory() as temporary:
             path = Path(temporary) / "smoke.xlsx"
@@ -49,7 +50,7 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 for name in SUMMARY_SHEETS.values():
                     sheet = workbook[name]
-                    if len(sheet._pivots) != 1 or sheet["F10"].value != 1:
+                    if len(sheet._pivots) != 1 or sheet["F10"].value != 0:
                         raise RuntimeError("Windows EXE透视工作簿自检失败")
             finally:
                 workbook.close()
@@ -62,6 +63,30 @@ def main(argv: list[str] | None = None) -> int:
                         raise RuntimeError("Windows EXE最终字段计算值自检失败")
             finally:
                 workbook.close()
+            # The packaged EXE must read grouped legacy pivot caches too.
+            # This temporary fixture reproduces openpyxl 3.1.5's Nested error.
+            from zipfile import ZipFile, ZIP_DEFLATED
+            from xml.etree import ElementTree as ET
+            from revenue_tool.adapters.excel_reader import ExcelInputAdapter
+            namespace = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
+            with ZipFile(path) as archive:
+                parts = [(info, archive.read(info.filename)) for info in archive.infolist()]
+            with ZipFile(path, 'w', ZIP_DEFLATED) as archive:
+                for info, data in parts:
+                    if info.filename.startswith('xl/pivotCache/pivotCacheDefinition') and info.filename.endswith('.xml'):
+                        tree = ET.fromstring(data)
+                        field = tree.find(f'{{{namespace}}}cacheFields')[0]
+                        group = ET.SubElement(field, f'{{{namespace}}}fieldGroup', {'base': '0'})
+                        discrete = ET.SubElement(group, f'{{{namespace}}}discretePr', {'count': '1'})
+                        ET.SubElement(discrete, f'{{{namespace}}}x', {'v': '0'})
+                        data = ET.tostring(tree)
+                    archive.writestr(info, data)
+            previous = ExcelInputAdapter().read_previous(path, config, IssueLog())
+            if not previous.usable or len(previous.rows) != 1:
+                raise RuntimeError('Windows EXE分组透视上期读取自检失败')
+            inherited = next(iter(previous.rows.values())).values
+            if inherited['manual_revenue_segment'] is not False or inherited['manual_revenue_month'] != 0:
+                raise RuntimeError('Windows EXE人工字段继承自检失败')
         if sys.platform == 'win32' or os.environ.get('DISPLAY'):
             from revenue_tool.gui_app import RevenueApp
             root = tkinter.Tk()
