@@ -24,6 +24,8 @@ MANUAL_MONTH_HEADERS = (
 )
 
 POST_32_FIELD_IDS = (
+    "final_revenue_segment", "final_revenue_month_rpd",
+    "final_revenue_month_cpd", "final_revenue_forecast",
     "revenue_forecast",
     "manual_revenue_segment",
     "manual_revenue_forecast_rpd",
@@ -54,7 +56,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
             try:
                 base = workbook["基表"]
                 headers = [cell.value for cell in base[1]]
-                self.assertEqual(36, len(headers))
+                self.assertEqual(40, len(headers))
                 self.assertEqual(EXPECTED_BASE_HEADERS, headers)
                 self.assertEqual(0, len(base.data_validations.dataValidation))
                 indexes = {cell.value: cell.column for cell in base[1]}
@@ -112,7 +114,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
                     if value is None:
                         break
                     field_ids.append(value)
-                self.assertEqual(36, len(field_ids))
+                self.assertEqual(40, len(field_ids))
                 for field in POST_32_FIELD_IDS:
                     self.assertIn(field, field_ids)
                 self.assertNotIn("manual_revenue_segment_flag", field_ids)
@@ -646,7 +648,9 @@ class ManualRevenueForecastTest(unittest.TestCase):
             _set_manual_values(previous, "C001", "SC-A")
             _remove_fields_from_result(
                 previous,
-                ("manual_revenue_segment",),
+                ("manual_revenue_segment", "final_revenue_segment",
+                 "final_revenue_month_rpd", "final_revenue_month_cpd",
+                 "final_revenue_forecast"),
             )
 
             _run(sources, output, previous=previous)

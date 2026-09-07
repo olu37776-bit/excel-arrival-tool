@@ -26,6 +26,7 @@ from revenue_tool.services.normalization import (
     ZERO_AMOUNT,
 )
 from revenue_tool.services.stock_unlock import aggregate_stock_unlock
+from revenue_tool.services.final_revenue import calculate_final_values
 
 
 _DEEP_SUPPLY_CENTER = normalize_lookup("深供")
@@ -253,6 +254,8 @@ class RevenueEngine:
                     **_manual_values(previous, identity_key),
                 }
                 result.append(BaseRow(values))
+        for row in result:
+            row.values.update(calculate_final_values(row.values))
         return sorted(
             result,
             key=lambda row: (

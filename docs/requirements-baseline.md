@@ -15,7 +15,7 @@
 |---|---|
 | `docs/requirements-baseline.md` | 总体范围、业务粒度、跨模块规则、异常原则 |
 | `docs/source-schema.md` | 源文件、源字段、Sheet/字段识别、数据标准化和重复规则 |
-| `docs/output-schema.md` | 基表32列的来源、计算和显示规则 |
+| `docs/output-schema.md` | 基表40列的来源、计算和显示规则 |
 | `docs/comparison-output.md` | RPD/CPD跨期变化及供应差异清单 |
 | `docs/decisions/DR-001..DR-007` | 已确认单项决策及其边界 |
 | `docs/implementation/*.md` | 当前实施范围、顺序和验证计划 |
@@ -396,6 +396,8 @@ row_kind=CONTRACT_ONLY_NO_DEMAND
 - 无要货占位行：合同号+空履行供应中心。
 
 空中心占位行的人工值不得自动复制给后续真实中心。
+
+Issue #36新增四个非人工最终字段（基表共40列）：最终收入分段类别、最终收入年月（按RPD）、最终收入年月（按CPD）、最终收入预测。对应人工字段非业务空白时优先使用人工值，否则回退自动值；0/False不得被当空白，是否手工调整预测不门控。Python保留独立计算，Excel使用实时公式，人工月份实时归一化为YYYY-MM，歧义显示待修正提示。最终字段不反向覆盖自动列、不参与历史人工继承，不改变跨月比较和供应提拉。保护和实时支持范围见output-schema第1.1节。
 
 RPD跨月变化、CPD跨月变化和供应需要提拉诉求清单粗表均在国家之后输出结转类型。
 

@@ -8,6 +8,12 @@ from typing import Any
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.comments import Comment
+from openpyxl.styles import Protection
+from openpyxl.workbook.properties import CalcProperties
+
+from revenue_tool.adapters.final_revenue_formulas import final_formulas
+from revenue_tool.services.final_revenue import FINAL_FIELD_SOURCES
 
 from revenue_tool.config import ToolConfig
 from revenue_tool.domain.models import (
@@ -36,6 +42,9 @@ class ExcelOutputAdapter:
         config: ToolConfig,
     ) -> Path:
         workbook = Workbook()
+        workbook.calculation = CalcProperties(
+            calcMode="auto", fullCalcOnLoad=True, forceFullCalc=True,
+        )
         workbook.remove(workbook.active)
         sheets = config.output["sheets"]
 
@@ -61,12 +70,15 @@ class ExcelOutputAdapter:
                 "monthly_new_order",
                 "revenue_forecast",
                 "manual_revenue_month",
+                "final_revenue_forecast",
             },
             text_fields={
                 "revenue_month_rpd",
                 "revenue_month_cpd",
                 "manual_revenue_forecast_rpd",
                 "manual_revenue_forecast_cpd",
+                "final_revenue_month_rpd",
+                "final_revenue_month_cpd",
             },
             editable_fields={
                 "manual_revenue_segment",
@@ -77,6 +89,36 @@ class ExcelOutputAdapter:
                 "adjustment_note",
             },
         )
+        base_sheet = workbook[sheets["base"]]
+        indexes = {c["id"]: i for i, c in enumerate(base_columns, 1)}
+        for row_number in range(2, base_sheet.max_row + 1):
+            refs = {
+                field: f"{get_column_letter(index)}{row_number}"
+                for field, index in indexes.items()
+            }
+            for field, formula in final_formulas(refs).items():
+                base_sheet.cell(row_number, indexes[field]).value = formula
+        for field in FINAL_FIELD_SOURCES:
+            base_sheet.cell(1, indexes[field]).comment = Comment(
+                "系统公式列，请勿编辑。对应黄色人工字段有值即生效，"
+                "不受是否手工调整预测门控。月份支持9月/10/2026-9等；"
+                "待修正提示请改填完整YYYY-MM。透视表需手动刷新。",
+                "ExcelRevenueTool",
+            )
+        # Protect system formulas from ordinary editing, while allowing the
+        # existing AutoFilter and yellow inputs. No password: deliberate layout
+        # edits can use Review > Unprotect Sheet before moving columns.
+        base_sheet.protection.sheet = True
+        base_sheet.protection.autoFilter = False
+        base_sheet.protection.sort = False
+        for column in base_columns:
+            if column["id"] in {
+                "manual_revenue_segment", "manual_adjust_flag",
+                "manual_revenue_forecast_rpd", "manual_revenue_forecast_cpd",
+                "manual_revenue_month", "adjustment_note",
+            }:
+                for cell in base_sheet[get_column_letter(indexes[column["id"]])][1:]:
+                    cell.protection = Protection(locked=False)
         self._write_change_sheet(
             workbook,
             sheets["rpd_changes"],

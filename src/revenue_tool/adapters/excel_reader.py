@@ -24,6 +24,7 @@ from revenue_tool.domain.models import (
     WorkbookReadError,
 )
 from revenue_tool.services.field_matching import resolve_name
+from revenue_tool.services.final_revenue import FINAL_FIELD_SOURCES
 from revenue_tool.services.normalization import (
     business_key_identity,
     is_business_blank,
@@ -194,6 +195,9 @@ class ExcelInputAdapter:
             ]
             indexes: dict[str, int | None] = {}
             for column in config.base_columns:
+                if column["id"] in FINAL_FIELD_SOURCES:
+                    indexes[column["id"]] = None
+                    continue
                 previous_name = previous_names.get(
                     column["id"], column["name"]
                 )
@@ -336,6 +340,7 @@ class ExcelInputAdapter:
                         )
 
                 already_parsed = {
+                    *FINAL_FIELD_SOURCES,
                     "contract_no",
                     "supply_center",
                     "revenue_month_rpd",
