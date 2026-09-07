@@ -13,11 +13,11 @@
 | 1 | `enterprise-contract-architecture-v5.md` | 端到端 canonical identity、真实 Runtime Projection、API canonical-only、Customer 主键贯穿、Heatmap canonical key、Progress 单一事实源、DB/Conformance Gate | 所有企业任务必读 |
 | 2 | `architecture/enterprise-runtime-field-options-contract-v1.md` | Runtime Field View Model、select/options 判定、动态 options 生命周期、错误边界与五模块回归门禁 | 长期 Runtime Options Authority |
 | 3 | `mox-canonical-authority-v6.md` | MOX 41字段、4 group、Create/Edit runtime、Heatmap、legacy key、Progress、Customer、DB/测试最终目标 | 已验证业务 Reference baseline |
-| 3b | `remediation/tob-shared-form-production-path-repair-v1.md` | 修复 TOB 本地完整表单构建器，迁入真实共享 Create/Edit 渲染链，补强漏检门禁 | **当前修复入口** |
+| 3b | `remediation/tob-shared-form-production-path-repair-v1.md` | 修复 TOB 本地完整表单构建器，迁入真实共享 Create/Edit 渲染链，补强漏检门禁 | 用户报告已修复；待独立复审 |
 | 3a | `remediation/five-module-shared-operation-convergence-v1.md` | 根据最新本地审查报告，对其他操作建立五模块生产路径清单，收敛重复机制并修复阻塞 | 用户报告修复完成；待新 HEAD 独立复审 |
 | 4 | `remediation/five-module-shared-form-renderer-convergence-v3.md` | 验证 MOX 是否也存在 local form builder；从 MOX 已验证行为提炼唯一 shared form renderer，并让 MOX/TOB/ISP/Power/Large 全部消费同一真实生产 render path | 已报告实施；当前修复须回归 |
 | 5 | `remediation/non-mox-shared-form-renderer-convergence-v1.md` | 仅针对 4x non-MOX module-local form builders 的第一版方案 | **SUPERSEDED BY FIVE-MODULE V3** |
-| 6 | `reviews/non-mox-full-independent-review-rerun-v3.md` | 固定新 HEAD，完整重跑原始审查；覆盖五模块真实渲染链、全部历史 findings 和新增问题 | 本轮修复后完整独立复审门禁 |
+| 6 | `reviews/non-mox-full-independent-review-rerun-v3.md` | 固定新 HEAD，完整重跑原始审查；覆盖五模块真实渲染链、全部历史 findings 和新增问题 | **当前执行：TOB 修复后完整独立复审** |
 | 7 | `reviews/non-mox-modules-mox-reference-independent-review-v1.md` | 原始全量 Independent Review Authority：shared runtime、Create/Edit、Customer、Progress、Heatmap、Metric、API/DB、重复机制、hidden consumers、测试可信度 | 每个新 HEAD 必须完整重跑 |
 | 8 | `remediation/non-mox-alignment-independent-review-findings-remediation-v2.md` | 关闭前次独立审查 7 个 blocking findings | 已实施；历史回归集 |
 | 9 | `reviews/non-mox-alignment-independent-rereview-v2.md` | 仅围绕7个finding的定向复核草案 | SUPERSEDED BY V3 |
@@ -45,16 +45,16 @@
 
 同时，`4x` finding 只证明四个 non-MOX builder 存在，**不能证明 MOX 自己已经是 shared form renderer consumer**。
 
-2026-09-07 用户报告 Five-Module Shared Form Renderer Convergence V3 已完成。随后用户报告完整独立审查阻塞，并明确主要问题是需要像 V3 一样收敛其他操作的机制。云端尚未取得本地报告正文，具体 finding、根因和修复范围必须由本地 Agent 从最新报告与代码核实，不能预设其他操作均有缺陷。用户报告共享操作链修复完成后，最新独立审查再次阻塞：用户明确指出 TOB 仍使用本地 .map() 表单构建器，未迁移到共享 renderer。具体位置、ID与其他 findings 以本地报告为准。此前“全部共享”的实施声明不能作为完成依据。当前状态：
+2026-09-07 用户报告 Five-Module Shared Form Renderer Convergence V3 已完成。随后用户报告完整独立审查阻塞，并明确主要问题是需要像 V3 一样收敛其他操作的机制。云端尚未取得本地报告正文，具体 finding、根因和修复范围必须由本地 Agent 从最新报告与代码核实，不能预设其他操作均有缺陷。用户报告共享操作链修复完成后，最新独立审查再次阻塞：用户明确指出 TOB 仍使用本地 .map() 表单构建器，未迁移到共享 renderer。具体位置、ID与其他 findings 以本地报告为准。此前“全部共享”的实施声明不能作为完成依据。用户现已报告 TOB 定向修复完成；尚未取得新 HEAD 的独立核验结果。当前状态：
 
 ```text
 MOX = VERIFIED BUSINESS/BEHAVIOR REFERENCE
 V3 IMPLEMENTATION = IMPLEMENTED_REPORTED
 PREVIOUS_FULL_REVIEW = BLOCKED_REPORTED
 SHARED_OPERATION_REMEDIATION = IMPLEMENTED_REPORTED
-LATEST_FULL_REVIEW = BLOCKED_REPORTED
-CURRENT_TASK = TOB_SHARED_FORM_PRODUCTION_PATH_REPAIR
-NEXT_GATE = FULL_INDEPENDENT_REVIEW_RERUN_V3
+PREVIOUS_FULL_REVIEW = BLOCKED_REPORTED
+TOB_REPAIR = IMPLEMENTED_REPORTED
+CURRENT_GATE = FULL_INDEPENDENT_REVIEW_RERUN_V3
 MANUAL_ACCEPTANCE = PENDING
 ```
 
@@ -169,9 +169,9 @@ remediation/five-module-shared-form-renderer-convergence-v3.md
 
 Five-Module V3 取代 V2 的执行规范，V2 仅保留设计背景；Non-MOX V1 不再是当前执行入口。
 
-当前执行入口为 `remediation/tob-shared-form-production-path-repair-v1.md`。读取最新本地审查报告，从真实 TOB Create/Edit 入口定位本地完整构建路径，接入唯一共享 shell/group/field renderer，并修复此前漏检的生产路径测试和门禁。
+用户已报告 TOB 定向修复完成。当前执行入口为 `reviews/non-mox-full-independent-review-rerun-v3.md`，完整读取第15节及其他必读资料，在新独立会话中对新 HEAD 完整复审。
 
-本轮是 Implementation；`.map()` 本身不是违规依据。报告中其他可执行 blocker 按共享操作链 V1 继续闭环，不能仅修 TOB 就把全轮标为 COMPLETE。原始独立审查报告保留；修复后对新 HEAD 完整复审。
+先核实 TOB Create/Edit 实际共享路径与漏检门禁，再继续五模块全部审查域及共享操作链。先检查 TOB 是执行顺序，不是缩小审查范围。报告和证据仍写既定路径；不修改生产代码或测试，不现场修复。
 
 ---
 
@@ -261,12 +261,12 @@ BLOCKED_BY_V0_2_AUTHORITY
 
 ## 10. 当前推进顺序
 
-1. 更新 Authority 镜像，恢复最新审查 findings、TOB 实际入口和受审/当前 HEAD。
-2. 按 TOB Shared Form Production Path Repair V1 先写具体计划，再实施 Create/Edit 共享路径迁移和漏检门禁修复。
-3. 完成同报告其他可执行 blocking findings，保留模块业务差异。
-4. 回归五模块 Create/Edit、共享操作链和必要全量验证，同步实施文档并本地提交。
-5. 新独立 Agent 对新 HEAD 完整执行 Review V1 + Full Rerun V3，额外读取本轮 TOB 修复规范/报告，核实真实入口与防回归证据。
-6. 独立 PASS 且无 blocking finding 后进入人工验收；其他后续阶段顺序不变。
+1. 更新 Authority 镜像，读取 TOB 定向修复报告、最新阻塞报告和共享操作链资料，核对 Git 事实并固定新 REVIEWED_HEAD。
+2. 新独立 Agent 按 Full Rerun V3 第15节核实 TOB 两条真实表单入口、旧路径清理和防漏检证据。
+3. 完整执行 Review V1 + Full Rerun V3 全部审查范围（含第14/15节），回归全部历史 findings，主动发现新问题。
+4. 保存历史报告，写完整新报告与证据，返回短回执；不现场修复或提交。
+5. 全部独立 PASS 且无 blocking finding 后进入人工验收；缺陷或证据不足分别进入修复或补验证。
+6. Excel V0.2、企业首页等后续阶段顺序保持不变。
 
 ---
 

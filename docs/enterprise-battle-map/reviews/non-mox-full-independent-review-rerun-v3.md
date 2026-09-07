@@ -2,7 +2,7 @@
 
 **状态：CURRENT REVIEW RERUN AUTHORITY**  
 **适用模块：MOX、TOB、ISP、电力、大企；五模块均验证真实 Create/Edit 生产路径**  
-**前置：共享表单 V3 与 `remediation/five-module-shared-operation-convergence-v1.md` 修复已实施并提交；本地审查者核实报告与实际 HEAD**  
+**前置：TOB 真实共享表单路径定向修复、共享表单 V3 与 `remediation/five-module-shared-operation-convergence-v1.md` 修复已实施并提交；本地审查者核实报告与实际 HEAD**  
 **阶段：用户已报告实施完成，当前为 IMPLEMENTED_REPORTED / PENDING_INDEPENDENT_REVIEW，尚未 VERIFIED**  
 **基础审查 Authority：`reviews/non-mox-modules-mox-reference-independent-review-v1.md`**
 
@@ -640,3 +640,34 @@ MODULE_STATE_ISOLATION=PASS
 
 最终短回执附上述四项和 V3_CREATE_EDIT_REGRESSION。所有必检项通过才 NEXT=USER_MANUAL_ACCEPTANCE；存在缺陷则 NEXT=REMEDIATION；缺验证证据则 NEXT=COMPLETE_REVIEW_EVIDENCE。
 本轮只读审查，沿用第10/13节的固定报告/证据路径、旧报告归档和 HEAD/受审文件稳定性规则；不要现场修复或提交代码。
+
+## 15. TOB 定向修复后的完整复审入口
+
+用户报告 TOB Shared Form Production Path Repair V1 已修复。本轮使用新的独立会话，固定修复后的新 REVIEWED_HEAD；前次“已共享”声明与测试 PASS 都不能替代当前代码证据。
+
+额外完整读取：
+- Authority：remediation/tob-shared-form-production-path-repair-v1.md；
+- 本地：docs/enterprise/remediations/tob-shared-form-production-path-plan-v1.md；
+- 本地：docs/enterprise/remediations/tob-shared-form-production-path-report-v1.md；
+- 对应 evidence/tob-shared-form-repair/<BASE_HEAD>/ 下的原报告、测试与门禁证据。
+
+按第13节核对实现提交、报告提交和当前 HEAD，检查是否还有未提交的受审代码。先对以下内容取证，再继续完整审查；发现缺陷应记录并继续其他可独立完成的检查。
+
+1. 分别从 TOB 页面实际 Create/Edit 动作追到最终 render tree，证明确实消费已有唯一 shared shell/group/field renderer，未绕回本地完整 builder。
+2. 核实旧本地构建器、替代入口、完整 slot body、条件 fallback、重复 group/控件分发的活动消费者均已清理。
+3. 将 .map() 按输入、输出、实际消费者分类；合法数据投影、薄绑定、共享 renderer 内部迭代不能误报，改写循环语法也不能当作修复。
+4. 检查真实页面入口测试是否挂载实际共享 renderer；不能通过 mock/stub 待验证机制、只检查 import/props 或调用未被生产消费的 helper 获得 PASS。
+5. 审核修复前快照/隔离实验的证据，确认补强的门禁确实能够识别旧本地 builder，且失败原因对应目标架构缺陷。不得在受审工作树回退或改写代码；证据不足记 TEST_GAP/EVIDENCE_GAP。
+6. 核实 TOB 字段视图、三组结构、Options、客户身份/只读规则、Progress入口和提交/取消/重开行为正确，同时回归其余四模块。
+
+本节是强制专项，不能替代第1—14节。必须完成五模块所有原始审查域、全部历史 findings、新问题发现和必要自动验证；报告中单独列出 TOB 的修复前后路径与防漏检证据。
+
+在原有 PASS 条件和最终短回执中补充：
+TOB_CREATE_USES_SHARED_RENDERER=PASS/FAIL/NOT_RUN
+TOB_EDIT_USES_SHARED_RENDERER=PASS/FAIL/NOT_RUN
+TOB_LOCAL_FULL_FORM_BUILDERS=数量或NOT_ASSESSED
+OLD_TOB_FORM_CONSUMERS=数量或NOT_ASSESSED
+REGRESSION_GATE_DETECTS_LOCAL_BUILDER=PASS/FAIL/NOT_RUN
+
+TOB两条入口、补强门禁必须PASS，活动本地完整builder/旧消费者必须为0；同时其他必需门禁通过且无blocking finding，才整体PASS并进入USER_MANUAL_ACCEPTANCE。
+报告/历史归档/证据目录继续使用第10/13节指定路径，不另建平行最终报告。实施记录只作为输入，不现场修复，不改测试、不提交、不上传。
