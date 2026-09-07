@@ -1,6 +1,6 @@
 # 企业作战地图：企业首页 Canonical Authority V3
 
-**状态：CURRENT FINAL AUTHORITY**  
+**状态：SUPERSEDED BY enterprise-home-canonical-authority-v4.md；仅保留历史背景**  
 **文档分支：`enterprise-battle-map-authority`**  
 **本地实施分支：`feature/enterprise-battle-map`**  
 **适用范围：企业首页导航、页面结构、视觉布局、目标占位、实时汇总、空间拓展、汇总 API、测试与审查**  

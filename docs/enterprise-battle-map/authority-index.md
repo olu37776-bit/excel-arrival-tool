@@ -13,11 +13,11 @@
 | 1 | `enterprise-contract-architecture-v5.md` | 端到端 canonical identity、真实 Runtime Projection、API canonical-only、Customer 主键贯穿、Heatmap canonical key、Progress 单一事实源、DB/Conformance Gate | 所有企业任务必读 |
 | 2 | `architecture/enterprise-runtime-field-options-contract-v1.md` | Runtime Field View Model、select/options 判定、动态 options 生命周期、错误边界与五模块回归门禁 | 长期 Runtime Options Authority |
 | 3 | `mox-canonical-authority-v6.md` | MOX 41字段、4 group、Create/Edit runtime、Heatmap、legacy key、Progress、Customer、DB/测试最终目标 | 已验证业务 Reference baseline |
-| 3b | `remediation/tob-shared-form-production-path-repair-v1.md` | 修复 TOB 本地完整表单构建器，迁入真实共享 Create/Edit 渲染链，补强漏检门禁 | 用户报告已修复；待独立复审 |
-| 3a | `remediation/five-module-shared-operation-convergence-v1.md` | 根据最新本地审查报告，对其他操作建立五模块生产路径清单，收敛重复机制并修复阻塞 | 用户报告修复完成；待新 HEAD 独立复审 |
+| 3b | `remediation/tob-shared-form-production-path-repair-v1.md` | 修复 TOB 本地完整表单构建器，迁入真实共享 Create/Edit 渲染链，补强漏检门禁 | 用户报告修复及后续检查完成；保留回归 |
+| 3a | `remediation/five-module-shared-operation-convergence-v1.md` | 根据最新本地审查报告，对其他操作建立五模块生产路径清单，收敛重复机制并修复阻塞 | 历史实施基线；保留回归 |
 | 4 | `remediation/five-module-shared-form-renderer-convergence-v3.md` | 验证 MOX 是否也存在 local form builder；从 MOX 已验证行为提炼唯一 shared form renderer，并让 MOX/TOB/ISP/Power/Large 全部消费同一真实生产 render path | 已报告实施；当前修复须回归 |
 | 5 | `remediation/non-mox-shared-form-renderer-convergence-v1.md` | 仅针对 4x non-MOX module-local form builders 的第一版方案 | **SUPERSEDED BY FIVE-MODULE V3** |
-| 6 | `reviews/non-mox-full-independent-review-rerun-v3.md` | 固定新 HEAD，完整重跑原始审查；覆盖五模块真实渲染链、全部历史 findings 和新增问题 | **当前执行：TOB 修复后完整独立复审** |
+| 6 | `reviews/non-mox-full-independent-review-rerun-v3.md` | 固定新 HEAD，完整重跑原始审查；覆盖五模块真实渲染链、全部历史 findings 和新增问题 | 既有五模块机制审查与回归基线 |
 | 7 | `reviews/non-mox-modules-mox-reference-independent-review-v1.md` | 原始全量 Independent Review Authority：shared runtime、Create/Edit、Customer、Progress、Heatmap、Metric、API/DB、重复机制、hidden consumers、测试可信度 | 每个新 HEAD 必须完整重跑 |
 | 8 | `remediation/non-mox-alignment-independent-review-findings-remediation-v2.md` | 关闭前次独立审查 7 个 blocking findings | 已实施；历史回归集 |
 | 9 | `reviews/non-mox-alignment-independent-rereview-v2.md` | 仅围绕7个finding的定向复核草案 | SUPERSEDED BY V3 |
@@ -35,30 +35,25 @@
 | 21 | `isp-canonical-authority-v2.md` | ISP当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
 | 22 | `power-canonical-authority-v2.md` | 电力当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
 | 23 | `large-enterprise-canonical-authority-v2.md` | 大企当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
-| 24 | `enterprise-home-canonical-authority-v2.md` | 企业首页旧阶段设计 | DEFERRED；最后重新冻结 |
+| 24 | `enterprise-home-canonical-authority-v4.md` | 首页间距、全局场景卡样式/数字、已下单金额实时汇总、空间拓展及双层导航；含本地实施步骤/产物 | **当前执行 Authority** |
 
 ---
 
 ## 2. 当前阶段判断
 
-修复前的完整 Independent Review 曾确认：TOB / ISP / Power / Large 仍存在 4 套 module-local form HTML builders。它们可能共享部分 Contract、Projection 和 Runtime Field，但最终 Create/Edit Vue render tree 仍由模块本地 builder 解释。
+用户在前轮网络/Authority核对后反馈“好了”，并人工检查“基本没什么问题”；本轮明确提出企业首页的布局、样式、真实金额和点击导航调整。
+这是人工检查反馈，不是云端重新核验本地代码/测试的声明。前轮报告继续作为原 HEAD 的历史证据，本轮新 HEAD 的验证另行记录。
 
-同时，`4x` finding 只证明四个 non-MOX builder 存在，**不能证明 MOX 自己已经是 shared form renderer consumer**。
-
-2026-09-07 用户报告 Five-Module Shared Form Renderer Convergence V3 已完成。随后用户报告完整独立审查阻塞，并明确主要问题是需要像 V3 一样收敛其他操作的机制。云端尚未取得本地报告正文，具体 finding、根因和修复范围必须由本地 Agent 从最新报告与代码核实，不能预设其他操作均有缺陷。用户报告共享操作链修复完成后，最新独立审查再次阻塞：用户明确指出 TOB 仍使用本地 .map() 表单构建器，未迁移到共享 renderer。具体位置、ID与其他 findings 以本地报告为准。此前“全部共享”的实施声明不能作为完成依据。用户现已报告 TOB 定向修复完成；尚未取得新 HEAD 的独立核验结果。当前状态：
-
+当前：
 ```text
-MOX = VERIFIED BUSINESS/BEHAVIOR REFERENCE
-V3 IMPLEMENTATION = IMPLEMENTED_REPORTED
-PREVIOUS_FULL_REVIEW = BLOCKED_REPORTED
-SHARED_OPERATION_REMEDIATION = IMPLEMENTED_REPORTED
-PREVIOUS_FULL_REVIEW = BLOCKED_REPORTED
-TOB_REPAIR = IMPLEMENTED_REPORTED
-CURRENT_GATE = FULL_INDEPENDENT_REVIEW_RERUN_V3
-MANUAL_ACCEPTANCE = PENDING
+PREVIOUS_REVIEW = USER_REPORTED_NO_BLOCKERS
+PREVIOUS_MANUAL_CHECK = BASICALLY_ACCEPTABLE_WITH_HOME_ISSUES
+CURRENT_TASK = ENTERPRISE_HOME_POLISH_V4
+HOME_V4_IMPLEMENTATION = PENDING
+NEXT_GATE = HOME_V4_INDEPENDENT_REVIEW
 ```
 
-MOX 的“已验证”表示其行为/字段/端到端结果可作为提炼 shared renderer 的参考，不表示 MOX 可以永久保留一套私有 form builder。
+执行 `enterprise-home-canonical-authority-v4.md`。本轮不重新实施已修复的五模块共享表单和其他操作链；保持其规则与必要回归。
 
 ---
 
@@ -159,27 +154,26 @@ renderer 必须根据 Contract 自然产生 4-group 或 3-group，不允许通�
 
 ---
 
-## 6. 本轮实施基线与当前审查
+## 6. 本轮首页实施入口
 
-本轮实施依据：
+当前完整 Authority 为 `enterprise-home-canonical-authority-v4.md`，取代首页 V1/V2/V3。
+本轮：
+- 企业专项、三卡和空间拓展用正常布局流分隔，消除重叠；
+- 三卡和空间拓展复用全局首页“骨干场景/企业场景/单域自治”卡片和数字样式；
+- 目标保留 xx M$，实时汇总各模块已下单金额；
+- ISP&大企实时包含 ISP、电力、大企；空间拓展维持已冻结公式；
+- 全局首页企业场景进入企业首页，MOX/TOB/ISP&大企三卡进入各自约定子页。
 
-```text
-remediation/five-module-shared-form-renderer-convergence-v3.md
-```
-
-Five-Module V3 取代 V2 的执行规范，V2 仅保留设计背景；Non-MOX V1 不再是当前执行入口。
-
-用户已报告 TOB 定向修复完成。当前执行入口为 `reviews/non-mox-full-independent-review-rerun-v3.md`，完整读取第15节及其他必读资料，在新独立会话中对新 HEAD 完整复审。
-
-先核实 TOB Create/Edit 实际共享路径与漏检门禁，再继续五模块全部审查域及共享操作链。先检查 TOB 是执行顺序，不是缩小审查范围。报告和证据仍写既定路径；不修改生产代码或测试，不现场修复。
+本轮用户已明确授权首页工作，旧“首页 DEFERRED/最后建设”的阶段安排不阻塞此任务。Excel V0.2 未授权字段变化继续独立处理。
+具体本地步骤、WRITE_SCOPE生成、验证、报告和回执以V4第16节为准。
 
 ---
 
-## 7. 完整 Independent Review 仍是最终门禁
+## 7. 既有五模块机制独立审查门禁
 
-本 blocker 修复后，不能只复核 form renderer finding。
+以下为共享表单/共享操作链机制的完整复审基线。本轮首页改动首先按首页 V4 范围独立核验；若实际修改触及共享业务机制，再按影响执行相关既有门禁。
 
-新的代码 HEAD 必须完整执行：
+针对五模块机制修复的新代码 HEAD 必须完整执行：
 
 ```text
 reviews/non-mox-modules-mox-reference-independent-review-v1.md
@@ -261,12 +255,11 @@ BLOCKED_BY_V0_2_AUTHORITY
 
 ## 10. 当前推进顺序
 
-1. 更新 Authority 镜像，读取 TOB 定向修复报告、最新阻塞报告和共享操作链资料，核对 Git 事实并固定新 REVIEWED_HEAD。
-2. 新独立 Agent 按 Full Rerun V3 第15节核实 TOB 两条真实表单入口、旧路径清理和防漏检证据。
-3. 完整执行 Review V1 + Full Rerun V3 全部审查范围（含第14/15节），回归全部历史 findings，主动发现新问题。
-4. 保存历史报告，写完整新报告与证据，返回短回执；不现场修复或提交。
-5. 全部独立 PASS 且无 blocking finding 后进入人工验收；缺陷或证据不足分别进入修复或补验证。
-6. Excel V0.2、企业首页等后续阶段顺序保持不变。
+1. 更新 Authority 镜像，读取首页V4及其引用的业务Contract，恢复真实全局首页/企业首页/汇总/路由实现。
+2. 在V4指定路径写最小实施计划、实际映射和WRITE_SCOPE，直接实施本轮首页调整。
+3. 完成金额/API/路由测试与布局视觉检查，回归实际受影响消费者，同步报告与证据并本地提交。
+4. 新HEAD按首页V4做独立核验，随后由用户人工确认本轮页面调整。
+5. Excel V0.2等其他需求继续按各自Authority推进，不混入本轮。
 
 ---
 
