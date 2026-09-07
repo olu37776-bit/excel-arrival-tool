@@ -6,6 +6,12 @@
 
 ---
 
+## 0. 当前新增业务变更（优先执行）
+
+用户已确认新版 Excel 的两项变更：所有业务表仅整列删除取值为“肥肉/瘦肉/骨头”的“整体空间”分类字段，其他字段与数据不动；大企表名改为“大企（油气矿、广电、交通）”。
+执行 `enterprise-excel-confirmed-delta-v1.md`，其中包含准确范围、本地工作簿修改、字段契约同步、验证与报告要求。
+本文件下方关于 V0.2 冻结和首页先行的旧阶段安排，对这两项已确认变更不构成阻塞；其他未确认差异继续冻结。旧模块字段数和旧大企表名按此增量覆盖。首页 V4 的独立核验状态仍待报告，不视为通过。
+
 ## 1. 当前正式 Authority
 
 | 顺序 | 文档 | 用途 | 当前门禁 |
@@ -48,7 +54,9 @@
 ```text
 PREVIOUS_REVIEW = USER_REPORTED_NO_BLOCKERS
 PREVIOUS_MANUAL_CHECK = BASICALLY_ACCEPTABLE_WITH_HOME_ISSUES
-CURRENT_TASK = HOME_V4_INDEPENDENT_REVIEW
+CURRENT_TASK = EXCEL_CONFIRMED_DELTA_V1
+EXCEL_CONFIRMED_DELTA_V1 = AUTHORIZED_PENDING_LOCAL_IMPLEMENTATION
+HOME_V4_INDEPENDENT_REVIEW = PENDING_RESULT
 HOME_V4_IMPLEMENTATION = IMPLEMENTED_REPORTED
 MANUAL_ACCEPTANCE_V4 = PENDING
 ```
