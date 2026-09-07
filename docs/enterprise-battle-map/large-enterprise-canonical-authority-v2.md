@@ -1,11 +1,11 @@
 # 企业作战地图：大企 Canonical Authority V2
 
-**状态：READY AFTER MOX VERIFIED**  
+**状态：CURRENT FIELD AUTHORITY / 已同步 Excel 确认增量；本地实施与验证状态见 authority-index.md**  
 **文档分支：`enterprise-battle-map-authority`**  
 **本地实施分支：`feature/enterprise-battle-map`**  
 **取代文档：`large-enterprise-canonical-authority-v1.md`**  
-**共享架构：`enterprise-contract-architecture-v2.md`**  
-**Excel Sheet：`大企（油气矿、广电等）`，实施时必须核实精确名称**
+**共享架构：`enterprise-contract-architecture-v5.md`**  
+**Excel Sheet：`大企（油气矿、广电、交通）`；旧输入名称与新输出名称分别记录**
 
 ---
 
@@ -15,7 +15,7 @@
 
 必须复用：FieldContract、Table/Create/Edit Projection、Validator、Metric Engine、Heatmap Engine、`customer_id`关系模式、`V*.sql + _migrations + database.js`治理和测试/审查闭环。
 
-Authority 顺序：本文件 → 本地大企 Sheet → 用户最新修正 → 当前代码/API/DB → 旧文档。
+Authority 优先级：用户最新明确要求 → authority-index.md 指定的当前增量与任务规则 → 本文件的最终字段契约；共享机制遵循架构 V5。实际 Excel、代码/API/DB 是核查事实源，未确认差异不能覆盖已确认要求。
 
 最终集合之外的旧业务字段必须从 UI、API 活动契约、`database.js` 和最终数据库 Schema 删除。
 
@@ -39,7 +39,9 @@ Authority 顺序：本文件 → 本地大企 Sheet → 用户最新修正 → �
 
 ---
 
-## 3. 大企最终 26 个业务字段
+已按 `enterprise-excel-confirmed-delta-v1.md` 删除“整体空间（肥肉/瘦肉/骨头）”分类字段；原 26 项变为 25 项，其他字段身份和顺序相对关系不变。整体空间金额及跳数保留。此处定义最终目标，不表示本地代码或 Excel 已实施完成。
+
+## 3. 大企最终 25 个业务字段
 
 ### 3.1 客户信息（1—6）
 
@@ -84,28 +86,26 @@ Authority 顺序：本文件 → 本地大企 Sheet → 用户最新修正 → �
 
 份额字段必须在 Contract 中明确数据库存储口径，并通过 parser/formatter 保证 UI、API、DB 一致。
 
-### 3.3 作战情况（13—26）
+### 3.3 作战情况（13—25）
 
 | order | canonical key | 用户可见字段 |
 |---:|---|---|
-| 13 | `overallSpaceTier` | 整体空间 |
-| 14 | `focusProject` | 作战分类-是否重点项目 |
-| 15 | `spaceInsight` | 空间洞察 |
-| 16 | `projectStatus` | 项目状态 |
-| 17 | `projectRiskStatus` | 项目风险状态 |
-| 18 | `overallSpaceHops` | 整体空间（跳） |
-| 19 | `overallSpaceMusd` | 整体空间（M$） |
-| 20 | `space2026Hops` | 26年空间（跳） |
-| 21 | `orderSpace2026Musd` | 26年订货空间（$M） |
-| 22 | `orderedHops` | 已下单数量（跳） |
-| 23 | `orderedAmountMusd` | 已下单金额（$M） |
-| 24 | `representativeOfficeHasSystemDepartment` | 代表处是否有系统部 |
-| 25 | `frontlineContact` | 一线接口人 |
-| 26 | `battleProgress` | 作战进展 |
+| 13 | `focusProject` | 作战分类-是否重点项目 |
+| 14 | `spaceInsight` | 空间洞察 |
+| 15 | `projectStatus` | 项目状态 |
+| 16 | `projectRiskStatus` | 项目风险状态 |
+| 17 | `overallSpaceHops` | 整体空间（跳） |
+| 18 | `overallSpaceMusd` | 整体空间（M$） |
+| 19 | `space2026Hops` | 26年空间（跳） |
+| 20 | `orderSpace2026Musd` | 26年订货空间（$M） |
+| 21 | `orderedHops` | 已下单数量（跳） |
+| 22 | `orderedAmountMusd` | 已下单金额（$M） |
+| 23 | `representativeOfficeHasSystemDepartment` | 代表处是否有系统部 |
+| 24 | `frontlineContact` | 一线接口人 |
+| 25 | `battleProgress` | 作战进展 |
 
 确认枚举：
 
-- 整体空间：肥肉 / 瘦肉 / 骨头；
 - 作战分类-是否重点项目：是 / 否；
 - 空间洞察：已孵化 / 孵化中；
 - 项目状态：已签单 / 推进中 / 跟踪；
@@ -119,7 +119,7 @@ Authority 顺序：本文件 → 本地大企 Sheet → 用户最新修正 → �
 
 ## 4. Field Contract 与 Excel Authority
 
-每个 source=excel 字段必须从 `大企（油气矿、广电等）` Sheet 填写真实 Sheet、列、Row2分类、Row3原文和 Data Validation。
+每个 source=excel 字段必须从 `大企（油气矿、广电、交通）` Sheet 填写真实 Sheet、列、Row2分类、Row3原文和 Data Validation。
 
 `customerId`标记为 `source: 'requirement'`。
 
@@ -188,7 +188,7 @@ Authority 顺序：本文件 → 本地大企 Sheet → 用户最新修正 → �
 
 至少验证：
 
-1. 26个key唯一、order 1—26连续；
+1. 25个key唯一、order 1—25连续；
 2. Section仅为客户信息/业务格局/作战情况；
 3. 大企有国家和行业，没有客户类别；
 4. `油气矿井数量（个）`保持一个字段；

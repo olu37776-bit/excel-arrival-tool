@@ -13,7 +13,7 @@ Excel 两项变更继续有效，保留既有进度，同一主工作树顺序�
 
 用户已确认新版 Excel 的两项变更：所有业务表仅整列删除取值为“肥肉/瘦肉/骨头”的“整体空间”分类字段，其他字段与数据不动；大企表名改为“大企（油气矿、广电、交通）”。
 执行 `enterprise-excel-confirmed-delta-v1.md`，其中包含准确范围、本地工作簿修改、字段契约同步、验证与报告要求。
-本文件下方关于 V0.2 冻结和首页先行的旧阶段安排，对这两项已确认变更不构成阻塞；其他未确认差异继续冻结。旧模块字段数和旧大企表名按此增量覆盖。首页 V4 当前为用户报告存在跳转阻塞，详细审查事实以本地报告为准。
+本文件下方关于 V0.2 冻结和首页先行的旧阶段安排，对这两项已确认变更不构成阻塞；其他未确认差异继续冻结。五份模块规范正文已同步最终字段集合和大企表名。首页 V4 当前为用户报告存在跳转阻塞，详细审查事实以本地报告为准。
 
 ## 1. 当前正式 Authority
 
@@ -21,30 +21,34 @@ Excel 两项变更继续有效，保留既有进度，同一主工作树顺序�
 |---:|---|---|---|
 | 1 | `enterprise-contract-architecture-v5.md` | 端到端 canonical identity、真实 Runtime Projection、API canonical-only、Customer 主键贯穿、Heatmap canonical key、Progress 单一事实源、DB/Conformance Gate | 所有企业任务必读 |
 | 2 | `architecture/enterprise-runtime-field-options-contract-v1.md` | Runtime Field View Model、select/options 判定、动态 options 生命周期、错误边界与五模块回归门禁 | 长期 Runtime Options Authority |
-| 3 | `mox-canonical-authority-v6.md` | MOX 41字段、4 group、Create/Edit runtime、Heatmap、legacy key、Progress、Customer、DB/测试最终目标 | 已验证业务 Reference baseline |
+| 3 | `mox-canonical-authority-v6.md` | MOX 40字段、4 group、Create/Edit runtime、Heatmap、legacy key、Progress、Customer、DB/测试最终目标 | 历史已验证机制 Reference；字段增量待本地证据 |
 | 3b | `remediation/tob-shared-form-production-path-repair-v1.md` | 修复 TOB 本地完整表单构建器，迁入真实共享 Create/Edit 渲染链，补强漏检门禁 | 用户报告修复及后续检查完成；保留回归 |
 | 3a | `remediation/five-module-shared-operation-convergence-v1.md` | 根据最新本地审查报告，对其他操作建立五模块生产路径清单，收敛重复机制并修复阻塞 | 历史实施基线；保留回归 |
 | 4 | `remediation/five-module-shared-form-renderer-convergence-v3.md` | 验证 MOX 是否也存在 local form builder；从 MOX 已验证行为提炼唯一 shared form renderer，并让 MOX/TOB/ISP/Power/Large 全部消费同一真实生产 render path | 已报告实施；当前修复须回归 |
 | 5 | `remediation/non-mox-shared-form-renderer-convergence-v1.md` | 仅针对 4x non-MOX module-local form builders 的第一版方案 | **SUPERSEDED BY FIVE-MODULE V3** |
 | 6 | `reviews/non-mox-full-independent-review-rerun-v3.md` | 固定新 HEAD，完整重跑原始审查；覆盖五模块真实渲染链、全部历史 findings 和新增问题 | 既有五模块机制审查与回归基线 |
-| 7 | `reviews/non-mox-modules-mox-reference-independent-review-v1.md` | 原始全量 Independent Review Authority：shared runtime、Create/Edit、Customer、Progress、Heatmap、Metric、API/DB、重复机制、hidden consumers、测试可信度 | 每个新 HEAD 必须完整重跑 |
+| 7 | `reviews/non-mox-modules-mox-reference-independent-review-v1.md` | 原始全量 Independent Review Authority：shared runtime、Create/Edit、Customer、Progress、Heatmap、Metric、API/DB、重复机制、hidden consumers、测试可信度 | 五模块机制修复的完整审查基线；首页按专属范围 |
 | 8 | `remediation/non-mox-alignment-independent-review-findings-remediation-v2.md` | 关闭前次独立审查 7 个 blocking findings | 已实施；历史回归集 |
 | 9 | `reviews/non-mox-alignment-independent-rereview-v2.md` | 仅围绕7个finding的定向复核草案 | SUPERSEDED BY V3 |
 | 10 | `remediation/non-mox-modules-mox-reference-alignment-v1.md` | TOB/ISP/电力/大企全面向MOX已验证机制对齐 | 历史实施背景；其 PASS 曾被独立审查推翻 |
-| 11 | `investigation/enterprise-excel-v0.1-v0.2-diff-survey-v1.md` | 企业作战地图基表V0.1→V0.2 Schema/Contract差异调查 | 可并行只读；业务字段变化需先Authority Review |
+| 11 | `investigation/enterprise-excel-v0.1-v0.2-diff-survey-v1.md` | 企业作战地图基表V0.1→V0.2 Schema/Contract差异调查 | 只读调查；两项已确认增量按专属文档实施 |
 | 12 | `remediation/enterprise-form-options-root-cause-remediation-v2.md` | `f.options is not iterable` 根因级修复 | 已实施并经用户确认Create/Edit可打开 |
 | 13 | `remediation/enterprise-customer-data-fetch-unification-v2.md` | Customer SQL/customer_id贯穿修复及长期回归门禁 | 已修复，统一机制回归项 |
-| 14 | `reviews/mox-end-to-end-canonical-independent-review-v1.md` | MOX端到端独立审查规范 | 最新复审PASS |
+| 14 | `reviews/mox-end-to-end-canonical-independent-review-v1.md` | MOX端到端独立审查规范 | 历史复审PASS；不代表新增字段变更已验证 |
 | 15 | `remediation/mox-4-group-render-chain-repair-v1.md` | MOX 4-group renderer断链修复 | 已实施并通过复审 |
 | 16 | `remediation/mox-end-to-end-canonical-convergence-v1.md` | MOX端到端canonical收敛 | 已实施，作为行为 Reference baseline |
 | 17 | `investigation/enterprise-runtime-implementation-survey-v1.md` | 已完成的实际运行链调查规范 | 事实证据来源 |
 | 18 | `integration/parallel-module-integration-plan-v1.md` | TOB/ISP/电力+大企合并规则 | 集成历史/回归参考 |
 | 19 | `integration/local-worktree-layout-v1.md` | 本地真实worktree路径 | 本地执行必读 |
-| 20 | `tob-canonical-authority-v2.md` | TOB当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
-| 21 | `isp-canonical-authority-v2.md` | ISP当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
-| 22 | `power-canonical-authority-v2.md` | 电力当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
-| 23 | `large-enterprise-canonical-authority-v2.md` | 大企当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
+| 20 | `tob-canonical-authority-v2.md` | TOB当前字段和3-group业务基线 | 已同步两项确认增量；其他字段不变 |
+| 21 | `isp-canonical-authority-v2.md` | ISP当前字段和3-group业务基线 | 已同步两项确认增量；其他字段不变 |
+| 22 | `power-canonical-authority-v2.md` | 电力当前字段和3-group业务基线 | 已同步两项确认增量；其他字段不变 |
+| 23 | `large-enterprise-canonical-authority-v2.md` | 大企当前字段和3-group业务基线 | 已同步两项确认增量；其他字段不变 |
 | 24 | `enterprise-home-canonical-authority-v4.md` | 首页间距、全局场景卡样式/数字、已下单金额实时汇总、空间拓展及双层导航；含本地实施步骤/产物 | **业务基线；当前先按跳转阻塞修复V1执行** |
+
+| 25 | `enterprise-excel-confirmed-delta-v1.md` | 删除指定分类字段、更新大企表名、对应契约和验证 | 已授权；本地完成情况待回执 |
+| 26 | `remediation/enterprise-home-route-blocker-repair-v1.md` | 读取本地报告、修复真实点击链路、浏览器导航证据 | **当前执行任务** |
+| 27 | `reviews/authority-consistency-audit-2026-09-07.md` | 本轮文档一致性修正及范围记录 | 文档核对；不代表应用验证 |
 
 ---
 
@@ -58,7 +62,7 @@ Excel 两项变更继续有效，保留既有进度，同一主工作树顺序�
 PREVIOUS_REVIEW = USER_REPORTED_NO_BLOCKERS
 PREVIOUS_MANUAL_CHECK = BASICALLY_ACCEPTABLE_WITH_HOME_ISSUES
 CURRENT_TASK = HOME_V4_ROUTE_BLOCKER_REPAIR_V1
-EXCEL_CONFIRMED_DELTA_V1 = AUTHORIZED_PENDING_LOCAL_IMPLEMENTATION
+EXCEL_CONFIRMED_DELTA_V1 = AUTHORIZED_LOCAL_COMPLETION_NOT_REPORTED
 HOME_V4_INDEPENDENT_REVIEW = USER_REPORTED_BLOCKER
 HOME_V4_IMPLEMENTATION = IMPLEMENTED_REPORTED
 MANUAL_ACCEPTANCE_V4 = USER_REPORTED_NAVIGATION_FAILURE
@@ -176,7 +180,7 @@ renderer 必须根据 Contract 自然产生 4-group 或 3-group，不允许通�
 - 全局首页企业场景进入企业首页，MOX/TOB/ISP&大企三卡进入各自约定子页。
 
 本轮用户已明确授权首页工作，旧“首页 DEFERRED/最后建设”的阶段安排不阻塞此任务。Excel V0.2 未授权字段变化继续独立处理。
-具体本地步骤、WRITE_SCOPE生成、验证、报告和回执以V4第16节为准。
+当前跳转修复的步骤、WRITE_SCOPE、验证、报告和回执以跳转阻塞修复 V1 为准；V4第16节保留原始首页实施基线，第17节规定修复后的独立复核。
 
 ---
 
@@ -250,17 +254,11 @@ field identity 必须 canonical；中文 label 只展示。
 
 ## 9. Excel V0.2 协调
 
-V0.1→V0.2 Excel Diff Survey 可以继续只读并行。
+两项确认增量已正式进入当前字段 Authority：仅删除“整体空间（肥肉/瘦肉/骨头）”分类字段，大企表名为“大企（油气矿、广电、交通）”。其他字段、金额、跳数及业务规则保持不变。
+当前目标字段总数：MOX 40、TOB 33、ISP 24、电力27、大企25。视图字段按各 Contract 的 visibility/mode 派生；这些数字不表示 Excel、代码或数据库已经完成迁移。
 
-当前 shared form renderer blocker 是现有实现机制问题，不能用尚未 Authority 化的 V0.2 字段变化掩盖。
-
-如果具体字段差异确属 V0.2，标记：
-
-```text
-BLOCKED_BY_V0_2_AUTHORITY
-```
-
-不得在本轮擅自修改业务字段集合。
+其他尚未确认的 V0.2 差异继续只读调查，只有这些未确认差异使用 BLOCKED_BY_V0_2_AUTHORITY。已确认两项不得再以旧冻结说明阻塞。
+首页路由任务与 Excel 字段任务分别恢复本地进度、记录实现提交和证据；首页修复不因新的字段目标而被迫混入尚未实施的 Excel 改动。若 Excel 已实施，其实际受影响消费者按新契约回归。
 
 ---
 
@@ -294,7 +292,13 @@ git -C "D:\BattleMap\BattleMapenterprise-authority" pull --ff-only origin enterp
 D:\BattleMap\battle-map
 ```
 
-完整独立审查报告：
+当前首页独立审查报告：
+
+```text
+D:\BattleMap\battle-map\docs\enterprise\reviews\enterprise-home-v4-independent-review.md
+```
+
+既有五模块完整独立审查报告：
 
 ```text
 D:\BattleMap\battle-map\docs\enterprise\reviews\non-mox-modules-mox-reference-independent-review.md
@@ -311,8 +315,14 @@ D:\BattleMap\battle-map\docs\enterprise\reviews\non-mox-modules-mox-reference-in
 - shared runtime 必须一直贯穿到 actual Vue render tree；
 - 不允许任何模块 local full form builder 成为第二业务结构 Authority；
 - 测试必须证明真实页面 production path 经过 shared renderer；
-- 每个修复后新 HEAD 都必须完整重新审查；
+- 每个修复后新 HEAD 都必须重新证明本次范围；五模块机制修复走第7节完整审查，首页/Excel任务按其专属验证与真实影响复核；
 - 独立审查代码事实优先于 Implementation Report 自报状态；
 - 不保留长期 legacy alias/fallback/双写；
 - Excel V0.2 未 Authority 化变化不得混入本轮 remediation；
 - 人工视觉/交互验收由用户执行。
+
+## 13. 文档一致性维护
+
+当前阶段与用户回执状态集中维护在本索引；模块规范描述最终目标，执行规范描述 WRITE_SCOPE 与步骤，本地报告描述对应 HEAD 的事实。三者不能互相替代。
+每次需求变更须同步：索引、相关字段表/枚举/order/数量、共享架构引用、Sheet 名称、消费者与验证断言、执行计划及报告入口。不得只在新文档顶部增加覆盖声明而让当前字段表继续自相矛盾。
+历史版本与已执行报告保留，旧数量和旧名称仅在明确的历史语境有效；已有 PASS 不延伸到新 HEAD 或新业务目标。本轮核对记录见 reviews/authority-consistency-audit-2026-09-07.md。

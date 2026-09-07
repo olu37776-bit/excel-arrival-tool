@@ -21,7 +21,9 @@
 
 ## 2. Authority
 
-审查按以下顺序：
+先读 authority-index.md 确定当前任务及已确认增量，再按职责读取以下规范；当前用户要求及已确认增量优先于旧字段基线。本文件用于五模块机制复审，不强制将首页定向修复扩为旧任务全量实施。
+
+机制审查依据：
 
 1. `enterprise-contract-architecture-v5.md`
 2. `architecture/enterprise-runtime-field-options-contract-v1.md`
@@ -31,7 +33,7 @@
 6. alignment implementation report
 7. 当前真实代码、API、database.js、SQLite、测试
 
-Excel V0.2 尚未正式发布的新业务字段变化不属于本轮机制审查 Authority；发现时标记 `BLOCKED_BY_V0_2_AUTHORITY`，不得自行解释。
+`enterprise-excel-confirmed-delta-v1.md` 两项变更已正式确认并同步到当前模块规范。除此以外，Excel V0.2 尚未正式发布的新业务字段变化不属于本轮机制审查 Authority；发现时标记 `BLOCKED_BY_V0_2_AUTHORITY`，不得自行解释。
 
 ---
 

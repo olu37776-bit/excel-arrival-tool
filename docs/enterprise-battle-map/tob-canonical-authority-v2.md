@@ -1,10 +1,10 @@
 # 企业作战地图：TOB Canonical Authority V2
 
-**状态：READY AFTER MOX VERIFIED**  
+**状态：CURRENT FIELD AUTHORITY / 已同步 Excel 确认增量；本地实施与验证状态见 authority-index.md**  
 **文档分支：`enterprise-battle-map-authority`**  
 **本地实施分支：`feature/enterprise-battle-map`**  
 **取代文档：`tob-canonical-authority-v1.md`**  
-**共享架构：`enterprise-contract-architecture-v2.md`**
+**共享架构：`enterprise-contract-architecture-v5.md`**
 
 ---
 
@@ -23,7 +23,7 @@ TOB 全面参考 MOX 验证后的实现机制，但不复制 MOX 字段。
 - `V*.sql + _migrations + database.js` 数据库治理；
 - 代码、测试、自动验证、独立审查闭环。
 
-Authority 顺序：本文件 → 本地 TOB Sheet → 用户最新修正 → 当前代码/API/DB → 旧文档。
+Authority 优先级：用户最新明确要求 → authority-index.md 指定的当前增量与任务规则 → 本文件的最终字段契约；共享机制遵循架构 V5。实际 Excel、代码/API/DB 是核查事实源，未确认差异不能覆盖已确认要求。
 
 旧页面或数据库存在某字段不能作为保留理由。最终字段集合之外的旧业务字段必须从 UI、API 活动契约、`database.js` 和最终数据库 Schema 删除。
 
@@ -49,7 +49,9 @@ TOB 新增和编辑统一使用三个同级区块：
 
 ---
 
-## 3. TOB 最终 34 个业务字段
+已按 `enterprise-excel-confirmed-delta-v1.md` 删除“整体空间（肥肉/瘦肉/骨头）”分类字段；原 34 项变为 33 项，其他字段身份和顺序相对关系不变。整体空间金额及跳数保留。此处定义最终目标，不表示本地代码或 Excel 已实施完成。
+
+## 3. TOB 最终 33 个业务字段
 
 ### 3.1 客户信息（1—5）
 
@@ -92,27 +94,25 @@ TOB 不包含客户类别和行业。
 
 固定下拉只能来自 Excel Data Validation、明确输入说明或用户确认，禁止根据历史 distinct values 自动生成。
 
-### 3.3 作战情况（22—34）
+### 3.3 作战情况（22—33）
 
 | order | canonical key | 用户可见字段 |
 |---:|---|---|
-| 22 | `overallSpaceTier` | 整体空间 |
-| 23 | `focusProject` | 作战分类-是否重点项目 |
-| 24 | `spaceInsight` | 空间洞察 |
-| 25 | `projectStatus` | 项目状态 |
-| 26 | `projectRiskStatus` | 项目风险状态 |
-| 27 | `overallSpaceHops` | 整体空间（跳） |
-| 28 | `overallSpaceMusd` | 整体空间（M$） |
-| 29 | `space2026Hops` | 26年空间（跳） |
-| 30 | `orderSpace2026Musd` | 26年订货空间（$M） |
-| 31 | `orderedHops` | 已下单数量（跳） |
-| 32 | `orderedAmountMusd` | 已下单金额（$M） |
-| 33 | `frontlineContact` | 一线接口人 |
-| 34 | `battleProgress` | 作战进展 |
+| 22 | `focusProject` | 作战分类-是否重点项目 |
+| 23 | `spaceInsight` | 空间洞察 |
+| 24 | `projectStatus` | 项目状态 |
+| 25 | `projectRiskStatus` | 项目风险状态 |
+| 26 | `overallSpaceHops` | 整体空间（跳） |
+| 27 | `overallSpaceMusd` | 整体空间（M$） |
+| 28 | `space2026Hops` | 26年空间（跳） |
+| 29 | `orderSpace2026Musd` | 26年订货空间（$M） |
+| 30 | `orderedHops` | 已下单数量（跳） |
+| 31 | `orderedAmountMusd` | 已下单金额（$M） |
+| 32 | `frontlineContact` | 一线接口人 |
+| 33 | `battleProgress` | 作战进展 |
 
 确认枚举：
 
-- 整体空间：肥肉 / 瘦肉 / 骨头；
 - 作战分类-是否重点项目：是 / 否；
 - 空间洞察：已孵化 / 孵化中；
 - 项目状态：已签单 / 推进中 / 跟踪；
@@ -202,7 +202,7 @@ TOB 使用共享9项规则：
 
 至少验证：
 
-1. 34个key唯一、order 1—34连续；
+1. 33个key唯一、order 1—33连续；
 2. Section仅为客户信息/业务格局/作战情况；
 3. TOB无客户类别和行业；
 4. 第10项已从Excel解析真实厂商名称；

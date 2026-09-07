@@ -1,10 +1,10 @@
 # 企业作战地图：电力 Canonical Authority V2
 
-**状态：READY AFTER MOX VERIFIED**  
+**状态：CURRENT FIELD AUTHORITY / 已同步 Excel 确认增量；本地实施与验证状态见 authority-index.md**  
 **文档分支：`enterprise-battle-map-authority`**  
 **本地实施分支：`feature/enterprise-battle-map`**  
 **取代文档：`power-canonical-authority-v1.md`**  
-**共享架构：`enterprise-contract-architecture-v2.md`**
+**共享架构：`enterprise-contract-architecture-v5.md`**
 
 ---
 
@@ -14,7 +14,7 @@
 
 必须复用：FieldContract、Table/Create/Edit Projection、Validator、Metric Engine、Heatmap Engine、`customer_id`关系模式、`V*.sql + _migrations + database.js`治理和测试/审查闭环。
 
-Authority 顺序：本文件 → 本地电力 Sheet → 用户最新修正 → 当前代码/API/DB → 旧文档。
+Authority 优先级：用户最新明确要求 → authority-index.md 指定的当前增量与任务规则 → 本文件的最终字段契约；共享机制遵循架构 V5。实际 Excel、代码/API/DB 是核查事实源，未确认差异不能覆盖已确认要求。
 
 最终集合之外的旧业务字段必须从 UI、API 活动契约、`database.js` 和最终数据库 Schema 删除。
 
@@ -38,7 +38,9 @@ Authority 顺序：本文件 → 本地电力 Sheet → 用户最新修正 → �
 
 ---
 
-## 3. 电力最终 28 个业务字段
+已按 `enterprise-excel-confirmed-delta-v1.md` 删除“整体空间（肥肉/瘦肉/骨头）”分类字段；原 28 项变为 27 项，其他字段身份和顺序相对关系不变。整体空间金额及跳数保留。此处定义最终目标，不表示本地代码或 Excel 已实施完成。
+
+## 3. 电力最终 27 个业务字段
 
 ### 3.1 客户信息（1—6）
 
@@ -83,28 +85,26 @@ Authority 顺序：本文件 → 本地电力 Sheet → 用户最新修正 → �
 
 份额和光纤化率必须在 Contract 中明确数据库存储口径，并通过 parser/formatter 保证 UI、API、DB 一致。
 
-### 3.3 作战情况（15—28）
+### 3.3 作战情况（15—27）
 
 | order | canonical key | 用户可见字段 |
 |---:|---|---|
-| 15 | `overallSpaceTier` | 整体空间 |
-| 16 | `focusProject` | 作战分类-是否重点项目 |
-| 17 | `spaceInsight` | 空间洞察 |
-| 18 | `projectStatus` | 项目状态 |
-| 19 | `projectRiskStatus` | 项目风险状态 |
-| 20 | `overallSpaceHops` | 整体空间（跳） |
-| 21 | `overallSpaceMusd` | 整体空间（M$） |
-| 22 | `space2026Hops` | 26年空间（跳） |
-| 23 | `orderSpace2026Musd` | 26年订货空间（$M） |
-| 24 | `orderedHops` | 已下单数量（跳） |
-| 25 | `orderedAmountMusd` | 已下单金额（$M） |
-| 26 | `representativeOfficeHasSystemDepartment` | 代表处是否有系统部 |
-| 27 | `frontlineContact` | 一线接口人 |
-| 28 | `battleProgress` | 作战进展 |
+| 15 | `focusProject` | 作战分类-是否重点项目 |
+| 16 | `spaceInsight` | 空间洞察 |
+| 17 | `projectStatus` | 项目状态 |
+| 18 | `projectRiskStatus` | 项目风险状态 |
+| 19 | `overallSpaceHops` | 整体空间（跳） |
+| 20 | `overallSpaceMusd` | 整体空间（M$） |
+| 21 | `space2026Hops` | 26年空间（跳） |
+| 22 | `orderSpace2026Musd` | 26年订货空间（$M） |
+| 23 | `orderedHops` | 已下单数量（跳） |
+| 24 | `orderedAmountMusd` | 已下单金额（$M） |
+| 25 | `representativeOfficeHasSystemDepartment` | 代表处是否有系统部 |
+| 26 | `frontlineContact` | 一线接口人 |
+| 27 | `battleProgress` | 作战进展 |
 
 确认枚举：
 
-- 整体空间：肥肉 / 瘦肉 / 骨头；
 - 作战分类-是否重点项目：是 / 否；
 - 空间洞察：已孵化 / 孵化中；
 - 项目状态：已签单 / 推进中 / 跟踪；
@@ -187,7 +187,7 @@ Authority 顺序：本文件 → 本地电力 Sheet → 用户最新修正 → �
 
 至少验证：
 
-1. 28个key唯一、order 1—28连续；
+1. 27个key唯一、order 1—27连续；
 2. Section仅为客户信息/业务格局/作战情况；
 3. 电力有国家和行业，没有客户类别；
 4. 友商空间正式显示为“友商空间（跳）”；

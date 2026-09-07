@@ -1,6 +1,6 @@
 # Five-Module Shared Form Renderer Convergence V3
 
-**状态：CURRENT EXECUTION AUTHORITY**  
+**状态：HISTORICAL IMPLEMENTATION BASELINE / SHARED RENDERER REGRESSION RULES**  
 **取代：`five-module-shared-form-renderer-convergence-v2.md` 作为本轮实施执行规范；V2保留设计背景**  
 **适用模块：MOX、TOB、ISP、电力、大企**  
 **代码工作树：`D:\BattleMap\battle-map`**  
@@ -8,9 +8,11 @@
 
 ---
 
+当前执行任务以 authority-index.md 为准；本文件保留共享渲染链规则，不代表当前仍有同一阻塞。下面的字段数量已与当前模块规范同步；已授权 Excel 两项改动按独立任务实施，不能用本文件的旧字段冻结限制撤销该授权。
+
 ## 1. 本轮唯一目标
 
-最新完整 Independent Review 已证明：企业模块虽然部分 Contract / Projection / Runtime Field 已开始共享，但 Create/Edit 到真实 Vue Render Tree 的最后一段仍存在 module-local form builder。
+该轮历史 Independent Review 曾证明：企业模块虽然部分 Contract / Projection / Runtime Field 已开始共享，但 Create/Edit 到真实 Vue Render Tree 的最后一段仍存在 module-local form builder。
 
 本轮必须把五个模块真正收敛到一条生产渲染链：
 
@@ -558,31 +560,31 @@ page/route
 
 ### MOX
 
-- 41字段双向完整；
+- 40项最终业务字段完整；视图集合按当前 Contract 的 visibility/mode 派生并双向核对；
 - 4 groups exact；
 - Create/Edit 都走 shared renderer。
 
 ### TOB
 
-- 34字段双向完整；
+- 33项最终业务字段完整；视图集合按当前 Contract 的 visibility/mode 派生并双向核对；
 - 3 groups exact；
 - Create/Edit 都走 shared renderer。
 
 ### ISP
 
-- 25字段双向完整；
+- 24项最终业务字段完整；视图集合按当前 Contract 的 visibility/mode 派生并双向核对；
 - 3 groups exact；
 - Create/Edit 都走 shared renderer。
 
 ### Power
 
-- 28字段双向完整；
+- 27项最终业务字段完整；视图集合按当前 Contract 的 visibility/mode 派生并双向核对；
 - 3 groups exact；
 - Create/Edit 都走 shared renderer。
 
 ### Large
 
-- 26字段双向完整；
+- 25项最终业务字段完整；视图集合按当前 Contract 的 visibility/mode 派生并双向核对；
 - 3 groups exact；
 - Create/Edit 都走 shared renderer。
 

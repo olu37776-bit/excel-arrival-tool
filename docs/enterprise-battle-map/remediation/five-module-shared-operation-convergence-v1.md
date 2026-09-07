@@ -1,12 +1,14 @@
 # 企业五模块：共享操作链收敛与审查阻塞修复 V1
 
-**状态：CURRENT REMEDIATION EXECUTION AUTHORITY**
+**状态：HISTORICAL IMPLEMENTATION BASELINE / SHARED OPERATION REGRESSION RULES**
 **适用模块：MOX、TOB、ISP、电力、大企**
 **代码目录：D:\BattleMap\battle-map**
 **代码分支：feature/enterprise-battle-map**
 **Authority 目录：D:\BattleMap\BattleMapenterprise-authority**
 
-## 1. 当前目标与事实边界
+## 1. 历史任务目标与事实边界
+
+最新阶段以 authority-index.md 为准；此文件保留既有操作链整改与回归规则，不代表用户最新报告的是该轮阻塞。已确认 Excel 增量和首页工作按各自当前规范独立实施，下面的旧 WRITE_SCOPE 不撤销后续授权。
 
 用户报告完整独立审查阻塞，并进一步明确：主要问题是需要像 V3 收敛新增/编辑一样，将其他操作中的重复机制收敛到实际共享生产路径。
 

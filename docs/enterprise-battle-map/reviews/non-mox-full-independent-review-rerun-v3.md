@@ -3,7 +3,7 @@
 **状态：CURRENT REVIEW RERUN AUTHORITY**  
 **适用模块：MOX、TOB、ISP、电力、大企；五模块均验证真实 Create/Edit 生产路径**  
 **前置：TOB 真实共享表单路径定向修复、共享表单 V3 与 `remediation/five-module-shared-operation-convergence-v1.md` 修复已实施并提交；本地审查者核实报告与实际 HEAD**  
-**阶段：用户已报告实施完成，当前为 IMPLEMENTED_REPORTED / PENDING_INDEPENDENT_REVIEW，尚未 VERIFIED**  
+**阶段：历史五模块机制复审基线；最新阶段及用户回执统一见 authority-index.md，不据此重复启动旧任务**  
 **基础审查 Authority：`reviews/non-mox-modules-mox-reference-independent-review-v1.md`**
 
 ---
@@ -187,7 +187,7 @@ runtime错误检查f.type
 
 正确 group：MOX 为客户信息、无线格局、微波格局、作战情况四组；TOB/ISP/Power/Large 为客户信息、业务格局、作战情况三组。
 
-业务字段总数基线分别为 MOX 41、TOB 34、ISP 25、Power 28、Large 26。各视图 expected keys 必须依据 Contract 的 visibility/mode 派生，不能把总字段数直接当成 Create/Edit 可见字段数。
+按已确认 Excel 增量，当前最终业务字段总数分别为 MOX 40、TOB 33、ISP 24、Power 27、Large 25。历史修复报告的41/34/25/28/26仅对应旧契约及旧 HEAD；新字段任务完成后的审查按新契约执行，首页定向修复不因此混入字段迁移。各视图 expected keys 必须依据 Contract 的 visibility/mode 派生，不能把总字段数直接当成 Create/Edit 可见字段数。
 
 检查任何 module-local section schema / renderer / alias。必须追到 actual Vue render tree；shared shell 内的 module-local body、shared 文件中的五套完整模板、只 import 不消费、测试 mock 掉 renderer 均不能证明共享。
 
@@ -455,6 +455,8 @@ lint/typecheck（如已有）
 ---
 
 ## 9. V0.2 边界
+
+`enterprise-excel-confirmed-delta-v1.md` 的两项变更已获授权，五份模块规范已同步；不属于下面的未确认差异。此文件为五模块机制完整审查基线，是否执行以及本轮范围以 authority-index.md 的当前任务为准。
 
 本轮完整审查仍以当前正式业务 Authority 为准。
 

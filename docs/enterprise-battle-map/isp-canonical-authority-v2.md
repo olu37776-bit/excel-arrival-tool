@@ -1,10 +1,10 @@
 # 企业作战地图：ISP Canonical Authority V2
 
-**状态：READY AFTER MOX VERIFIED**  
+**状态：CURRENT FIELD AUTHORITY / 已同步 Excel 确认增量；本地实施与验证状态见 authority-index.md**  
 **文档分支：`enterprise-battle-map-authority`**  
 **本地实施分支：`feature/enterprise-battle-map`**  
 **取代文档：`isp-canonical-authority-v1.md`**  
-**共享架构：`enterprise-contract-architecture-v2.md`**
+**共享架构：`enterprise-contract-architecture-v5.md`**
 
 ---
 
@@ -14,7 +14,7 @@ ISP 全面参考 MOX 验证后的契约机制，但只使用 ISP 自己的字段
 
 必须复用：FieldContract、Table/Create/Edit Projection、Validator、Metric Engine、Heatmap Engine、`customer_id`关系模式、`V*.sql + _migrations + database.js`治理和测试/审查闭环。
 
-Authority 顺序：本文件 → 本地 ISP Sheet → 用户最新修正 → 当前代码/API/DB → 旧文档。
+Authority 优先级：用户最新明确要求 → authority-index.md 指定的当前增量与任务规则 → 本文件的最终字段契约；共享机制遵循架构 V5。实际 Excel、代码/API/DB 是核查事实源，未确认差异不能覆盖已确认要求。
 
 旧代码存在某字段不能作为保留理由。最终集合之外的旧业务字段必须从 UI、API 活动契约、`database.js` 和最终数据库 Schema 删除。
 
@@ -38,7 +38,9 @@ ISP 新增与编辑统一使用三个同级区块：
 
 ---
 
-## 3. ISP 最终 25 个业务字段
+已按 `enterprise-excel-confirmed-delta-v1.md` 删除“整体空间（肥肉/瘦肉/骨头）”分类字段；原 25 项变为 24 项，其他字段身份和顺序相对关系不变。整体空间金额及跳数保留。此处定义最终目标，不表示本地代码或 Excel 已实施完成。
+
+## 3. ISP 最终 24 个业务字段
 
 ### 3.1 客户信息（1—6）
 
@@ -80,28 +82,26 @@ ISP 不包含客户类别。
 
 份额字段必须在 Contract 中明确数据库存储口径是 0—1 还是 0—100，并通过 parser/formatter 保证一致。
 
-### 3.3 作战情况（12—25）
+### 3.3 作战情况（12—24）
 
 | order | canonical key | 用户可见字段 |
 |---:|---|---|
-| 12 | `overallSpaceTier` | 整体空间 |
-| 13 | `focusProject` | 作战分类-是否重点项目 |
-| 14 | `spaceInsight` | 空间洞察 |
-| 15 | `projectStatus` | 项目状态 |
-| 16 | `projectRiskStatus` | 项目风险状态 |
-| 17 | `overallSpaceHops` | 整体空间（跳） |
-| 18 | `overallSpaceMusd` | 整体空间（M$） |
-| 19 | `space2026Hops` | 26年空间（跳） |
-| 20 | `orderSpace2026Musd` | 26年订货空间（$M） |
-| 21 | `orderedHops` | 已下单数量（跳） |
-| 22 | `orderedAmountMusd` | 已下单金额（$M） |
-| 23 | `representativeOfficeHasSystemDepartment` | 代表处是否有系统部 |
-| 24 | `frontlineContact` | 一线接口人 |
-| 25 | `battleProgress` | 作战进展 |
+| 12 | `focusProject` | 作战分类-是否重点项目 |
+| 13 | `spaceInsight` | 空间洞察 |
+| 14 | `projectStatus` | 项目状态 |
+| 15 | `projectRiskStatus` | 项目风险状态 |
+| 16 | `overallSpaceHops` | 整体空间（跳） |
+| 17 | `overallSpaceMusd` | 整体空间（M$） |
+| 18 | `space2026Hops` | 26年空间（跳） |
+| 19 | `orderSpace2026Musd` | 26年订货空间（$M） |
+| 20 | `orderedHops` | 已下单数量（跳） |
+| 21 | `orderedAmountMusd` | 已下单金额（$M） |
+| 22 | `representativeOfficeHasSystemDepartment` | 代表处是否有系统部 |
+| 23 | `frontlineContact` | 一线接口人 |
+| 24 | `battleProgress` | 作战进展 |
 
 确认枚举：
 
-- 整体空间：肥肉 / 瘦肉 / 骨头；
 - 作战分类-是否重点项目：是 / 否；
 - 空间洞察：已孵化 / 孵化中；
 - 项目状态：已签单 / 推进中 / 跟踪；
@@ -185,7 +185,7 @@ ISP 使用共享9项规则：
 
 至少验证：
 
-1. 25个key唯一、order 1—25连续；
+1. 24个key唯一、order 1—24连续；
 2. Section仅为客户信息/业务格局/作战情况；
 3. ISP有行业、没有客户类别；
 4. 应用场景和解决方案枚举正确；
