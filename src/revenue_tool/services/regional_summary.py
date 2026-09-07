@@ -1,60 +1,37 @@
-"""Reporting projection; automatic and final business facts remain untouched."""
-from __future__ import annotations
-
+"""All actual revenue months, displayed horizontally without a YTD bucket."""
 from dataclasses import dataclass
-from datetime import date
 from decimal import Decimal
 import re
 
-from revenue_tool.domain.models import BaseRow
+from revenue_tool.services.final_revenue import calculate_final_values
 from revenue_tool.services.normalization import normalize_amount
 
-MONTH_PATTERN = re.compile(r"[0-9]{4}-(0[1-9]|1[0-2])\Z")
-SEGMENTS = ("订未发", "发未收", "交未验", "其他")
-EXCLUDED = "未纳入汇总"
-EMPTY_REGION = "（地区未填写）"
+MONTH_PATTERN = re.compile(r'[0-9]{4}-(0[1-9]|1[0-2])\Z')
+SEGMENTS = ('订未发', '发未收', '交未验', '其他')
+LABELS = (*SEGMENTS, '小计')
+EXCLUDED = '未纳入汇总'
+EMPTY_REGION = '（地区未填写）'
 
 
-def report_month(value: str | None = None) -> str:
-    if value is None:
-        return date.today().strftime("%Y-%m")
-    if not isinstance(value, str) or not MONTH_PATTERN.fullmatch(value) or value[:4] == "0000":
-        raise ValueError("统计月份必须填写完整年月 YYYY-MM，例如2026-09")
-    return value
+def valid_month(value):
+    return isinstance(value, str) and bool(MONTH_PATTERN.fullmatch(value)) and value[:4] != '0000'
 
 
-def report_months(value=None) -> tuple[str, ...]:
-    """One shared selection contract for the GUI, CLI and workbook writer."""
-    if value is None or isinstance(value, str):
-        return (report_month(value),)
-    if not isinstance(value, (list, tuple)) or not value:
-        raise ValueError("请至少选择一个汇总月份")
-    if any(not isinstance(item, str) for item in value):
-        raise ValueError("每个汇总月份必须为完整年月YYYY-MM")
-    months = tuple(sorted({report_month(item) for item in value}))
-    if len(months) > 12:
-        raise ValueError("一次最多选择12个汇总月份")
-    return months
+def region_label(value):
+    return EMPTY_REGION if value is None or str(value).strip() == '' else str(value)
 
 
-def summary_labels(month: str) -> tuple[str, ...]:
-    # Stable cache members: month changes must never reorder/drop pivot columns.
-    return ("前期累计", *SEGMENTS, "小计")
-
-
-def cumulative_caption(month: str) -> str:
-    number = int(report_month(month)[-2:])
-    return f"1—{number - 1}月累计" if number > 1 else "前期累计（无）"
-
-
-def region_label(value) -> str:
-    return EMPTY_REGION if value is None or str(value).strip() == "" else str(value)
+def discover_months(rows):
+    return tuple(sorted({month for row in rows
+        for field, month in calculate_final_values(row.values).items()
+        if field in ('final_revenue_month_rpd', 'final_revenue_month_cpd') and valid_month(month)}))
 
 
 @dataclass(frozen=True)
 class SummaryEntry:
     base_row: int
     region: str
+    month: str
     bucket: str
     amount: Decimal | None
     subtotal_copy: bool
@@ -62,44 +39,32 @@ class SummaryEntry:
 
 @dataclass
 class RegionalSummary:
-    month: str
     mode: str
-    labels: tuple[str, ...]
+    months: tuple[str, ...]
     regions: list[str]
     entries: list[SummaryEntry]
-    totals: dict[str, list[Decimal]]
-    excluded_count: int
+    totals: dict[str, dict[str, list[Decimal]]]
 
 
-def build_regional_summary(rows: list[BaseRow], month: str, mode: str) -> RegionalSummary:
-    month = report_month(month)
-    if mode not in ("rpd", "cpd"):
-        raise ValueError("收入口径必须为rpd或cpd")
-    labels = summary_labels(month)
-    regions = sorted({region_label(row.values.get("region")) for row in rows})
-    totals = {region: [Decimal("0.00") for _ in labels] for region in regions}
+def build_regional_summary(rows, mode, months=None):
+    if mode not in ('rpd', 'cpd'):
+        raise ValueError('收入口径必须为rpd或cpd')
+    months = discover_months(rows) if months is None else tuple(months)
+    regions = sorted({region_label(row.values.get('region')) for row in rows})
+    totals = {region: {month: [Decimal('0.00')] * 5 for month in months} for region in regions}
     entries = []
-    excluded_count = 0
     for number, row in enumerate(rows, 2):
-        values = row.values
-        region = region_label(values.get("region"))
-        raw_month = values.get(f"final_revenue_month_{mode}")
-        amount = normalize_amount(values.get("final_revenue_forecast"))
-        bucket = EXCLUDED
-        if (amount is not None and isinstance(raw_month, str)
-                and MONTH_PATTERN.fullmatch(raw_month)):
-            if month[:4] + "-01" <= raw_month < month:
-                bucket = labels[0]
-            elif raw_month == month:
-                segment = values.get("final_revenue_segment")
-                category = segment if segment in SEGMENTS[:3] else "其他"
-                bucket = labels[1 + SEGMENTS.index(category)]
-        current = bucket in labels[1:5]
-        excluded_count += bucket == EXCLUDED
-        # A separate subtotal bucket makes native Show Details return each
-        # current-period business row exactly once, without YTD records.
-        for is_subtotal, category in ((False, bucket), (True, labels[5] if current else EXCLUDED)):
-            entries.append(SummaryEntry(number, region, category, amount, is_subtotal))
+        final = calculate_final_values(row.values)
+        raw_month = final[f'final_revenue_month_{mode}']
+        month = raw_month if valid_month(raw_month) else EXCLUDED
+        region = region_label(row.values.get('region'))
+        amount = normalize_amount(final['final_revenue_forecast'])
+        segment = final['final_revenue_segment']
+        bucket = segment if segment in SEGMENTS[:3] else '其他'
+        if amount is None or month not in months:
+            bucket = EXCLUDED
+        for subtotal, category in ((False, bucket), (True, '小计' if bucket != EXCLUDED else EXCLUDED)):
+            entries.append(SummaryEntry(number, region, month, category, amount, subtotal))
             if category != EXCLUDED:
-                totals[region][labels.index(category)] += amount
-    return RegionalSummary(month, mode, labels, regions, entries, totals, excluded_count)
+                totals[region][month][LABELS.index(category)] += amount
+    return RegionalSummary(mode, months, regions, entries, totals)

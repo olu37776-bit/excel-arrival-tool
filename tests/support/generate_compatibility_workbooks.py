@@ -18,9 +18,8 @@ def main():
     _run(sources, root / 'pipeline.xlsx')
     config = load_config(CONFIG)
     for name, rows in [('edge-cases', example_rows()), ('empty', [])]:
-        ExcelOutputAdapter().write(root / f'{name}.xlsx', rows, [], [], [], IssueLog(), config, '2026-09')
-    ExcelOutputAdapter().write(root / 'multi-month.xlsx', example_rows(), [], [], [], IssueLog(), config,
-                               ['2026-08', '2026-09', '2027-01'])
+        ExcelOutputAdapter().write(root / f'{name}.xlsx', rows, [], [], [], IssueLog(), config)
+
 
 
 if __name__ == '__main__':
