@@ -14,6 +14,8 @@ from openpyxl.workbook.properties import CalcProperties
 
 from revenue_tool.adapters.final_revenue_formulas import final_formulas
 from revenue_tool.services.final_revenue import FINAL_FIELD_SOURCES
+from revenue_tool.adapters.regional_pivot import write_regional_pivots
+from revenue_tool.services.regional_summary import report_month as validate_report_month
 
 from revenue_tool.config import ToolConfig
 from revenue_tool.domain.models import (
@@ -40,7 +42,9 @@ class ExcelOutputAdapter:
         supply_pull_rows: list[ComparisonRow],
         issues: IssueLog,
         config: ToolConfig,
+        report_month: str | None = None,
     ) -> Path:
+        report_month = validate_report_month(report_month)
         workbook = Workbook()
         workbook.calculation = CalcProperties(
             calcMode="auto", fullCalcOnLoad=True, forceFullCalc=True,
@@ -151,6 +155,7 @@ class ExcelOutputAdapter:
             "IssuesTable",
         )
         self._write_metadata_sheet(workbook, config, base_rows)
+        write_regional_pivots(workbook, base_rows, config, report_month)
 
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)

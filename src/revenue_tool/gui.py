@@ -7,6 +7,7 @@ import sys
 from revenue_tool.application.pipeline import run_pipeline
 from revenue_tool.config import load_config
 from revenue_tool.domain.models import WorkbookReadError
+from revenue_tool.services.regional_summary import report_month
 
 
 def default_config_path() -> Path:
@@ -48,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
 
     root = tk.Tk()
     root.title("Excel 收入统计工具")
-    root.minsize(780, 410)
+    root.minsize(780, 450)
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
 
@@ -69,6 +70,7 @@ def main(argv: list[str] | None = None) -> int:
         "transit": tk.StringVar(),
         "output": tk.StringVar(),
         "previous": tk.StringVar(),
+        "report_month": tk.StringVar(value=report_month()),
     }
     source_types = [("Excel files", "*.xlsx *.xlsm"), ("All files", "*.*")]
 
@@ -106,15 +108,21 @@ def main(argv: list[str] | None = None) -> int:
             row=row, column=2, padx=(10, 0), pady=5
         )
 
+    ttk.Label(frame, text="汇总统计月份（YYYY-MM）").grid(
+        row=7, column=0, sticky="w", padx=(0, 10), pady=5
+    )
+    ttk.Entry(frame, textvariable=variables["report_month"]).grid(
+        row=7, column=1, sticky="ew", pady=5
+    )
     ttk.Label(
         frame,
         text="第一次运行不用选择上一次结果；后续需要继承和跨期比较时再选择。",
         foreground="#555555",
-    ).grid(row=7, column=0, columnspan=3, sticky="w", pady=(8, 4))
+    ).grid(row=8, column=0, columnspan=3, sticky="w", pady=(8, 4))
 
     status = tk.StringVar(value="等待选择文件")
     ttk.Label(frame, textvariable=status).grid(
-        row=8, column=0, columnspan=3, sticky="w", pady=(8, 8)
+        row=9, column=0, columnspan=3, sticky="w", pady=(8, 8)
     )
 
     def execute() -> None:
@@ -144,6 +152,7 @@ def main(argv: list[str] | None = None) -> int:
                 output_path=variables["output"].get().strip(),
                 config_path=Path(args.config),
                 previous_path=previous,
+                report_month=variables["report_month"].get().strip(),
             )
         except (WorkbookReadError, ValueError, OSError) as exc:
             status.set("生成失败")
@@ -163,6 +172,7 @@ def main(argv: list[str] | None = None) -> int:
                         f"CPD 跨月变化：{result.cpd_change_count}",
                         f"供应需要提拉诉求：{result.supply_pull_count}",
                         f"异常记录：{result.issue_count}",
+                        "已生成RPD/CPD地区收入汇总，双击金额查看明细。",
                     ]
                 ),
             )
@@ -170,7 +180,7 @@ def main(argv: list[str] | None = None) -> int:
             run_button.state(["!disabled"])
 
     button_frame = ttk.Frame(frame)
-    button_frame.grid(row=9, column=0, columnspan=3, sticky="e", pady=(8, 0))
+    button_frame.grid(row=10, column=0, columnspan=3, sticky="e", pady=(8, 0))
     ttk.Button(button_frame, text="退出", command=root.destroy).pack(
         side="right", padx=(8, 0)
     )

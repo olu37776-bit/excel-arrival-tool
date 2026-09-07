@@ -132,7 +132,7 @@ class FinalRevenueTest(unittest.TestCase):
                             self.assertEqual("#,##0.00", cell.number_format)
                 self.assertEqual(0, len(sheet.data_validations.dataValidation))
                 for s in wb:
-                    if s.sheet_state == "visible":
+                    if s.sheet_state == "visible" and not s._pivots:
                         self.assertEqual("A2", s.freeze_panes)
                         self.assertIsNotNone(s.auto_filter.ref)
                         self.assertFalse(s.tables)
