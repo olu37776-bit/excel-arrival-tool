@@ -28,3 +28,13 @@ v0.9.0 生成的四个最终字段包含 Excel 公式，但没有缓存计算值
 
 用户的实际旧文件尚未提供，本次修复针对已复现的空缓存问题。
 用户后续在第三方程序中编辑并保存，仍由该程序负责更新公式缓存。
+
+## 发布验证结果
+
+- PR #41 已合并，正式代码提交 `6f03d351962b3dbed51f02bc0a69d7a922ac0600`。
+- PR 工作流 34076705633：Linux 124项通过，Windows完整测试、EXE构建及运行自检通过。
+- 正式发布工作流 [34077005750](https://github.com/olu37776-bit/excel-arrival-tool/actions/runs/34077005750)：Linux 124项无跳过通过（131.263秒），Windows全部必需步骤成功。
+- 两种XML写入器（lxml与ElementTree）均覆盖；自闭合空单元格不影响后继公式缓存。
+- v0.9.1已于2026-09-07 02:44:36 UTC发布，EXE 12,812,436字节。
+- SHA256：`9f620385f46545d17441cfc534f54123cd679dc1ac446d36f1e1eedf09c51cd1`。
+- [下载 ExcelRevenueTool-v0.9.1.exe](https://github.com/olu37776-bit/excel-arrival-tool/releases/download/v0.9.1/ExcelRevenueTool-v0.9.1.exe)

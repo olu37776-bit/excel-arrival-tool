@@ -2,8 +2,8 @@
 
 ## Windows 使用方式（推荐）
 
-1. [直接下载 ExcelRevenueTool-v0.9.0.exe](https://github.com/olu37776-bit/excel-arrival-tool/releases/download/v0.9.0/ExcelRevenueTool-v0.9.0.exe)。
-2. 双击 `ExcelRevenueTool-v0.9.0.exe`。不需要安装 Python，也不需要运行 BAT 或打开终端。
+1. [直接下载 ExcelRevenueTool-v0.9.1.exe](https://github.com/olu37776-bit/excel-arrival-tool/releases/download/v0.9.1/ExcelRevenueTool-v0.9.1.exe)。
+2. 双击 `ExcelRevenueTool-v0.9.1.exe`。不需要安装 Python，也不需要运行 BAT 或打开终端。
 3. 在窗口中选择三个必选源文件，并按需选择当月订货文件：
    - 遗留量 Excel
    - 当月订货 Excel（可选；没有时留空）
@@ -12,6 +12,8 @@
 4. 确认“汇总统计月份”（默认当前月份），选择结果保存位置，然后点击“开始生成”。
 
 第一次运行时，“上一次成功结果”留空。以后需要跨期比较或继承人工填写字段时，选择上一次成功生成的结果文件。
+
+v0.9.1 兼容缺少新增系统列的旧版上期结果：按本期源数据补算收入预测和最终字段，并保留可继承的人工调整。四个最终字段同时保存公式与初始计算值，生成后即可读取；旧文件本身不会被修改，请用新版重新生成。
 
 如果 Windows SmartScreen 提示未识别应用，这是因为程序尚未购买代码签名证书；可点击“更多信息”后选择“仍要运行”。
 
