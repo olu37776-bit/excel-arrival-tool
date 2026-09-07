@@ -247,8 +247,7 @@ class ExcelInputAdapter:
                 )
                 return PreviousData({}, usable=False)
             rows: dict[tuple[str, str], BaseRow] = {}
-            for row_number in range(header_row + 1, sheet.max_row + 1):
-                cells = list(sheet[row_number])
+            for row_number, cells in enumerate(sheet.iter_rows(min_row=header_row + 1), header_row + 1):
                 if _row_is_blank(cells):
                     continue
                 field_cells = {
@@ -494,8 +493,7 @@ class ExcelInputAdapter:
 
         seen_signatures: dict[tuple[tuple[str, str], ...], int] = {}
         result: list[ParsedRow] = []
-        for row_number in range(header_row + 1, sheet.max_row + 1):
-            cells = list(sheet[row_number])
+        for row_number, cells in enumerate(sheet.iter_rows(min_row=header_row + 1), header_row + 1):
             if _row_is_blank(cells):
                 continue
             signature = tuple(
@@ -570,8 +568,8 @@ class ExcelInputAdapter:
         expected = expected_names or [
             column["name"] for column in config.base_columns
         ]
-        for row_number in range(1, max_row + 1):
-            headers = [normalize_text(cell.value) for cell in sheet[row_number]]
+        for row_number, cells in enumerate(sheet.iter_rows(max_row=max_row), 1):
+            headers = [normalize_text(cell.value) for cell in cells]
             matched = sum(
                 1
                 for name in expected
@@ -592,7 +590,19 @@ def _open_workbook(path: Path):
     if not path.exists():
         raise WorkbookReadError(f"工作簿不存在: {path}")
     try:
-        return load_workbook(path, data_only=True, read_only=False)
+        # Import consumes cells, not the user's pivot/chart objects. In normal
+        # mode openpyxl parses every pivot cache, including FieldGroup/discretePr
+        # that raises Nested.from_tree(node) in 3.1.5. Read-only mode skips it.
+        workbook = load_workbook(path, data_only=True, read_only=True, keep_links=False)
+        try:
+            for sheet in workbook.worksheets:
+                if sheet.max_row is None or sheet.max_column is None or (sheet.max_row, sheet.max_column) == (1, 1):
+                    sheet.reset_dimensions()
+                    sheet.calculate_dimension(force=True)
+            return workbook
+        except Exception:
+            workbook.close()
+            raise
     except Exception as exc:
         raise WorkbookReadError(f"工作簿无法读取: {path}: {exc}") from exc
 
@@ -863,21 +873,24 @@ def _read_previous_metadata(
         return default_sheet, default_names, None, None
     sheet = workbook["_tool_meta"]
     try:
+        metadata = list(sheet.iter_rows(max_col=3, values_only=True))
+        def value(row, column):
+            return metadata[row - 1][column - 1] if row <= len(metadata) else None
         if (
-            normalize_text(sheet["A1"].value) != "schema_version"
-            or normalize_text(sheet["A2"].value) != "base_sheet"
-            or normalize_text(sheet["A4"].value) != "field_id"
+            normalize_text(value(1, 1)) != "schema_version"
+            or normalize_text(value(2, 1)) != "base_sheet"
+            or normalize_text(value(4, 1)) != "field_id"
         ):
             raise ValueError("metadata header mismatch")
-        schema_version = normalize_text(sheet["B1"].value)
+        schema_version = normalize_text(value(1, 2))
         if schema_version not in {"2", "3"}:
             raise ValueError("unsupported metadata schema")
-        base_sheet = normalize_text(sheet["B2"].value)
+        base_sheet = normalize_text(value(2, 2))
         names: dict[str, str] = {}
         legacy_manual_revenue_segment: bool | None = None
         for row_number in range(5, sheet.max_row + 1):
-            field = normalize_text(sheet.cell(row_number, 1).value)
-            name = normalize_text(sheet.cell(row_number, 2).value)
+            field = normalize_text(value(row_number, 1))
+            name = normalize_text(value(row_number, 2))
             if not field:
                 break
             if field == _LEGACY_MANUAL_REVENUE_SEGMENT_ID:
@@ -900,11 +913,11 @@ def _read_previous_metadata(
         row_kind_header = None
         for row_number in range(5, sheet.max_row + 1):
             if (
-                normalize_text(sheet.cell(row_number, 1).value)
+                normalize_text(value(row_number, 1))
                 == "row_kind_contract_no"
-                and normalize_text(sheet.cell(row_number, 2).value)
+                and normalize_text(value(row_number, 2))
                 == "row_kind_supply_center"
-                and normalize_text(sheet.cell(row_number, 3).value)
+                and normalize_text(value(row_number, 3))
                 == "row_kind"
             ):
                 row_kind_header = row_number
@@ -913,9 +926,9 @@ def _read_previous_metadata(
             raise ValueError("row kind metadata missing")
         row_kinds: dict[tuple[str, str], str] = {}
         for row_number in range(row_kind_header + 1, sheet.max_row + 1):
-            contract_no = normalize_text(sheet.cell(row_number, 1).value)
-            supply_center = normalize_text(sheet.cell(row_number, 2).value)
-            row_kind = normalize_text(sheet.cell(row_number, 3).value)
+            contract_no = normalize_text(value(row_number, 1))
+            supply_center = normalize_text(value(row_number, 2))
+            row_kind = normalize_text(value(row_number, 3))
             if not contract_no and not supply_center and not row_kind:
                 continue
             if row_kind not in {DEMAND_CENTER, CONTRACT_ONLY_NO_DEMAND}:
