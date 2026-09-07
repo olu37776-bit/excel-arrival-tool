@@ -26,7 +26,7 @@ jobs:
       - name: Install independent formula engine and project
         run: |
           sudo apt-get update
-          sudo apt-get install -y libreoffice-calc
+          sudo apt-get install -y libreoffice-calc python3-uno
           python -m pip install .
       - name: Full suite including real XLSX formula recalculation
         env:

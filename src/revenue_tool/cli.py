@@ -24,6 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--transit", required=True, help="国家运输周期 Excel 路径"
     )
     parser.add_argument("--output", required=True, help="结果 Excel 路径")
+    parser.add_argument("--report-month", help="汇总统计月份YYYY-MM；默认当前月份")
     parser.add_argument(
         "--previous",
         help="可选：上一次成功运行结果，用于人工字段继承和跨月比较",
@@ -47,6 +48,7 @@ def main(argv: list[str] | None = None) -> int:
             output_path=args.output,
             config_path=args.config,
             previous_path=args.previous,
+            report_month=args.report_month,
         )
     except (WorkbookReadError, ValueError, OSError) as exc:
         print(f"执行失败: {exc}", file=sys.stderr)

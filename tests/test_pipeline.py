@@ -35,6 +35,9 @@ class PipelineTest(unittest.TestCase):
                         "供应需要提拉诉求清单粗表",
                         "异常清单",
                         "_tool_meta",
+                        "RPD地区收入汇总",
+                        "CPD地区收入汇总",
+                        "_summary_source",
                     ],
                     workbook.sheetnames,
                 )
