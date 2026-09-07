@@ -6,11 +6,14 @@
 
 ---
 
-## 0. 当前新增业务变更（优先执行）
+## 0. 当前首页阻塞修复与已授权 Excel 变更
+
+用户现已报告首页独立审查发现未跳转，与人工检查一致。当前先执行 `remediation/enterprise-home-route-blocker-repair-v1.md`，读取本地报告确定具体 finding 和失败入口，再修复真实点击链路。云端尚未读取本地报告；不能推定其他项已通过。
+Excel 两项变更继续有效，保留既有进度，同一主工作树顺序写入，不混入首页修复提交。
 
 用户已确认新版 Excel 的两项变更：所有业务表仅整列删除取值为“肥肉/瘦肉/骨头”的“整体空间”分类字段，其他字段与数据不动；大企表名改为“大企（油气矿、广电、交通）”。
 执行 `enterprise-excel-confirmed-delta-v1.md`，其中包含准确范围、本地工作簿修改、字段契约同步、验证与报告要求。
-本文件下方关于 V0.2 冻结和首页先行的旧阶段安排，对这两项已确认变更不构成阻塞；其他未确认差异继续冻结。旧模块字段数和旧大企表名按此增量覆盖。首页 V4 的独立核验状态仍待报告，不视为通过。
+本文件下方关于 V0.2 冻结和首页先行的旧阶段安排，对这两项已确认变更不构成阻塞；其他未确认差异继续冻结。旧模块字段数和旧大企表名按此增量覆盖。首页 V4 当前为用户报告存在跳转阻塞，详细审查事实以本地报告为准。
 
 ## 1. 当前正式 Authority
 
@@ -41,7 +44,7 @@
 | 21 | `isp-canonical-authority-v2.md` | ISP当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
 | 22 | `power-canonical-authority-v2.md` | 电力当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
 | 23 | `large-enterprise-canonical-authority-v2.md` | 大企当前字段和3-group业务基线 | 字段暂冻结，V0.2后可能升级 |
-| 24 | `enterprise-home-canonical-authority-v4.md` | 首页间距、全局场景卡样式/数字、已下单金额实时汇总、空间拓展及双层导航；含本地实施步骤/产物 | **本轮实施基线；当前执行第17节独立核验** |
+| 24 | `enterprise-home-canonical-authority-v4.md` | 首页间距、全局场景卡样式/数字、已下单金额实时汇总、空间拓展及双层导航；含本地实施步骤/产物 | **业务基线；当前先按跳转阻塞修复V1执行** |
 
 ---
 
@@ -54,14 +57,14 @@
 ```text
 PREVIOUS_REVIEW = USER_REPORTED_NO_BLOCKERS
 PREVIOUS_MANUAL_CHECK = BASICALLY_ACCEPTABLE_WITH_HOME_ISSUES
-CURRENT_TASK = EXCEL_CONFIRMED_DELTA_V1
+CURRENT_TASK = HOME_V4_ROUTE_BLOCKER_REPAIR_V1
 EXCEL_CONFIRMED_DELTA_V1 = AUTHORIZED_PENDING_LOCAL_IMPLEMENTATION
-HOME_V4_INDEPENDENT_REVIEW = PENDING_RESULT
+HOME_V4_INDEPENDENT_REVIEW = USER_REPORTED_BLOCKER
 HOME_V4_IMPLEMENTATION = IMPLEMENTED_REPORTED
-MANUAL_ACCEPTANCE_V4 = PENDING
+MANUAL_ACCEPTANCE_V4 = USER_REPORTED_NAVIGATION_FAILURE
 ```
 
-用户现已报告首页V4实施完成，尚无本轮独立核验结果。执行 `enterprise-home-canonical-authority-v4.md` 第17节。本轮不重新实施已修复的五模块共享表单和其他操作链；保持其规则与必要回归。
+用户已报告首页V4独立审查存在跳转阻塞，与人工结果一致。执行 `remediation/enterprise-home-route-blocker-repair-v1.md`；先读本地报告并修复，再针对固定新 HEAD 按 V4 第17节独立复核。既有五模块机制保持必要回归。
 
 ---
 
@@ -263,11 +266,11 @@ BLOCKED_BY_V0_2_AUTHORITY
 
 ## 10. 当前推进顺序
 
-1. 新独立 Agent 更新Authority，读取首页V4及本地实施计划/报告，固定新REVIEWED_HEAD。
-2. 按V4第17节核验布局/共享样式、真实金额与空间指标、路由和状态刷新；验证本轮实际受影响范围。
-3. 保存指定独立报告与证据，保留历史记录；不现场修复。
-4. PASS后由用户人工确认首页；FAIL进入首页修复；PARTIAL补齐具体缺项。
-5. 首页V4独立及人工确认完成后，再恢复Excel V0.2等其他待办的真实进度。
+1. 更新 Authority，读取首页独立报告与证据，核对当前代码和运行版本。
+2. 按跳转阻塞修复 V1 定位真实失败入口、根因和测试漏检，修复报告中属于 V4 的阻塞项。
+3. 完成真实浏览器点击与受影响回归，保存指定实施报告，仅声明 IMPLEMENTED。
+4. 固定新 HEAD 独立复核，通过后由用户确认实际页面；未完成项继续如实记录。
+5. Excel 两项任务保持授权及已有进度，按独立范围顺序推进，不混淆两个任务的证据与提交。
 
 ---
 

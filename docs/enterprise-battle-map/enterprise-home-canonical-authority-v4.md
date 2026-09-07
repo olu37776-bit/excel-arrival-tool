@@ -9,6 +9,10 @@
 
 ---
 
+## 0. 最新执行状态
+
+用户已报告独立审查发现首页未跳转，与人工检查一致。当前为 USER_REPORTED_BLOCKER；详细 finding、失败入口及根因待执行者读取本地报告确认。先执行 `remediation/enterprise-home-route-blocker-repair-v1.md`，修复后再按第17节对固定新 HEAD 独立复核。历史实施自报状态不等于当前验收通过。
+
 ## 1. 当前确认结论
 
 1. 企业首页当前阶段暂不建设 Heatmap。
@@ -587,7 +591,7 @@ NEXT=HOME_V4_INDEPENDENT_REVIEW/CONTINUE_IMPLEMENTATION
 
 ## 17. V4 实施后独立核验与人工验收
 
-用户已报告首页V4实施完成，当前为 IMPLEMENTED_REPORTED / PENDING_INDEPENDENT_REVIEW。新独立 Agent 负责本节；实施报告的 PASS 不是审查事实。此次只审查本轮首页范围与实际受影响消费者，不机械重跑无关五模块整改。
+用户此前报告首页V4实施完成，现已报告独立审查存在跳转阻塞；按第0节先修复，以下为修复后复核规则。新独立 Agent 负责本节；实施报告的 PASS 不是审查事实。此次只审查本轮首页范围与实际受影响消费者，不机械重跑无关五模块整改。
 
 ### 17.1 输入和固定状态
 
