@@ -11,6 +11,7 @@ from openpyxl import load_workbook
 from openpyxl.utils.datetime import from_excel
 
 from revenue_tool.adapters.sheet_locator import resolve_role_sheet
+from revenue_tool.adapters.pivot_input_view import business_sheet
 from revenue_tool.config import ToolConfig
 from revenue_tool.domain.models import (
     BaseRow,
@@ -118,7 +119,7 @@ class ExcelInputAdapter:
                 selected = resolution.selected
                 if selected is None or selected.header_row is None:
                     raise AssertionError("唯一 Sheet 解析结果必须包含表头行")
-                worksheet = workbook[selected.sheet_name]
+                worksheet = business_sheet(workbook, workbook[selected.sheet_name])
                 sheet_names[role] = worksheet.title
                 result[role] = self._read_role_sheet(
                     workbook_path,
@@ -172,7 +173,7 @@ class ExcelInputAdapter:
                     raw_value=" | ".join(workbook.sheetnames),
                 )
                 return PreviousData({}, usable=False)
-            sheet = workbook[workbook.sheetnames[match.index]]
+            sheet = business_sheet(workbook, workbook[workbook.sheetnames[match.index]])
             header_row = self._detect_output_header(
                 sheet,
                 config,

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from revenue_tool.config import ToolConfig
+from revenue_tool.adapters.pivot_input_view import business_sheet
 from revenue_tool.services.field_matching import resolve_name
 from revenue_tool.services.normalization import normalize_lookup, normalize_text
 
@@ -52,7 +53,7 @@ def resolve_role_sheet(
     )
     fingerprints = tuple(
         _fingerprint_sheet(
-            sheet,
+            business_sheet(workbook, sheet),
             role,
             config,
             normalize_lookup(sheet.title) in expected_names,
