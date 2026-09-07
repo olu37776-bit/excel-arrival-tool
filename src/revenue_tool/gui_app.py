@@ -133,7 +133,14 @@ class RevenueApp:
         self.run_button = ttk.Button(actions, text='开始生成', command=self.execute, style='Primary.TButton')
         self.run_button.pack(side='right')
         self.controls.append(self.run_button)
-        root.after(100, self.poll)
+        self.closed = False
+        self.poll_id = root.after(100, self.poll)
+        root.bind('<Destroy>', self.on_destroy, add='+')
+
+    def on_destroy(self, event):
+        if event.widget is self.root:
+            self.closed = True
+            self.root.after_cancel(self.poll_id)
 
     def card(self, parent, row, title):
         frame = ttk.Frame(parent, padding=(14, 10), style='Card.TFrame')
@@ -215,6 +222,8 @@ class RevenueApp:
         Thread(target=work, daemon=True, name='revenue-generation').start()
 
     def poll(self):
+        if self.closed:
+            return
         try:
             kind, result, count = self.events.get_nowait()
         except Empty:
@@ -232,7 +241,7 @@ class RevenueApp:
             else:
                 self.status.set('生成失败，请检查提示后重试。')
                 messagebox.showerror('生成失败', str(result), parent=self.root)
-        self.root.after(100, self.poll)
+        self.poll_id = self.root.after(100, self.poll)
 
     def open_result(self, folder=False):
         if self.last_output is None:
