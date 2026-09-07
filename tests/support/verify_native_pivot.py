@@ -4,6 +4,7 @@ Executed with distribution python3-uno, not the application's Python runtime.
 Only synthetic test workbooks are passed to this helper.
 """
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -46,18 +47,25 @@ def main():
             (prop("Hidden", True), prop("ReadOnly", False), prop("UpdateDocMode", 3)))
         if doc is None:
             raise RuntimeError("Office could not open the generated XLSX")
+        doc.enableAutomaticCalculation(True)
         snapshots = []
         for edits in json.loads(Path(plan_path).read_text()):
             for sheet_name, address, value in edits:
                 cell = doc.Sheets.getByName(sheet_name).getCellRangeByName(address)
                 if value is None:
                     cell.setFormula("")
+                elif isinstance(value, bool):
+                    cell.setFormula("=TRUE()" if value else "=FALSE()")
                 elif isinstance(value, (int, float)):
                     cell.setValue(value)
                 else:
                     cell.setString(value)
-            doc.calculateAll()
-            snapshot = {}
+            # Capture formula results immediately after editing, before refreshing
+            # pivots. No F9/calculateAll is allowed in this automatic-edit test.
+            base = doc.Sheets.getByName("基表")
+            cursor = base.createCursor()
+            cursor.gotoEndOfUsedArea(False)
+            snapshot = {"base": base.getCellRangeByPosition(0, 0, 39, cursor.RangeAddress.EndRow).getDataArray(), "summaries": {}}
             for name in doc.Sheets.getElementNames():
                 if not name.startswith(("RPD地区收入汇总", "CPD地区收入汇总")):
                     continue
@@ -70,32 +78,37 @@ def main():
                 area = table.getOutputRange()
                 # Discover positions after native refresh; also detect shifted or extra columns.
                 grid = sheet.getCellRangeByPosition(area.StartColumn, area.StartRow, area.EndColumn, area.EndRow).getDataArray()
-                header_offset = next(i for i, r in enumerate(grid) if "前期累计" in r and "小计" in r)
+                header_offset = next(i for i, r in enumerate(grid) if "订未发" in r and "小计" in r)
                 headers = list(grid[header_offset])
+                month_headers = grid[header_offset - 1]
+                columns, months = {}, []
+                month = None
+                for col_offset in range(1, len(headers)):
+                    value = str(month_headers[col_offset])
+                    if re.fullmatch(r"[0-9]{4}-[0-9]{2}", value):
+                        month = value
+                        if month not in months:
+                            months.append(month)
+                    if headers[col_offset] in ("订未发", "发未收", "交未验", "其他", "小计"):
+                        if month is None:
+                            raise AssertionError(f"Missing month heading: {grid!r}")
+                        columns[col_offset] = (month, headers[col_offset])
                 cells = {}
-                total_caption = None
                 for row_offset in range(header_offset + 1, len(grid)):
                     values = grid[row_offset]
                     region = str(values[0])
-                    if row_offset == len(grid) - 1:
-                        # Calc drops OOXML grandTotalCaption on import and uses
-                        # its localized total label. Record it; normalize only
-                        # this last total row for numeric/drill-through checks.
-                        total_caption = region
-                        if region in ("Total Result", "小计"):
-                            region = "小计"
+                    if row_offset == len(grid) - 1 and region in ("Total Result", "小计"):
+                        region = "小计"
                     cells[region] = {}
-                    for col_offset in range(1, len(headers)):
+                    for col_offset, (month, label) in columns.items():
                         address = CellAddress(area.Sheet, area.StartColumn + col_offset, area.StartRow + row_offset)
                         detail = table.getDrillDownData(address)
                         contracts = []
                         if detail:
                             contract_column = list(detail[0]).index("合同号")
                             contracts = [str(r[contract_column]) for r in detail[1:]]
-                        cells[region][headers[col_offset]] = {"value": values[col_offset] or 0, "contracts": contracts}
-                snapshot[name] = {"headers": headers, "cells": cells, "total_caption": total_caption,
-                    "month": sheet.getCellRangeByName("C4").getString(),
-                    "cumulative_caption": sheet.getCellRangeByName("B5").getString()}
+                        cells[region].setdefault(month, {})[label] = {"value": values[col_offset] or 0, "contracts": contracts}
+                snapshot["summaries"][name] = {"months": months, "cells": cells}
             snapshots.append(snapshot)
         Path(output).write_text(json.dumps(snapshots, ensure_ascii=False), encoding="utf-8")
     finally:

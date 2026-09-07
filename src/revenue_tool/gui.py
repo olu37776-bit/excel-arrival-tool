@@ -44,12 +44,12 @@ def main(argv: list[str] | None = None) -> int:
         values.update(calculate_final_values(values))
         with TemporaryDirectory() as temporary:
             path = Path(temporary) / "smoke.xlsx"
-            ExcelOutputAdapter().write(path, [BaseRow(values)], [], [], [], IssueLog(), config, "2026-09")
+            ExcelOutputAdapter().write(path, [BaseRow(values)], [], [], [], IssueLog(), config)
             workbook = load_workbook(path)
             try:
                 for name in SUMMARY_SHEETS.values():
                     sheet = workbook[name]
-                    if len(sheet._pivots) != 1 or sheet["G11"].value != 1:
+                    if len(sheet._pivots) != 1 or sheet["F10"].value != 1:
                         raise RuntimeError("Windows EXE透视工作簿自检失败")
             finally:
                 workbook.close()
@@ -62,29 +62,14 @@ def main(argv: list[str] | None = None) -> int:
                         raise RuntimeError("Windows EXE最终字段计算值自检失败")
             finally:
                 workbook.close()
-            multi = Path(temporary) / "multi.xlsx"
-            ExcelOutputAdapter().write(multi, [BaseRow(values)], [], [], [], IssueLog(), config, ['2026-08', '2026-09'])
-            workbook = load_workbook(multi)
-            try:
-                if workbook[config.output['sheets']['base']].protection.sheet:
-                    raise RuntimeError('基表不应受保护')
-                for month in ('2026-08', '2026-09'):
-                    for mode in ('RPD', 'CPD'):
-                        sheet = workbook[f'{mode}地区收入汇总-{month}']
-                        if sheet['G11'].value != (1 if month == '2026-09' else 0):
-                            raise RuntimeError('多月汇总自检失败')
-            finally:
-                workbook.close()
         if sys.platform == 'win32' or os.environ.get('DISPLAY'):
             from revenue_tool.gui_app import RevenueApp
             root = tkinter.Tk()
             try:
                 app = RevenueApp(root, args.config)
                 root.update()
-                app.year.set('2026')
-                app.set_months((8, 9))
-                if app.selected_months() != ('2026-08', '2026-09'):
-                    raise RuntimeError('GUI多月选择自检失败')
+                if hasattr(app, 'months') or hasattr(app, 'year'):
+                    raise RuntimeError('GUI不应包含月份选择')
             finally:
                 root.destroy()
         return 0

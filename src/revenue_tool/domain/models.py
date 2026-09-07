@@ -107,6 +107,7 @@ class PipelineResult:
     cpd_change_count: int
     supply_pull_count: int
     issue_count: int
+    report_months: tuple[str, ...] = ()
 
 
 class WorkbookReadError(RuntimeError):

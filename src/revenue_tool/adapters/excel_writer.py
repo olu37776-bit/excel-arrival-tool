@@ -16,7 +16,6 @@ from revenue_tool.adapters.final_revenue_formulas import final_formulas
 from revenue_tool.services.final_revenue import FINAL_FIELD_SOURCES, calculate_final_values
 from revenue_tool.adapters.formula_cache import save_with_formula_cache
 from revenue_tool.adapters.regional_pivot import write_regional_pivots
-from revenue_tool.services.regional_summary import report_months
 
 from revenue_tool.config import ToolConfig
 from revenue_tool.domain.models import (
@@ -43,12 +42,10 @@ class ExcelOutputAdapter:
         supply_pull_rows: list[ComparisonRow],
         issues: IssueLog,
         config: ToolConfig,
-        report_month: str | list[str] | tuple[str, ...] | None = None,
     ) -> Path:
-        report_month = report_months(report_month)
         workbook = Workbook()
         workbook.calculation = CalcProperties(
-            calcMode="auto", fullCalcOnLoad=True, forceFullCalc=True,
+            calcMode="auto", fullCalcOnLoad=True, forceFullCalc=True, calcOnSave=True,
         )
         workbook.remove(workbook.active)
         sheets = config.output["sheets"]
@@ -109,7 +106,7 @@ class ExcelOutputAdapter:
         for field in FINAL_FIELD_SOURCES:
             base_sheet.cell(1, indexes[field]).comment = Comment(
                 "系统公式列，请勿编辑。对应黄色人工字段有值即生效，"
-                "不受是否手工调整预测门控。月份支持9月/10/2026-9等；"
+                "不受是否手工调整预测门控。若编辑后不更新，请检查“公式→计算选项→自动”及本格公式是否被覆盖。月份支持9月/10/2026-9等；"
                 "待修正提示请改填完整YYYY-MM。透视表需手动刷新。",
                 "ExcelRevenueTool",
             )
@@ -158,7 +155,7 @@ class ExcelOutputAdapter:
             "IssuesTable",
         )
         self._write_metadata_sheet(workbook, config, base_rows)
-        write_regional_pivots(workbook, base_rows, config, report_month)
+        write_regional_pivots(workbook, base_rows, config)
 
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
