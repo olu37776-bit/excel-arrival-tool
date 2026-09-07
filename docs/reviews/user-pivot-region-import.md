@@ -12,7 +12,10 @@ v0.11.1忽略透视对象/缓存，但仍读取其显示单元格。已复现基
 
 新增同页右侧重复表头、下方业务形状透视、多个透视、元数据有/无、分组缓存、透视后真实行、0/False人工输入、筛选旁真实备注、损坏location停止导入。输出只含本期系统两张透视，原输入字节不变。EXE smoke增加基表AS1用户透视与重复合同号表头，再叠加分组缓存，验证读取及继承。
 
-本地7项专项回归已通过，等待完整验证与发布。
+本地7项专项回归通过，完整133项测试通过（本地3项GUI/UNO环境检查跳过）。PR #49，head a6325644b886fa7dbc1d2acc66c37305ae4f8573，工作流34107562329：Linux任务101695981361共133项全通过、无跳过，148.593秒；Microsoft SDK任务101695981432对edge-cases/empty/pipeline输出均0错误。Windows任务101696877234共133项通过（2项仅Linux引擎跳过），107.727秒；EXE构建、同页用户透视叠加分组缓存读取/人工继承及GUI smoke通过。PR #49已合并为8e1d34d948fd5a911a4adaa9f6e5c9bde97af6ff，正式工作流34108108501中Microsoft SDK任务101697733568通过，Linux任务101697733880共133项全通过、无跳过。Windows任务101698631268共133项通过（2项仅Linux引擎跳过），104.791秒；EXE构建、同页用户透视继承、分组缓存及GUI smoke通过。
+
+v0.11.2于2026-09-07 09:54:44 UTC正式发布，EXE 12,849,407字节，SHA256：3a1574eb0001fa6e6a4350fbee31d45d49e599c92aede6d5c70cf66ef56fb0f5。
+[下载EXE](https://github.com/olu37776-bit/excel-arrival-tool/releases/download/v0.11.2/ExcelRevenueTool-v0.11.2.exe)。
 
 ## Excel启动问题状态
 
