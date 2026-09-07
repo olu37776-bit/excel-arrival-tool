@@ -13,9 +13,10 @@
 | 1 | `enterprise-contract-architecture-v5.md` | 端到端 canonical identity、真实 Runtime Projection、API canonical-only、Customer 主键贯穿、Heatmap canonical key、Progress 单一事实源、DB/Conformance Gate | 所有企业任务必读 |
 | 2 | `architecture/enterprise-runtime-field-options-contract-v1.md` | Runtime Field View Model、select/options 判定、动态 options 生命周期、错误边界与五模块回归门禁 | 长期 Runtime Options Authority |
 | 3 | `mox-canonical-authority-v6.md` | MOX 41字段、4 group、Create/Edit runtime、Heatmap、legacy key、Progress、Customer、DB/测试最终目标 | 已验证业务 Reference baseline |
-| 4 | `remediation/five-module-shared-form-renderer-convergence-v3.md` | 验证 MOX 是否也存在 local form builder；从 MOX 已验证行为提炼唯一 shared form renderer，并让 MOX/TOB/ISP/Power/Large 全部消费同一真实生产 render path | 用户报告已实施；待独立核验 |
+| 3a | `remediation/five-module-shared-operation-convergence-v1.md` | 根据最新本地审查报告，对其他操作建立五模块生产路径清单，收敛重复机制并修复阻塞 | **当前执行：共享操作链收敛** |
+| 4 | `remediation/five-module-shared-form-renderer-convergence-v3.md` | 验证 MOX 是否也存在 local form builder；从 MOX 已验证行为提炼唯一 shared form renderer，并让 MOX/TOB/ISP/Power/Large 全部消费同一真实生产 render path | 已报告实施；当前修复须回归 |
 | 5 | `remediation/non-mox-shared-form-renderer-convergence-v1.md` | 仅针对 4x non-MOX module-local form builders 的第一版方案 | **SUPERSEDED BY FIVE-MODULE V3** |
-| 6 | `reviews/non-mox-full-independent-review-rerun-v3.md` | 固定新 HEAD，完整重跑原始审查；覆盖五模块真实渲染链、全部历史 findings 和新增问题 | **当前执行门禁：五模块完整独立审查** |
+| 6 | `reviews/non-mox-full-independent-review-rerun-v3.md` | 固定新 HEAD，完整重跑原始审查；覆盖五模块真实渲染链、全部历史 findings 和新增问题 | 本轮修复后新 HEAD 的完整独立复审门禁 |
 | 7 | `reviews/non-mox-modules-mox-reference-independent-review-v1.md` | 原始全量 Independent Review Authority：shared runtime、Create/Edit、Customer、Progress、Heatmap、Metric、API/DB、重复机制、hidden consumers、测试可信度 | 每个新 HEAD 必须完整重跑 |
 | 8 | `remediation/non-mox-alignment-independent-review-findings-remediation-v2.md` | 关闭前次独立审查 7 个 blocking findings | 已实施；历史回归集 |
 | 9 | `reviews/non-mox-alignment-independent-rereview-v2.md` | 仅围绕7个finding的定向复核草案 | SUPERSEDED BY V3 |
@@ -43,13 +44,14 @@
 
 同时，`4x` finding 只证明四个 non-MOX builder 存在，**不能证明 MOX 自己已经是 shared form renderer consumer**。
 
-2026-09-07 用户报告 Five-Module Shared Form Renderer Convergence V3 已完成。当前会话尚未读取本地实施报告/代码，不能把用户完成回执升级为独立 VERIFIED。当前状态：
+2026-09-07 用户报告 Five-Module Shared Form Renderer Convergence V3 已完成。随后用户报告完整独立审查阻塞，并明确主要问题是需要像 V3 一样收敛其他操作的机制。云端尚未取得本地报告正文，具体 finding、根因和修复范围必须由本地 Agent 从最新报告与代码核实，不能预设其他操作均有缺陷。当前状态：
 
 ```text
 MOX = VERIFIED BUSINESS/BEHAVIOR REFERENCE
 V3 IMPLEMENTATION = IMPLEMENTED_REPORTED
-FIVE-MODULE FORM RENDERER SHARING = PENDING_INDEPENDENT_REVIEW
-CURRENT_GATE = FULL_INDEPENDENT_REVIEW_RERUN_V3
+FULL_INDEPENDENT_REVIEW = BLOCKED_REPORTED
+CURRENT_TASK = SHARED_OPERATION_CONVERGENCE_FROM_LOCAL_REVIEW
+NEXT_GATE = FULL_INDEPENDENT_REVIEW_RERUN_V3
 ```
 
 MOX 的“已验证”表示其行为/字段/端到端结果可作为提炼 shared renderer 的参考，不表示 MOX 可以永久保留一套私有 form builder。
@@ -163,7 +165,9 @@ remediation/five-module-shared-form-renderer-convergence-v3.md
 
 Five-Module V3 取代 V2 的执行规范，V2 仅保留设计背景；Non-MOX V1 不再是当前执行入口。
 
-用户报告 V3 已实施完成。下一步读取本地 `docs/enterprise/remediations/five-module-shared-form-renderer-convergence-report-v3.md`，按 `reviews/non-mox-full-independent-review-rerun-v3.md` 完整执行独立审查；审查中不实施修复。
+用户报告 V3 后的独立审查阻塞。当前执行入口为 `remediation/five-module-shared-operation-convergence-v1.md`：读取本地完整审查报告、V3 实施报告和真实生产代码，先形成具体操作清单/根因修复计划，再直接实施。保持 V3 Create/Edit 结果，收敛报告所涉及的其他操作及同根因重复路径。
+
+本轮属于 Implementation，不是继续只读 Review。实施者仅声明 IMPLEMENTED；修复完成后用新 HEAD 完整重跑独立审查。
 
 ---
 
@@ -253,15 +257,14 @@ BLOCKED_BY_V0_2_AUTHORITY
 
 ## 10. 当前推进顺序
 
-1. 更新 Authority 镜像，记录 AUTHORITY_HEAD。
-2. 读取 V3 实施报告、历史完整审查与全部 finding；核对本地分支、干净工作树、无并发写入并固定 REVIEWED_HEAD。
-3. 独立执行原始 Review V1 全部审查域 + Full Rerun V3 的五模块当前门禁。
-4. 核实五模块真实 Create/Edit render tree、全部历史 finding 关闭情况，主动发现新问题；重跑必要测试/build。
-5. 保留旧报告，在固定路径写完整新报告、原始证据和简短回执。
-6. FAIL：进入有证据的 remediation；PARTIAL：补足未完成验证；不直接人工验收。
-7. PASS 且无 blocking finding：进入用户人工视觉/交互验收。
-8. 完成 Excel V0.2 Authority Review，必要时发布新模块 Canonical Authority，只实施 V0.2 delta。
-9. 企业模块统一验证与人工验收完成后，再建设企业首页。
+1. 更新 Authority 镜像，读取最新本地阻塞报告并记录受审 HEAD、当前 BASE_HEAD。
+2. 执行 Shared Operation Convergence V1；保留原报告，恢复全部 findings，调查五模块实际操作链。
+3. 写具体修复计划、WRITE_SCOPE、验收条件；在既有 Authority 内直接实施，不停在规划。
+4. 收敛报告指出的其他操作及同根因重复机制，补齐生产路径测试，回归 V3 Create/Edit 和必要全量验证。
+5. 同步本地计划、finding 矩阵、实施报告与证据，只提交本轮明确拥有的变更。
+6. 修复完成后，对新 HEAD 完整重跑 Review V1 + Full Rerun V3，包含本轮操作链和全部历史 findings。
+7. 独立 PASS 且无 blocking finding：进入用户人工验收；有缺陷继续 remediation，证据不足补验证。
+8. 完成 Excel V0.2 Authority Review 后仅实施获准 delta；企业模块验证与人工验收完成后再建设首页。
 
 ---
 
