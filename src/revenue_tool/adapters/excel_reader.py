@@ -587,6 +587,26 @@ class ExcelInputAdapter:
         return None
 
 
+def _recover_sheet_dimensions(sheet) -> None:
+    """Recover actual cell bounds, including empty and misreported sheets."""
+    sheet.reset_dimensions()
+    max_row = max_column = 1
+    for cells in sheet.iter_rows():
+        # Empty XML rows/gaps may contain no cells. A styled blank cell still
+        # has coordinates, whereas the read-only EMPTY_CELL filler does not.
+        for candidate in reversed(cells):
+            row = getattr(candidate, "row", None)
+            column = getattr(candidate, "column", None)
+            if row is not None and column is not None:
+                max_row = max(max_row, row)
+                max_column = max(max_column, column)
+                break
+    # openpyxl 3.1.5's calculate_dimension(force=True) references an unassigned
+    # loop variable on empty sheets. Keep the adapter's fallback explicit.
+    sheet._max_row = max_row
+    sheet._max_column = max_column
+
+
 def _open_workbook(path: Path):
     if not path.exists():
         raise WorkbookReadError(f"工作簿不存在: {path}")
@@ -597,9 +617,10 @@ def _open_workbook(path: Path):
         workbook = load_workbook(path, data_only=True, read_only=True, keep_links=False)
         try:
             for sheet in workbook.worksheets:
-                if sheet.max_row is None or sheet.max_column is None or (sheet.max_row, sheet.max_column) == (1, 1):
-                    sheet.reset_dimensions()
-                    sheet.calculate_dimension(force=True)
+                # Any declared dimension can be stale, not only A1:A1. A
+                # smaller one silently truncates rows/columns; a larger one
+                # needlessly pads imported rows. Verify actual cells once.
+                _recover_sheet_dimensions(sheet)
             return workbook
         except Exception:
             workbook.close()
