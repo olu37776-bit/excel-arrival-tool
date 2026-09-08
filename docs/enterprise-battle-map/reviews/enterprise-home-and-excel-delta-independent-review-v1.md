@@ -1,6 +1,6 @@
 # 首页修复与 Excel 确认增量：联合独立复核 V1
 
-**状态：CURRENT REVIEW AUTHORITY / 用户报告未提交改动导致无法固定HEAD；先准备候选，再独立复核**  
+**状态：CURRENT REVIEW AUTHORITY / 字面“（空）”选项新增修正；实施提交并固定新候选后复核**  
 **依据：2026-09-08 用户报告“首页和那个删除字段都完成了”**  
 **代码工作树：D:\BattleMap\battle-map / feature/enterprise-battle-map**
 
@@ -19,6 +19,7 @@ git -C "D:\BattleMap\BattleMapenterprise-authority" pull --ff-only origin enterp
 
 在 Authority 的 docs/enterprise-battle-map 下读取：
 - authority-index.md、本文件、integration/enterprise-review-snapshot-preparation-v1.md；
+- remediation/enterprise-empty-option-removal-v1.md；
 - enterprise-home-canonical-authority-v4.md；
 - remediation/enterprise-home-route-blocker-repair-v1.md；
 - enterprise-excel-confirmed-delta-v1.md；
@@ -31,6 +32,7 @@ git -C "D:\BattleMap\BattleMapenterprise-authority" pull --ff-only origin enterp
 - docs/enterprise/implementation/enterprise-test-expectation-alignment-v1-plan.md、enterprise-test-expectation-alignment-v1-report.md 及其失败矩阵/证据；
 - 最新迁移Schema专项的 docs/enterprise/implementation/enterprise-migration-schema-test-alignment-v1-plan.md、enterprise-migration-schema-test-alignment-v1-report.md 及失败矩阵/证据；
 - docs/enterprise/implementation/enterprise-review-snapshot-preparation-v1-plan.md、enterprise-review-snapshot-preparation-v1-report.md及候选交接信息；
+- docs/enterprise/implementation/enterprise-empty-option-removal-v1-plan.md、enterprise-empty-option-removal-v1-report.md及实际命中/未命中清单；
 - Excel 计划/实施报告若已存在则读取作为辅助；缺少单独报告不阻塞，直接读取下面规定的本地根目录工作簿。
 
 报告变更路径时先在本地用 rg 找到真实文件并核对内容/HEAD，不要求用户上传。某报告缺失时先尝试实际代码、文件与测试直接核验；只有无法获取完成具体检查所需的事实时才记录对应 EVIDENCE_GAP。
@@ -195,3 +197,13 @@ PASS 后由用户在实际页面与根目录 Excel 做简短人工验收，再�
 4. SNAPSHOT_READY只证明版本准备。另核对测试/build证据和已知剩余失败；原工作树的证据仅在实现及相关环境等价可证明时复用，缺失部分按真实影响补跑。
 5. 开始与结束复核核对候选HEAD、受审源码/配置及Excel hash。只有本次报告/证据和明确的隔离临时输出可变化；需要修改实现时结束本次复核，由实施者另行处理并提交新版本。
 6. 纯未提交导致的缺口准确归为无法固定/还原版本，不自动等同生产缺陷；已证实真实失败仍按第6节判定。保留原报告结论和当时证据，新报告独立给出关闭理由。没有完整固定版本证据不能整体PASS。
+
+## 10. 字面“（空）”选项修正复核
+
+先按第9节核对包含本次修正的新候选，再按 `remediation/enterprise-empty-option-removal-v1.md` 核验：
+
+1. 五模块实际选择入口检查清单完整，所有命中的可选“（空）”文字项及其注入来源已处理；核实确有同义半角“(空)”时同样检查，不按包含“空”字模糊清理。
+2. 受影响控件无值显示灰色不可选“请选择”，已有合法值正常回显、不默认首项、不把placeholder写入业务值；级联/刷新/重开不重新注入该选项。
+3. 真正null/空字符串、原nullable/required及其他正常候选保持，没有按value真假值/空值全局过滤。MOX客户类别用户确认没有该项，按实际未命中保留，不要求改其合法空值测试。
+4. 静态/动态来源、共享控件及真实菜单均有证据；测试只修要求渲染字面标记的过期预期，保留真实空值fixture和精确集合。客户关系、错误边界及其他共享消费者按实际影响回归。
+5. 无SQL/Excel/历史数据清洗，保留原finding与未完成项。在第6节唯一报告记录新HEAD证据和实际未运行项，不把实施自测视为独立通过，也不重复审查未受影响且证据有效的历史范围。

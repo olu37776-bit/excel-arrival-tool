@@ -6,11 +6,11 @@
 
 ---
 
-## 0. 当前先收口未提交改动并固定复核版本
+## 0. 当前修正下拉选项字面文字“（空）”
 
-用户最新补充：之前独立复核返回大量改动未提交，无法在稳定HEAD完成核验。先由实施者按 `integration/enterprise-review-snapshot-preparation-v1.md` 盘点并提交已授权企业实现，固定实际运行的候选版本；独立审查者不代提交、不边审边改。云端未读取本地完整报告和git状态，不推定原报告全部结论。
-本地commit不需联网或先push。受审代码/测试及可执行依赖必须完整进入候选；Excel继续用真实路径/hash固定，报告/证据及已证明不影响运行的本地文件不要求清空或入Git。
-三个迁移/DB测试仍按专项V1恢复实际完成状态；已执行历史SQL不改，真实完整链仍须验证最终结构。行业选项V1保留已授权及实际进度，不重做、不混入无关修改。稳定版本与测试通过分别记录，未关闭finding不因提交自动消失。
+用户最终要求：删除五模块字段下拉中实际显示字面“（空）”的选项，受影响控件未选择时显示不可选“请选择”，已有值正常回显。按 `remediation/enterprise-empty-option-removal-v1.md` 执行。
+本次不是空值清理，null/空字符串/合法未填写及原nullable/required保持。MOX客户类别用户确认没有该选项，记录未命中并保持；其他未命中控件同样不改，不因旧文档提到空值就调整它。
+先盘点实际选项来源和未提交改动归属，再完成本次修正并按快照准备V1精确本地提交，固定新候选后独立复核。旧候选及报告保留，不边审边改；Excel不入Git、历史SQL不改，本地commit无需push。行业及迁移任务保留真实进度，不重做、不自行标通过。
 
 ## 1. 当前正式 Authority
 
@@ -49,7 +49,8 @@
 | 29 | `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` | 测试失败分类、过期预期/fixture维护及真实回归处理 | 此前修复已报告；最新迁移残留按专项V1 |
 | 30 | `enterprise-industry-options-authority-v1.md` | ISP/电力/大企行业选项、共享链路和测试同步 | 已授权，完成状态待回执；与迁移测试修复分开 |
 | 31 | `remediation/enterprise-migration-schema-test-alignment-v1.md` | 历史迁移不可改、版本化schema预期、完整链与物理列集合 | 已授权；恢复实际进度并纳入候选，尚无完成回执 |
-| 32 | `integration/enterprise-review-snapshot-preparation-v1.md` | 盘点未提交实现、精确本地提交、隔离候选及交接 | **当前执行：先形成完整稳定的受审版本** |
+| 32 | `integration/enterprise-review-snapshot-preparation-v1.md` | 盘点未提交实现、精确本地提交、隔离候选及交接 | 持续门禁：本次修正提交后固定新候选 |
+| 33 | `remediation/enterprise-empty-option-removal-v1.md` | 仅清理字面“（空）”选项；无值显示请选择，真实空值保留 | **当前执行：已授权待本地实施** |
 
 ---
 
@@ -62,7 +63,10 @@
 ```text
 PREVIOUS_REVIEW = USER_REPORTED_NO_BLOCKERS
 PREVIOUS_MANUAL_CHECK = BASICALLY_ACCEPTABLE_WITH_HOME_ISSUES
-CURRENT_TASK = ENTERPRISE_REVIEW_SNAPSHOT_PREPARATION_V1
+CURRENT_TASK = ENTERPRISE_LITERAL_EMPTY_OPTION_REMOVAL_V1
+LITERAL_EMPTY_OPTION_REMOVAL = AUTHORIZED_PENDING_IMPLEMENTATION
+AFFECTED_UNSELECTED_PLACEHOLDER = 请选择
+ACTUAL_NULL_VALUES = PRESERVE_EXISTING_CONTRACT
 INDUSTRY_OPTIONS = AUTHORIZED_PENDING_IMPLEMENTATION
 EXCEL_CONFIRMED_DELTA_V1 = IMPLEMENTED_REPORTED
 HOME_ROUTE_REPAIR = IMPLEMENTED_REPORTED
@@ -283,11 +287,11 @@ field identity 必须 canonical；中文 label 只展示。
 
 ## 10. 当前推进顺序
 
-1. 更新Authority，读取最近独立报告，盘点全部暂存/未暂存及未跟踪实现，按已授权需求建立文件/必要hunk归属与依赖矩阵；不重复启动对脏工作树的完整审查。
-2. 恢复三个迁移/DB测试修复及行业选项的真实进度。迁移测试尚未完成则按其专项执行；已经完成的实现不重做，已执行历史SQL不改。
-3. 按快照准备V1精确暂存并本地提交已核实的企业实现、完整依赖及必要报告，保留无关工作与Excel；不要求push，不全量add，不reset/clean。
-4. 固定REVIEW_CANDIDATE_HEAD与实际运行目录；原工作树其他源码可能影响核验时从候选创建隔离review worktree。记录可信验证、剩余失败、Excel路径/hash和排除文件，SNAPSHOT_READY不等于功能PASS。
-5. 新独立会话按联合复核V1第9节恢复准确候选，再执行第7/8节及实际业务范围。若仍有具体缺口/有效失败，按既有授权继续对应修复，不靠提交或改预期掩盖。
+1. 更新Authority，读取最近报告，恢复未提交改动归属和已有候选，确认无并发审查/写入。
+2. 按字面“（空）”选项修正规范检查五模块真实菜单及来源，形成命中/未命中清单和最小WRITE_SCOPE；MOX客户类别未命中则保持。
+3. 只修命中选项及其直接共享来源，受影响控件无值显示不可选“请选择”，保留真实空值和其他业务行为，同步相关测试并核验实际UI。
+4. 按快照准备V1精确本地提交本次完整实现/测试，固定新REVIEW_CANDIDATE_HEAD及运行目录。既有行业/迁移任务按实际进度保留，旧finding不因提交自动关闭。
+5. 新独立会话按联合复核第9节核对候选、第10节验证本次字面选项修正，其余范围按实际影响及可信证据核验。
 
 ---
 
