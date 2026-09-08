@@ -220,14 +220,14 @@ battleProgress 文本字段
 
 双写会产生一致性问题，目标态不可接受。
 
-结合现有“独立新增进展弹窗、追加、编辑、历史”行为，最终原则是：
+结合现有“表单内展开新增进展、独立新增/编辑弹窗、历史”行为，最终原则是：
 
 > **进展历史表是 Progress 唯一持久化 Authority。**
 
 `battleProgress` 保留为 canonical 业务身份，但它的角色调整为：
 
 - 表格/详情中的“当前/最新作战进展”投影；
-- Create/Edit 中特殊 Progress editor 的业务入口；
+- Create/Edit中的特殊Progress editor入口，按主分支同模块同模式保留原有能力；新增与编辑可以不同，不将摘要/历史或展开区硬套到另一模式。原本具备最新摘要、新增按钮、表单内主题/内容展开编辑的页面不得降级为整个区域readonly；
 - 从进展历史关系读取，不在 MOX 业务表维护第二份可写文本事实。
 
 目标链：
@@ -242,7 +242,8 @@ Progress History
 写入链：
 
 ```text
-独立新增/编辑进展 UI
+表单内展开的进展编辑 / 独立新增编辑进展 UI
+→ 共享进展操作与适配
 → Progress API
 → Progress History table
 ```
@@ -251,7 +252,8 @@ Progress History
 
 - 同一操作同时写 history 和 business-table text；
 - history 与 `battleProgress` column 互相兜底；
-- 用普通 textarea 取代现有特殊进展能力。
+- 用普通textarea或仅readonly摘要取代原有特殊进展能力；
+- 以独立历史/新增弹窗存在为由删除表单内原有展开新增入口。
 
 ### 7.1 数据收敛
 
@@ -270,6 +272,14 @@ history latest projection
 - 无法可靠保留历史语义/时间信息：阻塞并报告，不得静默丢数据或伪造业务时间。
 
 Schema 变更继续使用 `V*.sql + _migrations + transaction`。
+
+---
+
+### 7.2 UI命名与主分支行为基线
+
+用户确认这里只统一可见“进展”文案为“作战进展”，保留最新/新增等限定词，例如最新作战进展、新增作战进展、作战进展主题/内容。不得连带改canonical key、API/DB身份、用户正文或历史数据。
+本地应用主分支MOX/TOB的对应Create/Edit是参照，必须保留模式差异。此次只核对底部固定取消/保存按钮样式及进展区域功能/样式；不扩大为整体表单字体、布局或其他字段改造。双滚动用户确认原本如此，不以数量直接判错。
+共享机制必须承载这些既有能力，History单一存储约束不限制只能有一个UI入口；也不授权复制旧模块整套模板或恢复双写。精确接线和旧提交/取消时机按 `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` 对照，本轮只调查不实施。
 
 ---
 
@@ -361,7 +371,9 @@ click-to-filter
 - 单一 history persistence；
 - 双写为 0；
 - latest projection 正确；
-- 添加/编辑进展后读取一致。
+- 添加/编辑进展后读取一致；
+- 按主分支同模式验证原有表单内按钮、主题/内容编辑及独立入口，不要求Create/Edit相同，不能只测readonly摘要或仅测独立popup；
+- 文案统一不改变原展开/取消/保存语义及业务字段身份。
 
 ### 11.6 Database
 

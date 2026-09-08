@@ -6,12 +6,12 @@
 
 ---
 
-## 0. 当前先调查新增/编辑双滚动与作战进展差异
+## 0. 当前仅对照两块：底栏取消/保存按钮、作战进展
 
-用户人工打开页面发现新增/编辑窗口内外两条竖向滚动条，怀疑套了两层；表单中的作战进展与独立新增进展弹窗不同，参照弹窗还有标题和内容。用户明确本轮先指导本地调查。
-当前按 `investigation/enterprise-form-scroll-progress-survey-v1.md` 只读恢复五模块实际入口、组件/DOM/滚动链和进展标题/内容映射。双滚动不直接等于双弹窗；弹窗标题栏与进展业务标题须区分，不预设根因或新增字段。
-仅写调查报告/证据，不改生产代码、CSS、测试、SQL、Excel或业务库，不提交、不自动修复。允许调查当前含未提交改动的运行现场，但记录BASE_HEAD、相关差异/hash和实际服务版本；这不是固定HEAD独立验收，不能借调查结论宣布VERIFIED。
-既有首页展示、字面选项、行业、迁移及快照准备任务保持各自授权和真实进度，本调查会话不混做，也不推定它们已完成。
+用户已指定本地BattleMap应用主分支MOX/TOB为旧实现基线，并再次限定只有两块：底部取消/保存按钮与固定底栏样式；作战进展区域的功能和样式。新增页和编辑页原本不同，按主分支同模块同模式分别对照，不能强行统一。
+进展只改可见文案，加“作战”并保留最新/新增等限定词，不改字段key、历史数据或保存语义；原本存在的表单内新增/主题/内容展开能力不能用readonly摘要加独立弹窗替代。
+双滚动用户确认可接受，其他字段、整体表单样式和布局不动。当前按 `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` 只读对照并报告两块区域的准确差异，不现场修复，不重新设计。
+V1报告保留为历史；共享规范已明确单一History不限制多个UI入口，并要求保留Create/Edit原有差异。其他任务保持实际进度。
 
 ## 1. 当前正式 Authority
 
@@ -52,7 +52,8 @@
 | 31 | `remediation/enterprise-migration-schema-test-alignment-v1.md` | 历史迁移不可改、版本化schema预期、完整链与物理列集合 | 已授权；恢复实际进度并纳入候选，尚无完成回执 |
 | 32 | `integration/enterprise-review-snapshot-preparation-v1.md` | 盘点未提交实现、精确本地提交、隔离候选及交接 | 持续门禁：本次修正提交后固定新候选 |
 | 33 | `remediation/enterprise-empty-option-removal-v1.md` | 仅清理字面“（空）”选项；无值显示请选择，真实空值保留 | 已授权，完成状态待回执；保留实际进度 |
-| 34 | `investigation/enterprise-form-scroll-progress-survey-v1.md` | 双滚动/重复外壳取证，作战进展与独立弹窗标题/内容对照 | **当前执行：只读调查，不修复** |
+| 34 | `investigation/enterprise-form-scroll-progress-survey-v1.md` | 前轮调查任务及证据背景 | SUPERSEDED；用户报告结果已出，口径由V2纠正 |
+| 35 | `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` | 主分支MOX/TOB分Create/Edit对照：底栏按钮、进展两块 | **当前执行：只读对照，先不修复** |
 
 ---
 
@@ -65,10 +66,15 @@
 ```text
 PREVIOUS_REVIEW = USER_REPORTED_NO_BLOCKERS
 PREVIOUS_MANUAL_CHECK = BASICALLY_ACCEPTABLE_WITH_HOME_ISSUES
-CURRENT_TASK = ENTERPRISE_FORM_SCROLL_PROGRESS_SURVEY_V1
-FORM_SCROLL_PROGRESS_SURVEY = AUTHORIZED_READ_ONLY
-DOUBLE_SCROLL_ROOT_CAUSE = UNCONFIRMED
-PROGRESS_UI_DIFFERENCE = USER_REPORTED_PENDING_INVESTIGATION
+CURRENT_TASK = ENTERPRISE_FORM_PROGRESS_LEGACY_PARITY_SURVEY_V2
+FORM_SCROLL_PROGRESS_SURVEY = REPORT_REPORTED_SCOPE_SUPERSEDED
+FORM_PROGRESS_LEGACY_PARITY_SURVEY = AUTHORIZED_READ_ONLY
+SURVEY_SCOPE = FOOTER_BUTTON_STYLE_AND_PROGRESS_AREA_ONLY
+CREATE_EDIT_BEHAVIOR = PRESERVE_MODE_SPECIFIC_MAIN_BASELINE
+LEGACY_UI_REFERENCE = LOCAL_BATTLEMAP_MAIN_MOX_AND_TOB
+DOUBLE_SCROLL = USER_CONFIRMED_ACCEPTABLE
+PROGRESS_UI_DIFFERENCE = USER_REPORTED_INLINE_CONTROLS_MISSING
+PROGRESS_NAMING = UI_TEXT_ONLY_PRESERVE_BEHAVIOR
 HOME_CARD_LAYOUT_UNIT = AUTHORIZED_PENDING_IMPLEMENTATION
 ENTERPRISE_SPECIAL_TITLE_COLOR = MATCH_EXISTING_SPECIAL_TITLE_BLUE
 HOME_REALTIME_CALCULATION = USER_REPORTED_PRESENT
@@ -273,7 +279,8 @@ customers.customer_id
 ```text
 Progress History = 唯一持久化事实源
 battleProgress = latest/current canonical projection
-独立进展弹窗 = History 新增/编辑入口
+表单内展开编辑 + 独立进展弹窗 = 共用History操作的UI入口
+只读最新摘要 != 整个进展区域只读
 ```
 
 ### Heatmap
@@ -296,11 +303,11 @@ field identity 必须 canonical；中文 label 只展示。
 
 ## 10. 当前推进顺序
 
-1. 更新Authority，读取实际报告、运行来源和工作树差异，停止对同一运行链的并发写入；本次调查不要求先完成本地commit。
-2. 按调查V1核对五模块Create/Edit及独立新增进展入口，记录复现/未复现/未运行，先对真实命中完整取证。
-3. 定位内外滚动节点、组件/DOM及高度/overflow来源，区分重复外壳、双滚容器、背景滚动与合法编辑器内部滚动。
-4. 对照进展标题/内容/样式、editor绑定及History投影，区分业务标题与外壳标题，确认两问题是否同根因；只读检查旧版本/差异和测试缺口。
-5. 写唯一调查报告、证据和建议文件级修复范围，明确事实/假设/缺项后停止。后续再据报告制定定向修复，不现场改代码或自动进入独立验收。
+1. 更新Authority，读取V1实际报告，记录本地应用主分支/功能分支SHA、当前未提交diff与运行版本；调查不要求先commit。
+2. 直接读取主分支MOX/TOB的表单、进展组件、footer、样式和保存事件，与功能分支对应代码/页面对照，不切换或覆盖当前树。
+3. 按V2分模块分Create/Edit只核对两块：固定底栏取消/保存按钮样式、进展区域原有功能/样式。各模式按主分支实际能力对照，不强行一致，不扩展整体表单字体/布局。
+4. 核对当前共享registry/projection/editor/slot接线及History操作，给出丢失位置/原因；其他三模块按同类交互和独立字段契约检查。不消除双滚动。
+5. 在指定V2新报告中保留主分支证据、修正旧等价判断、列最小恢复范围后停止。只改名不代表允许重写模型；正式实施另行按证据确定范围。
 
 ---
 

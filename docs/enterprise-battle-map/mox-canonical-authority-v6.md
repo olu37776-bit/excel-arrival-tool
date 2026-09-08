@@ -212,7 +212,8 @@ Progress history
 
 独立新增/编辑进展弹窗继续操作 Progress History。
 
-Create/Edit 中如展示作战进展，必须通过特殊 progress editor / history projection，不得写 MOX 业务表第二份文本。
+Create/Edit中的作战进展通过特殊progress editor/history projection承载主分支MOX对应模式的原有能力。新增与编辑可以不同，不强制共享同一可见交互；原本有摘要、表单内新增按钮和主题/内容展开区的模式不得仅保留readonly摘要并让独立popup替代。不得写MOX业务表第二份文本。
+仅将可见“进展”文案加“作战”，保留最新/新增等限定词，canonical身份和字段总数不变。本次仅对照固定底栏取消/保存按钮样式和进展区域，按主分支同模式保留；其他表单区域不动；当前差异按 `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` 只读调查。
 
 ### 数据收敛
 

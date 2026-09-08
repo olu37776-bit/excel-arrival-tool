@@ -206,7 +206,8 @@ MOX 的业务行为是 Reference，MOX 的私有 builder 不是长期 Reference�
 - form-level validation presentation；
 - group container；
 - group spacing；
-- form-level layout。
+- form-level layout；
+- 按本地主分支MOX/TOB对应模式保留固定取消/保存底栏及按钮样式，内容滚动时操作栏不被卷走；本次不扩大为其他字段或整体表单样式改造。
 
 模块页面只允许提供：
 
@@ -414,11 +415,13 @@ Progress History
 → battleProgress
 ```
 
-独立 Progress popup 必须保留。
+独立Progress popup必须保留，但不能代替原表单内新增入口。主分支MOX/TOB对应模式原有能力须由共享特殊editor承载；Create/Edit原本不同，不能强制相同或把某模式的摘要/展开编辑复制到另一模式。原本具备摘要、展开新增按钮及主题/内容编辑的入口不得退化成整个区域readonly。
+用户仅要求进展可见文案加“作战”，保留限定词及原模式功能/保存语义；当前只对照底栏按钮样式和进展区域两块，其他表单字体/布局不动。双滚动用户确认可接受，不以滚动条数量判断共享失败。当前先按 `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` 只读对照，不继承本文件历史实施写入权限。
 
 Shared Form Renderer 只处理 Contract 投影到表单时的 editor binding，不得：
 
-- 把 popup 降级为 textarea；
+- 把popup或原表单内特殊editor降级为普通textarea/仅readonly摘要；
+- 因独立popup存在而删除表单内原有新增按钮与展开区；
 - 恢复 business-table progress text；
 - double write；
 - fallback。
