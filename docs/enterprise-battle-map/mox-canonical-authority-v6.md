@@ -212,8 +212,10 @@ Progress history
 
 独立新增/编辑进展弹窗继续操作 Progress History。
 
-Create/Edit中的作战进展通过特殊progress editor/history projection承载主分支MOX对应模式的原有能力。新增与编辑可以不同，不强制共享同一可见交互；原本有摘要、表单内新增按钮和主题/内容展开区的模式不得仅保留readonly摘要并让独立popup替代。不得写MOX业务表第二份文本。
-仅将可见“进展”文案加“作战”，保留最新/新增等限定词，canonical身份和字段总数不变。本次仅对照固定底栏取消/保存按钮样式和进展区域，按主分支同模式保留；其他表单区域不动；当前差异按 `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` 只读调查。
+Create/Edit中的作战进展通过特殊progress editor/history projection承载同一UI结构：只读最新摘要、表单内可展开新增按钮、主题和内容两个可编辑输入。两者均不能仅保留readonly摘要并让独立popup替代；新增无历史时保留结构并显示合法空摘要。Create/Edit的父记录ID、草稿及保存时机按真实代码分别核实，不得写MOX业务表第二份文本。
+新增页、编辑页和独立“新增进展”弹窗必须纳入同一对照：四处原有名称（最新进展、新增进展、进展主题、进展内容）只做“作战”命名调整，其他原有功能、样式和交互不随改名变化。三入口的主题/内容语义、校验、payload、存储归属、父记录关联与保存后回显应一致；新增业务记录尚无ID等必要生命周期差异单独说明，不强行统一提交时机，也不把独立弹窗外壳套进表单。当前仅调查并报告差异，不执行改名或修复。
+
+仅将可见“进展”文案加“作战”，保留最新/新增等限定词，canonical身份和字段总数不变。本次仅查固定底栏取消/保存按钮样式和进展区域，后者包括主题/内容对应API及实际表列/关系/读取映射；其他表单区域不动；当前差异按 `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` 只读调查。
 
 ### 数据收敛
 

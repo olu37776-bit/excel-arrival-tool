@@ -6,12 +6,14 @@
 
 ---
 
-## 0. 当前仅对照两块：底栏取消/保存按钮、作战进展
+## 0. 当前重新调查：两块范围、Create/Edit同一进展结构及数据库映射
 
-用户已指定本地BattleMap应用主分支MOX/TOB为旧实现基线，并再次限定只有两块：底部取消/保存按钮与固定底栏样式；作战进展区域的功能和样式。新增页和编辑页原本不同，按主分支同模块同模式分别对照，不能强行统一。
-进展只改可见文案，加“作战”并保留最新/新增等限定词，不改字段key、历史数据或保存语义；原本存在的表单内新增/主题/内容展开能力不能用readonly摘要加独立弹窗替代。
-双滚动用户确认可接受，其他字段、整体表单样式和布局不动。当前按 `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` 只读对照并报告两块区域的准确差异，不现场修复，不重新设计。
-V1报告保留为历史；共享规范已明确单一History不限制多个UI入口，并要求保留Create/Edit原有差异。其他任务保持实际进度。
+新增页、编辑页和独立“新增进展”弹窗必须纳入同一对照：四处原有名称（最新进展、新增进展、进展主题、进展内容）只做“作战”命名调整，其他原有功能、样式和交互不随改名变化。三入口的主题/内容语义、校验、payload、存储归属、父记录关联与保存后回显应一致；新增业务记录尚无ID等必要生命周期差异单独说明，不强行统一提交时机，也不把独立弹窗外壳套进表单。当前仅调查并报告差异，不执行改名或修复。
+
+用户最新纠正：新增与编辑的进展UI都一样——只读最新进展、可点开展开的新增按钮、主题和内容两个可编辑输入。此前“新增/编辑进展结构不同”的前提撤销，不得继续用它解释缺少按钮或编辑区。
+调查仍只有底部固定取消/保存按钮样式、作战进展区域两块；后者必须追到主题/内容的真实model、API、表/列、父记录关联、保存及latest读取。相同UI不等于Create/Edit的ID与保存生命周期必须相同，分别查实，不重新设计。
+准确参照仍是本地BattleMap应用主分支MOX/TOB；仅给进展可见文案加“作战”，保留限定词与原行为，双滚动及其他表单区域不动。
+当前按 `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` 重写后的规范重新只读调查，旧报告/证据先归档，不修改代码、CSS、测试、SQL或数据，不commit/push、不自动修复。其他任务保持实际进度。
 
 ## 1. 当前正式 Authority
 
@@ -53,7 +55,7 @@ V1报告保留为历史；共享规范已明确单一History不限制多个UI入
 | 32 | `integration/enterprise-review-snapshot-preparation-v1.md` | 盘点未提交实现、精确本地提交、隔离候选及交接 | 持续门禁：本次修正提交后固定新候选 |
 | 33 | `remediation/enterprise-empty-option-removal-v1.md` | 仅清理字面“（空）”选项；无值显示请选择，真实空值保留 | 已授权，完成状态待回执；保留实际进度 |
 | 34 | `investigation/enterprise-form-scroll-progress-survey-v1.md` | 前轮调查任务及证据背景 | SUPERSEDED；用户报告结果已出，口径由V2纠正 |
-| 35 | `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` | 主分支MOX/TOB分Create/Edit对照：底栏按钮、进展两块 | **当前执行：只读对照，先不修复** |
+| 35 | `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` | 底栏按钮、Create/Edit同一进展结构及主题/内容数据库映射 | **当前执行：重新只读调查，不修复** |
 
 ---
 
@@ -68,9 +70,11 @@ PREVIOUS_REVIEW = USER_REPORTED_NO_BLOCKERS
 PREVIOUS_MANUAL_CHECK = BASICALLY_ACCEPTABLE_WITH_HOME_ISSUES
 CURRENT_TASK = ENTERPRISE_FORM_PROGRESS_LEGACY_PARITY_SURVEY_V2
 FORM_SCROLL_PROGRESS_SURVEY = REPORT_REPORTED_SCOPE_SUPERSEDED
-FORM_PROGRESS_LEGACY_PARITY_SURVEY = AUTHORIZED_READ_ONLY
-SURVEY_SCOPE = FOOTER_BUTTON_STYLE_AND_PROGRESS_AREA_ONLY
-CREATE_EDIT_BEHAVIOR = PRESERVE_MODE_SPECIFIC_MAIN_BASELINE
+FORM_PROGRESS_LEGACY_PARITY_SURVEY = REINVESTIGATION_AUTHORIZED_READ_ONLY
+SURVEY_SCOPE = FOOTER_BUTTON_STYLE_AND_PROGRESS_AREA_WITH_DB_MAPPING
+CREATE_EDIT_PROGRESS_UI = SAME_READONLY_LATEST_AND_EXPANDABLE_SUBJECT_CONTENT
+CREATE_EDIT_SAVE_LIFECYCLE = INVESTIGATE_SEPARATELY
+PROGRESS_STORAGE_MAPPING = PENDING_LOCAL_READ_ONLY_INVESTIGATION
 LEGACY_UI_REFERENCE = LOCAL_BATTLEMAP_MAIN_MOX_AND_TOB
 DOUBLE_SCROLL = USER_CONFIRMED_ACCEPTABLE
 PROGRESS_UI_DIFFERENCE = USER_REPORTED_INLINE_CONTROLS_MISSING
@@ -303,11 +307,11 @@ field identity 必须 canonical；中文 label 只展示。
 
 ## 10. 当前推进顺序
 
-1. 更新Authority，读取V1实际报告，记录本地应用主分支/功能分支SHA、当前未提交diff与运行版本；调查不要求先commit。
-2. 直接读取主分支MOX/TOB的表单、进展组件、footer、样式和保存事件，与功能分支对应代码/页面对照，不切换或覆盖当前树。
-3. 按V2分模块分Create/Edit只核对两块：固定底栏取消/保存按钮样式、进展区域原有功能/样式。各模式按主分支实际能力对照，不强行一致，不扩展整体表单字体/布局。
-4. 核对当前共享registry/projection/editor/slot接线及History操作，给出丢失位置/原因；其他三模块按同类交互和独立字段契约检查。不消除双滚动。
-5. 在指定V2新报告中保留主分支证据、修正旧等价判断、列最小恢复范围后停止。只改名不代表允许重写模型；正式实施另行按证据确定范围。
+1. 更新Authority，归档已有本次报告并纠正旧前提，记录本地应用main/feature版本、实际服务、相关未提交diff和数据库身份；不以先commit为调查前置。
+2. 对照主分支MOX/TOB与当前Create/Edit，只查底栏取消/保存按钮样式和进展区域；两种模式都核验只读最新摘要、展开按钮及两个可编辑输入。
+3. 追踪主题/内容的model、API payload、handler、实际表列、父记录关联及最新读取规则，分别核实Create/Edit提交/取消/刷新生命周期和存储归属。
+4. 只读检查实库schema/迁移登记与必要最小证据，区分实库观察、源码路径和未执行的保存往返，不用“History”概念代替具体映射。
+5. 在指定报告/唯一新证据目录记录根因、缺项和最小建议范围后停止。不清除双滚动，不改其他区域，不现场修复。
 
 ---
 
