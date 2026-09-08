@@ -6,11 +6,11 @@
 
 ---
 
-## 0. 当前测试修复后的联合独立复核
+## 0. 当前新增行业选项调整
 
-用户最新报告“修复好了”。测试预期对齐与根目录工作簿核对任务记为 IMPLEMENTED_REPORTED，具体修复项、测试结果和实物证据须由本地报告恢复，不能据此标 VERIFIED。
-当前执行 `reviews/enterprise-home-and-excel-delta-independent-review-v1.md`，重点按第7节复核本次失败处置和断言强度，覆盖旧 findings、根目录 Excel 实物与实际受影响的首页/五模块行为。不再次启动已报告完成的实施任务。
-工作簿仍不要求入 Git，也不要求单独 Excel 实施报告。直接读取实际文件并固定路径/hash，原审查报告保留历史；本次对新 HEAD 给出独立结论。
+用户新增要求：ISP行业只有“ISP”，电力行业只有“电力”，大企行业为“油气矿、广电、交通”。当前执行 `enterprise-industry-options-authority-v1.md`，三份模块规范已同步选项，字段总数/身份和其他字段规则不变。
+前轮测试残留修复已报告完成，独立复核尚无新回执，不能标记通过；旧报告和证据保留。若旧审查仍运行，保存其报告并结束读取后再写入行业选项改动，避免同一工作树并发改变受审快照。
+本轮按新规范完成契约/共享选项链、实际直接消费者及测试预期同步。Excel继续留在本地；旧表验证列表不覆盖这次用户明确选项，也不阻塞应用调整。
 
 ## 1. 当前正式 Authority
 
@@ -38,15 +38,16 @@
 | 18 | `integration/parallel-module-integration-plan-v1.md` | TOB/ISP/电力+大企合并规则 | 集成历史/回归参考 |
 | 19 | `integration/local-worktree-layout-v1.md` | 本地真实worktree路径 | 本地执行必读 |
 | 20 | `tob-canonical-authority-v2.md` | TOB当前字段和3-group业务基线 | 已同步两项确认增量；其他字段不变 |
-| 21 | `isp-canonical-authority-v2.md` | ISP当前字段和3-group业务基线 | 已同步两项确认增量；其他字段不变 |
-| 22 | `power-canonical-authority-v2.md` | 电力当前字段和3-group业务基线 | 已同步两项确认增量；其他字段不变 |
-| 23 | `large-enterprise-canonical-authority-v2.md` | 大企当前字段和3-group业务基线 | 已同步两项确认增量；其他字段不变 |
+| 21 | `isp-canonical-authority-v2.md` | ISP当前字段和3-group业务基线 | 已同步字段删除及行业选项V1 |
+| 22 | `power-canonical-authority-v2.md` | 电力当前字段和3-group业务基线 | 已同步字段删除及行业选项V1 |
+| 23 | `large-enterprise-canonical-authority-v2.md` | 大企当前字段和3-group业务基线 | 已同步字段删除及行业选项V1 |
 | 24 | `enterprise-home-canonical-authority-v4.md` | 首页间距、全局场景卡样式/数字、已下单金额实时汇总、空间拓展及双层导航；含本地实施步骤/产物 | 业务基线；当前联合独立复核 |
 | 25 | `enterprise-excel-confirmed-delta-v1.md` | 删除指定分类字段、更新大企表名、对应契约和验证 | 用户报告字段删除完成；具体两项与输出待核验 |
 | 26 | `remediation/enterprise-home-route-blocker-repair-v1.md` | 读取本地报告、修复真实点击链路、浏览器导航证据 | 用户报告修复完成；待独立复核 |
 | 27 | `reviews/authority-consistency-audit-2026-09-07.md` | 2026-09-07文档一致性核对快照 | 历史核对；当前状态以本索引为准 |
-| 28 | `reviews/enterprise-home-and-excel-delta-independent-review-v1.md` | 同一新HEAD核验首页修复、Excel增量与联合回归 | **当前执行：第7节测试修复后的联合独立复核** |
+| 28 | `reviews/enterprise-home-and-excel-delta-independent-review-v1.md` | 同一新HEAD核验首页修复、Excel增量与联合回归 | 前轮复核仍待结果；保留对应HEAD证据 |
 | 29 | `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` | 测试失败分类、过期预期/fixture维护及真实回归处理 | 用户报告修复完成；保留修复规则供复核 |
+| 30 | `enterprise-industry-options-authority-v1.md` | ISP/电力/大企行业选项、共享链路和测试同步 | **当前执行：已授权待实施** |
 
 ---
 
@@ -59,12 +60,14 @@
 ```text
 PREVIOUS_REVIEW = USER_REPORTED_NO_BLOCKERS
 PREVIOUS_MANUAL_CHECK = BASICALLY_ACCEPTABLE_WITH_HOME_ISSUES
-CURRENT_TASK = POST_TEST_ALIGNMENT_JOINT_INDEPENDENT_REVIEW
+CURRENT_TASK = ENTERPRISE_INDUSTRY_OPTIONS_V1
+INDUSTRY_OPTIONS = AUTHORIZED_PENDING_IMPLEMENTATION
 EXCEL_CONFIRMED_DELTA_V1 = IMPLEMENTED_REPORTED
 HOME_ROUTE_REPAIR = IMPLEMENTED_REPORTED
 HOME_V4_PREVIOUS_REVIEW = USER_REPORTED_BLOCKER
 PREVIOUS_JOINT_REVIEW = USER_REPORTED_BLOCKED
-CURRENT_INDEPENDENT_REVIEW = PENDING_REREVIEW
+PREVIOUS_POST_TEST_ALIGNMENT_REVIEW = PENDING_RESULT
+INDUSTRY_OPTIONS_REVIEW = NOT_STARTED
 TEST_FAILURES = FIX_REPORTED_CLOSURE_UNVERIFIED
 TEST_ALIGNMENT = IMPLEMENTED_REPORTED
 EXCEL_SOURCE = USER_CONFIRMED_LOCAL_ROOT_FILE
@@ -74,7 +77,7 @@ HOME_V4_IMPLEMENTATION = IMPLEMENTED_REPORTED
 MANUAL_ACCEPTANCE_AFTER_REPAIR = PENDING
 ```
 
-旧首页报告与人工检查曾发现跳转阻塞，现用户报告首页和字段删除均已完成。用户现又报告测试残留修复完成，本轮以新 HEAD、修复差异和本地实物独立确认旧 findings 的处置；其他检查不因用户简短回执自动 PASS。既有机制保持受影响范围回归。
+旧首页报告与人工检查曾发现跳转阻塞，现用户报告首页和字段删除均已完成。用户现又报告测试残留修复完成，其独立复核结果尚待回执；本轮新增行业选项任务不意味着旧 findings 已关闭，具体历史结论按对应 HEAD 保存。既有机制保持受影响范围回归。
 
 ---
 
@@ -186,7 +189,7 @@ renderer 必须根据 Contract 自然产生 4-group 或 3-group，不允许通�
 - 全局首页企业场景进入企业首页，MOX/TOB/ISP&大企三卡进入各自约定子页。
 
 本轮用户已明确授权首页工作，旧“首页 DEFERRED/最后建设”的阶段安排不阻塞此任务。Excel V0.2 未授权字段变化继续独立处理。
-当前按联合独立复核 V1 第7节检查修复后新 HEAD，旧首页 findings 和实施基线保留；具体执行的回归以实际代码/测试变化及有效证据为准。
+首页业务规则不变；前轮复核待结果，本次行业选项变更后仅按实际影响回归首页与共享消费者，旧报告不改写。
 
 ---
 
@@ -260,6 +263,8 @@ field identity 必须 canonical；中文 label 只展示。
 
 ## 9. Excel V0.2 协调
 
+行业选项另有用户已确认增量 `enterprise-industry-options-authority-v1.md`，已同步三模块规范；不受下面“未确认差异”冻结限制，不改变字段总数。
+
 两项确认增量已正式进入当前字段 Authority：仅删除“整体空间（肥肉/瘦肉/骨头）”分类字段，大企表名为“大企（油气矿、广电、交通）”。其他字段、金额、跳数及业务规则保持不变。
 当前目标字段总数：MOX 40、TOB 33、ISP 24、电力27、大企25。视图字段按各 Contract 的 visibility/mode 派生；这些数字不表示 Excel、代码或数据库已经完成迁移。
 
@@ -270,11 +275,11 @@ field identity 必须 canonical；中文 label 只展示。
 
 ## 10. 当前推进顺序
 
-1. 新独立审查会话更新 Authority，读取联合旧报告、测试预期对齐计划/实施报告、失败矩阵和实际代码差异。
-2. 固定新 REVIEWED_HEAD 与根目录 workbook hash，确认本次修复已包含在受审版本中。
-3. 按联合复核 V1 第7节检查失败处置、断言强度与旧 findings，执行必要测试及首页/字段/数据保留回归。
-4. 归档旧联合报告，在既定路径写入新结论和证据；不现场修改代码、测试或 Excel。
-5. PASS 后人工验收，FAIL 进入明确的定向修复，PARTIAL 补齐具体缺项；不因同一实现重复建设已完成部分。
+1. 更新 Authority，保留前轮审查状态，核实同一工作树不再被并发审查。
+2. 按行业选项 V1恢复真实industry字段、选项、客户关联和实际消费者，写最小计划/WRITE_SCOPE。
+3. 实施三模块选项调整，同时维护相关测试预期；其他字段与历史数据保持。
+4. 完成针对性回归和必要构建，保存行业选项实施报告，提交本轮拥有的改动，只声明IMPLEMENTED。
+5. 新HEAD独立核验本范围及受影响功能，结合前轮复核实际结果再人工验收。
 
 ---
 

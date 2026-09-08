@@ -1,6 +1,6 @@
 # 企业作战地图：大企 Canonical Authority V2
 
-**状态：CURRENT FIELD AUTHORITY / 已同步 Excel 确认增量；本地实施与验证状态见 authority-index.md**  
+**状态：CURRENT FIELD AUTHORITY / 已同步 Excel 确认增量及行业选项 V1；本地实施与验证状态见 authority-index.md**  
 **文档分支：`enterprise-battle-map-authority`**  
 **本地实施分支：`feature/enterprise-battle-map`**  
 **取代文档：`large-enterprise-canonical-authority-v1.md`**  
@@ -53,6 +53,8 @@ Authority 优先级：用户最新明确要求 → authority-index.md 指定的�
 | 4 | `customerId` | 客户ID |
 | 5 | `customerName` | 客户名称 |
 | 6 | `industry` | 行业 |
+
+**行业选项（用户已确认）：油气矿、广电、交通。** 仅为本模块可选行业；通过现有 Field Contract/optionSet 和共享 Runtime Options 消费，精确规则见 `enterprise-industry-options-authority-v1.md`。其他模块候选不得混入，编辑只读及客户关联规则不变。本次只调整选项，不新增字段，不批量改写历史数据。
 
 大企不包含客户类别。
 
@@ -122,6 +124,8 @@ Authority 优先级：用户最新明确要求 → authority-index.md 指定的�
 每个 source=excel 字段必须从 `大企（油气矿、广电、交通）` Sheet 填写真实 Sheet、列、Row2分类、Row3原文和 Data Validation。
 
 `customerId`标记为 `source: 'requirement'`。
+
+`industry` 的本次选项以用户明确要求为准，保留字段原有 Excel 来源信息，并记录选项要求来源；旧 Excel 验证列表不能覆盖行业选项 V1。
 
 每个字段必须定义：canonical key、label、section、order、data type/unit、table/create/edit、API read/create/update、`database.js`映射、SQLite列、Validation和特殊行为。
 
@@ -200,6 +204,8 @@ Authority 优先级：用户最新明确要求 → authority-index.md 指定的�
 10. 9个统计和9个点击筛选正确；
 11. Heatmap生命周期和空状态正确；
 12. API/DB映射、Migration、新库、升级库、全量测试和build通过。
+
+行业选项补充门禁：大企 的真实可选集合严格为“油气矿、广电、交通”，经生产共享 options/form 链消费；现有客户级联、保存/重读、编辑只读与相关筛选无回归。按行业选项 V1 同步测试预期，原字段数和客户关系身份保持。
 
 人工页面验收由用户执行。
 
