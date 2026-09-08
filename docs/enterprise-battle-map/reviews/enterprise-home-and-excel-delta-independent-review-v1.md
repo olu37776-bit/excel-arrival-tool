@@ -1,6 +1,6 @@
 # 首页修复与 Excel 确认增量：联合独立复核 V1
 
-**状态：CURRENT INDEPENDENT REVIEW / IMPLEMENTED_REPORTED / PENDING_VERIFICATION**  
+**状态：CURRENT REVIEW RULES / 用户报告前轮阻塞，修复后按本规则复核**  
 **依据：2026-09-08 用户报告“首页和那个删除字段都完成了”**  
 **代码工作树：D:\BattleMap\battle-map / feature/enterprise-battle-map**
 
@@ -28,14 +28,14 @@ git -C "D:\BattleMap\BattleMapenterprise-authority" pull --ff-only origin enterp
 - docs/enterprise/reviews/enterprise-home-v4-independent-review.md 及历史 findings/证据；
 - docs/enterprise/implementation/enterprise-home-polish-v4-plan.md 和 enterprise-home-polish-v4-report.md；
 - docs/enterprise/implementation/enterprise-home-route-repair-v1-plan.md 和 enterprise-home-route-repair-v1-report.md；
-- docs/enterprise/implementation/enterprise-excel-confirmed-delta-v1-plan.md 和 enterprise-excel-confirmed-delta-v1-report.md。
+- Excel 计划/实施报告若已存在则读取作为辅助；缺少单独报告不阻塞，直接读取下面规定的本地根目录工作簿。
 
-报告变更路径时先在本地用 rg 找到真实文件并核对内容/HEAD，不要求用户上传。缺失输入应记录具体 EVIDENCE_GAP，继续其他可完成核验，不编造结果。
-从报告定位真实 workbook 输入、备份、输出和相关 hash。不要凭文件修改时间在多个候选中猜测。
+报告变更路径时先在本地用 rg 找到真实文件并核对内容/HEAD，不要求用户上传。某报告缺失时先尝试实际代码、文件与测试直接核验；只有无法获取完成具体检查所需的事实时才记录对应 EVIDENCE_GAP。
+用户明确工作簿就在根目录且无需入 Git：先检查 D:\BattleMap\battle-map 根目录，必要时检查已知资料根 D:\BattleMap 的直属 Excel。用文件系统枚举，包括 Git ignored/untracked 文件，不得只执行 git ls-files 后宣称不存在。排除 Excel 锁文件，按名称、版本及真实 sheet/表头识别用户的当前文件，记录绝对路径和 SHA-256。存在多个无法区分的候选时列出具体冲突，不能凭最新修改时间猜测。
 
 记录 AUTHORITY_HEAD、两项 IMPLEMENTATION_HEAD、旧 REVIEWED_HEAD、当前 REVIEWED_HEAD、工作树状态以及运行服务的代码目录/版本。确认两项实现均包含在受审 HEAD 中，识别 docs-only 后续提交。
 受审生产代码/测试须已提交且无并发修改；若未提交，不由审查者提交或清理，完成可做的预检查并标记固定版本证据缺口。
-Excel 不在 Git 内则固定输入/输出 SHA-256，审查前后校验。Authority 拉取失败不能称最新；记录实际本地版本及缺项，继续有依据的部分。
+工作簿无需 Git 跟踪、Git 历史、单独输出副本或独立 Excel 实施报告。对实际选定的当前文件记录并复核 SHA-256 即可固定核验对象；现有旧输入/备份可补充历史对照，不是当前文件检查前置。Authority 拉取失败不能称最新；记录实际本地版本及缺项，继续有依据的部分。
 
 ## 3. 首页与历史 findings
 
@@ -62,16 +62,20 @@ Excel 不在 Git 内则固定输入/输出 SHA-256，审查前后校验。Author
 - 可参与总空间继续按已孵化 AND 跟踪的整体空间金额求和，其他空间指标按 V4 原公式；
 - 加载、0、失败可区分，返回首页刷新有效，不因字段删除或表名变化丢模块、错列、倍增或重复换算单位。
 
-## 4. Excel 文件核验
+## 4. 根目录 Excel 实物核验
 
-只读输入/备份与输出，对所有业务 sheet 逐项比较：
-1. 仅整列删除取值为“肥肉/瘦肉/骨头”的“整体空间”分类字段，包括字段表头、该列数据及对应验证；不能仅隐藏、清空或删除选项。
-2. 大企 sheet 名为“大企（油气矿、广电、交通）”；未额外新增交通 sheet 或改变业务模块身份。
-3. 其余字段、数据、相对顺序和业务含义保留，尤其整体空间金额、整体空间跳数、已下单金额。以字段身份对齐列删除前后数据，不用原列字母直接比较。
-4. 公式/名称/验证、合并表头、表格范围和其他实际受影响引用有效；允许必要的引用位置移动，不允许语义改变、#REF! 或格式/宏静默丢失。
-5. 输出可正常重新打开。原始工作簿和输出均不在审查中保存改写；不可取得旧输入/备份时明确无法证明“其他数据未变”的证据缺口。
+本轮以用户指出的根目录当前工作簿、当前字段契约和应用行为为核验对象，不要求重建 Excel 的历史编辑过程，也不要求补造单独实施报告。
+只读打开真实文件，逐表记录实际 sheet 名、完整表头、相关验证/数值字段、必要结构和解析结果：
 
-记录每表前后字段与结构摘要、输入/输出 hash 和差异判定，不上传真实业务数据。
+1. 每个业务表不再包含“整体空间（肥肉/瘦肉/骨头）”分类字段；不能只隐藏、清空或删除选项。不得误判整体空间金额/跳数为被删字段。
+2. 大企 sheet 名为“大企（油气矿、广电、交通）”，没有额外创建交通模块。
+3. 按当前已确认完整字段集合核对其余字段及相对顺序，特别是整体空间金额、跳数、已下单金额。核对数据与列对应及实际受影响的公式/验证/合并表头引用有效，不读取报告文字代替实物检查。
+4. 工作簿可正常读取/打开，审查中不保存改写，不修改 Git ignore 或强制添加到 Git，也不要求重生成一个文件来满足报告格式。
+5. 若已有旧版本/备份，可按字段身份对照剩余数据和引用；没有旧版本时仅注明“历史编辑差异未核实”，不把这一点单独升级为当前核验阻塞，也不得声称已证明全部历史单元格从未改变。已发现的数据错位/损坏仍是实际问题，应用迁移的数据保留测试仍须执行。
+
+必要证据直接写入联合报告：真实路径、SHA-256、读取方式、每表字段/名称结论、与当前契约及应用的映射、实际发现问题。
+只有真实文件无法定位/读取、多个候选无法识别或内容不符合当前需求，才记录相应的定位/证据缺口或实际缺陷。仅“未入 Git”“没有独立 Excel 实施报告”不是失败条件。
+原报告受旧文档前置条件影响的 finding 保留历史；新复核记录用户澄清与实物证据，重新判断适用性，不能直接把未核验的工作簿标 PASS。
 
 ## 5. 应用端字段与联合回归
 
@@ -97,7 +101,7 @@ TOB/ISP/电力/大企被删除分类身份原为 overallSpaceTier，MOX 精确 k
 
 ## 5.1 本轮出现的既有测试失败
 
-用户报告当前执行中存在多项旧测试预期失败，尚未由云端读取日志。审查者按 `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` 第3节记录逐项分类：过期预期、真实生产回归、测试/fixture缺陷、环境/证据缺口或未分类。
+用户报告前轮审查已结束且存在测试残留，尚未由云端读取日志。审查者按 `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` 第3节记录逐项分类：过期预期、真实生产回归、测试/fixture缺陷、环境/证据缺口或未分类。
 先完成可执行独立检查并保存报告，不现场改测试。旧数、旧名称或旧字段字样并不天然错误，例如升级前 fixture 应保持旧结构；反之，已确认过期的活动门禁也不能仅标“预期失败”就当作通过。
 已证实必需测试资产与当前契约不一致、阻碍有效验证时，记录阻塞的测试问题；保持 FAIL 的事实归属，不能称为生产缺陷或忽略失败给整体 PASS。只有必要执行条件/证据不足而未确认缺陷时才使用 PARTIAL。
 本轮审查只分类；保存报告并结束后由实施者维护测试。修改后新 HEAD 需复核断言强度与联合功能，具体任务见该规范。
@@ -114,12 +118,12 @@ D:\BattleMap\battle-map\docs\enterprise\reviews\evidence\enterprise-home-and-exc
 docs/enterprise/reviews/history/enterprise-home-and-excel-delta-independent-review-before-<REVIEWED_HEAD>.md
 同名归档内容不同则使用唯一后缀，不能覆盖。原首页独立报告保留旧结论，联合报告引用它并给出新 HEAD 下的 closure；不制造两份竞争的当前结论。
 
-报告须包含版本/hash、逐项需求矩阵、finding 闭环、实际路由、字段和 workbook 差异、数据保留依据、测试/浏览器证据、复用证据的影响分析、未运行项及下一步。
+报告须包含版本/hash、逐项需求矩阵、finding 闭环、实际路由、当前 workbook 实物字段清单、应用数据保留依据、测试/浏览器证据、复用证据的影响分析、未运行项及下一步；历史 workbook 差异仅在有旧文件时补充。
 每个新 finding 有 ID、严重度、实际位置/生产路径、违反条款、复现证据、影响和修复方向。发现阻塞继续其余独立检查，不现场修复。
 结束复核受审代码 HEAD、工作树及 workbook hash 稳定；只允许本报告/证据和已识别的隔离测试临时输出变化。
 
 判定：
-- PASS：上述必检范围完成，无阻塞，新 HEAD 与输出文件证据稳定；人工最终验收仍单独待确认。
+- PASS：上述必检范围完成，无阻塞，新 HEAD 与实际工作簿证据稳定；人工最终验收仍单独待确认。
 - FAIL：有已证实阻塞，列出准确 finding 和归属，转定向修复。
 - PARTIAL：未证实缺陷但必要环境/输入/证据不足，列具体缺项。纯环境限制不得伪装代码缺陷；缺必需真实点击证据不得整体 PASS。
 - 用户“完成了”不等于本轮人工验收完成，也不能据此称整个企业模块最终 VERIFIED。
@@ -131,7 +135,8 @@ AUTHORITY_HEAD=
 HOME_ROUTE_REPAIR=PASS/FAIL/NOT_RUN
 ORIGINAL_FINDINGS_CLOSURE=
 EXCEL_FIELD_REMOVAL=PASS/FAIL/NOT_RUN
-OTHER_FIELDS_AND_DATA_PRESERVED=PASS/FAIL/NOT_RUN
+REMAINING_FIELDS_AND_DATA_ALIGNMENT=PASS/FAIL/NOT_RUN
+HISTORICAL_WORKBOOK_DIFF=VERIFIED/NOT_ASSESSED
 LARGE_SHEET_NAME=PASS/FAIL/NOT_RUN
 FIVE_MODULE_CONTRACT_AND_CONSUMERS=PASS/FAIL/NOT_RUN
 HOME_SUMMARY_REGRESSION=PASS/FAIL/NOT_RUN
@@ -144,4 +149,4 @@ REPORT_PATH=
 MANUAL_ACCEPTANCE=PENDING
 NEXT=USER_MANUAL_ACCEPTANCE/TARGETED_REMEDIATION/COMPLETE_REVIEW
 
-PASS 后由用户在实际页面与输出 Excel 做简短人工验收，再更新联合报告中的人工结果并按当前 Authority 恢复其他待办；不自动启动新业务建设。
+PASS 后由用户在实际页面与根目录 Excel 做简短人工验收，再更新联合报告中的人工结果并按当前 Authority 恢复其他待办；不自动启动新业务建设。

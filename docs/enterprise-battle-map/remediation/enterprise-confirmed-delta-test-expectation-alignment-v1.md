@@ -1,14 +1,14 @@
 # 企业已确认需求变更：测试预期统一对齐 V1
 
-**状态：AUTHORIZED / 审查结束后实施；当前失败待本地分类**  
+**状态：CURRENT IMPLEMENTATION / 用户报告审查已结束并阻塞，执行测试残留修复**  
 **代码：D:\BattleMap\battle-map / feature/enterprise-battle-map**  
-**依据：用户报告联合复核正在执行，很多既有测试预期失败，要求统一维护**
+**依据：联合审查报告测试残留；用户明确 Excel 在根目录且无需进 Git或单独实施报告**
 
 ## 1. 目的与角色边界
 
 测试是当前契约的可执行约束，需求已经明确变化时，应同步修正过期预期、fixture 与必要快照。
 用户报告“预期失败”尚不能证明所有失败都是旧断言问题；云端未读取失败日志。逐项依据当前 Authority、真实实现和测试意图分类，不按错误数量批量放行。
-正在运行的独立审查先完成可执行检查并保存报告，不现场修改测试。审查结束且不再读取受审工作树后，实施者执行本文件；不能两个角色同时在同一工作树修改/审查。
+用户已报告审查结束，实施者现在读取报告并执行本文件；核实受审工作树无并发审查写入。处理测试残留，同时按最新实物核验规则读取根目录 Excel；原独立结论保留，后续由新审查重新评估。
 
 ## 2. 输入与固定产物
 
@@ -18,7 +18,7 @@ git -C "D:\BattleMap\BattleMapenterprise-authority" pull --ff-only origin enterp
 读取 Authority 的 authority-index.md、本文件、当前五模块契约、enterprise-excel-confirmed-delta-v1.md、enterprise-home-canonical-authority-v4.md 及实际失败涉及的共享机制规范。
 读取本地：
 docs/enterprise/reviews/enterprise-home-and-excel-delta-independent-review.md
-及两项实施报告、失败日志与命令/退出码；报告位置如有变化先用 rg 恢复实际路径。
+及已有实施记录、失败日志与命令/退出码；报告位置如有变化先用 rg 恢复实际路径。独立 Excel 实施报告不是前置，文件定位与检查按 enterprise-excel-confirmed-delta-v1.md 第2节直接执行。
 确认当前代码分支、BASE_HEAD、旧 REVIEWED_HEAD、AUTHORITY_HEAD、工作树状态和运行/测试环境，保留其他变更，不 reset/rebase/clean。拉取失败记录真实版本，不称为最新。
 
 固定产物：
@@ -26,7 +26,7 @@ docs/enterprise/reviews/enterprise-home-and-excel-delta-independent-review.md
 - 实施报告：docs/enterprise/implementation/enterprise-test-expectation-alignment-v1-report.md
 - 证据：docs/enterprise/implementation/evidence/enterprise-test-expectation-alignment-v1/<BASE_HEAD>/
 
-已有同名报告保留历史副本，原独立审查结论不得改写。
+已有同名报告保留历史副本，原独立审查结论不得改写。把根目录 Excel 的真实路径、hash、每表字段/名称核对证据记录在本轮报告，不补造过去的修改过程。
 
 ## 3. 先分类再修改
 
@@ -38,6 +38,7 @@ docs/enterprise/reviews/enterprise-home-and-excel-delta-independent-review.md
 | PRODUCTION_REGRESSION | 失败验证的是仍有效要求，实际实现违反该要求 | 保留有效断言，修复真实实现；不能把预期改成错误结果 |
 | TEST_OR_FIXTURE_DEFECT | 测试搭建/数据/清理或硬编码位置与已明确新机制不符 | 修正真实测试问题，维持相同验证强度 |
 | ENVIRONMENT_OR_EVIDENCE_GAP | 依赖、启动、服务版本、输入或日志不足，无法得出代码结论 | 处理可解决环境问题，明确缺项；不能改业务预期来绕过 |
+| OBSOLETE_REVIEW_PREREQUISITE | 仅因 workbook 未入Git或独立Excel实施报告不存在而阻塞，且未尝试实物核验 | 按最新用户澄清直接读取根目录文件；报告其证据和旧finding适用性，不能未读就宣称通过 |
 | UNCLASSIFIED | 缺少足够依据 | 继续调查并保留失败，不默认归为过期 |
 
 一次失败可能涉及多项原因，分别记录。先复用现有日志；缺失或不能复现的项再运行对应测试。
@@ -57,7 +58,7 @@ docs/enterprise/reviews/enterprise-home-and-excel-delta-independent-review.md
 
 ## 5. 必须保留的验证能力
 
-- 旧 schema/旧 Excel 的升级输入必须保留原字段与必要数据；验证迁移前存在、迁移后删除及其他字段数据保留。不能把旧输入也改成新 schema，让迁移测试退化为空操作。
+- 已有迁移测试所用旧 schema/旧 Excel fixture 必须保留原字段与必要数据（不要求用户当前根目录工作簿具备 Git 历史）；验证迁移前存在、迁移后删除及其他字段数据保留。不能把旧输入也改成新 schema，让迁移测试退化为空操作。
 - 保留已删除字段不再被活动接口接受/投影/持久化的必要负向断言，以及金额和跳数字段保存重读的回归。
 - snapshot 更新必须逐项核对 diff 与需求对应，不整仓无审查刷新。
 - 不能新增 skip/only、删除有价值用例、吞掉异常、将精确相等改成宽松包含，或降低门禁以消除本轮失败。目标已经废止的旧用例可有依据地替换，报告须说明新覆盖位置。
@@ -85,6 +86,9 @@ STALE_EXPECTATIONS_FIXED=
 PRODUCTION_REGRESSIONS_FIXED=
 TEST_FIXTURE_DEFECTS_FIXED=
 UNCLASSIFIED_FAILURES=
+ROOT_WORKBOOK_PATH=
+ROOT_WORKBOOK_SHA256=
+WORKBOOK_ACTUAL_CONTENT_CHECK=
 REGRESSION_AND_FULL_SUITE=
 BUILD=
 REPORT_PATH=

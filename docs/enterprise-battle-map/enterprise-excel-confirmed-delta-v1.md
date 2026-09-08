@@ -12,18 +12,17 @@
 
 本文件对以上两点优先于既有模块 Authority、Excel V0.2 字段冻结说明及历史固定字段数量断言。其余 V0.2 差异仍需逐项调查，不因本轮自动获准。旧报告保留为旧 HEAD 的证据。2026-09-08 用户报告首页和删除字段均完成。当前按 `reviews/enterprise-home-and-excel-delta-independent-review-v1.md` 核验输出、字段收敛、大企改名及首页回归，不再重复实施；具体完成事实以本地证据为准，不自行标 PASS。下面保留原实施流程供核对，不向审查者授予写入权限。
 
-## 2. 本地输入与实施顺序
+## 2. 本地文件与当前核验方式
 
-Authority checkout：D:\BattleMap\BattleMapenterprise-authority  
-代码：D:\BattleMap\battle-map（feature/enterprise-battle-map）  
-Excel 从 D:\BattleMap 中按既有调查报告定位用户所说的新版基表；优先恢复已确认输入路径，不能凭修改时间猜多个候选中的一个。
+Authority checkout：D:\BattleMap\BattleMapenterprise-authority
+代码：D:\BattleMap\battle-map（feature/enterprise-battle-map）
 
-1. 读取本文件、authority-index.md、既有 V0.1/V0.2 调查及本地报告，核对实际 workbook、sheet、字段定义和代码 HEAD。
-2. 记录输入路径、文件 hash、sheet 清单、删除字段位置、原表名及依赖引用，写最小实施计划。
-3. 原始工作簿先备份，再修改明确命名的输出副本；报告准确给出原件、备份及输出路径。如果新版已完成某项，验证后记为已满足，不重复删除相邻列。
-4. 对每个业务 sheet 核查“整体空间”字段；存在则整列删除，不存在则记录。多行/合并表头按实际字段身份判断，不能用包含“整体空间”的字符串批量删除其他列或整个分组。若命中不唯一，先定位具体冲突，继续可确定的工作。
-5. 大企 sheet 改用上述名称，并修正真实受影响的公式、名称、验证范围及导入/导出映射。检查列删除后的公式和范围移动、合并表头、表格范围、筛选、冻结及格式。
-6. 重新打开输出文件核对各 sheet 的最终字段、数据对应关系和公式引用；保留宏等源文件功能，不能静默降级格式或丢失功能。新增“交通”仅修改已要求的表名，不额外创建交通 sheet 或业务模块。
+用户最新明确：Excel 就在根目录，不需要进入 Git。先检查代码根 D:\BattleMap\battle-map，必要时检查既有资料根 D:\BattleMap 的直属工作簿。通过文件系统列举实际文件，包括 ignored/untracked 文件；排除锁文件，按文件名、版本、sheet 和表头确定当前基表，记录真实绝对路径与 SHA-256。多候选无法区分时报告具体冲突，不能猜测。
+
+用户已报告改动完成，当前只读实际工作簿核对字段、名称及与应用契约的一致性，不要求重新实施改表，不要求单独输出文件、Git提交记录或单独 Excel 实施报告。
+现有计划/报告/旧版本可作辅助事实；缺少它们时直接核验实物。没有历史副本时不声称核实了全部历史编辑差异；按联合复核 V1第4节记录可证明范围，不据此单独阻塞当前核验。
+如果实物不符合两项已确认要求，记录准确 sheet/字段证据后按原范围修复，保留原文件和其他数据；不能为通过检查扩大删除范围或静默改写当前源表。
+原有修改列/表名所需的公式、验证范围、合并表头及格式完整性继续要求有效，不能只看字段数。新增“交通”只改已要求表名，不新增交通 sheet/模块。
 
 ## 3. 项目中的对应字段收敛（仅限被删除字段）
 
@@ -42,7 +41,7 @@ Excel 从 D:\BattleMap 中按既有调查报告定位用户所说的新版基表
 ## 4. 验证与报告
 
 验证应覆盖：
-- 所有业务 sheet 的字段整列删除、相邻数据完整、新表名、公式/验证引用有效；
+- 根目录实际工作簿的全部业务 sheet 符合最终字段/名称要求，其他字段与数值列对应正确、公式/验证引用有效；
 - 五模块真实表格及共享 Create/Edit 中不再出现该字段，保存/重读正常；
 - 当前契约、API、导入导出和实际受影响消费者一致，无 active legacy alias；
 - 如有迁移，新库/升级库的最终结构一致，其他业务数据保持正确；
@@ -52,19 +51,19 @@ Excel 从 D:\BattleMap 中按既有调查报告定位用户所说的新版基表
 
 测试维护补充：本轮已报告多项既有测试失败，按 `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` 分类后对齐；旧升级输入保留旧结构，仍有效的金额/数据保留断言不能放宽。正在执行的独立审查不现场修改测试。
 
-本地计划：
+原实施计划路径（如存在则参考，不是实物核验前置）：
 docs/enterprise/implementation/enterprise-excel-confirmed-delta-v1-plan.md
 
-本地报告：
+原独立 Excel 实施报告路径（可选，不要求补造）：
 docs/enterprise/implementation/enterprise-excel-confirmed-delta-v1-report.md
 
-报告记录 AUTHORITY_HEAD、BASE_HEAD、实现提交、workbook 输入/输出及 hash、每表前后字段清单、canonical/DB/消费者映射、修改范围、验证结果和未完成项。保留已有报告历史。工作簿及业务数据留在本地，不提交到 GitHub。
+当前直接将真实工作簿路径/hash、每表实际字段和名称、canonical/DB/消费者核对、验证结果及未完成项写入正在执行的修复报告或联合审查报告，无需另补一份 Excel 实施报告。已有旧报告保留历史；工作簿及业务数据留在本地，不提交到 GitHub。
 
 最终简短回执：
 RESULT=IMPLEMENTED/PARTIAL/BLOCKED
 AUTHORITY_HEAD=
 IMPLEMENTATION_HEAD=
-WORKBOOK_OUTPUT=
+WORKBOOK_PATH=
 ALL_SHEETS_OVERALL_SPACE_FIELD_REMOVED=
 LARGE_SHEET_NAME=
 APPLICATION_CONTRACT_CONVERGENCE=
