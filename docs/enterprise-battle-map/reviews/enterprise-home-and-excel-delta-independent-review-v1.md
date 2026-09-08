@@ -1,6 +1,6 @@
 # 首页修复与 Excel 确认增量：联合独立复核 V1
 
-**状态：CURRENT REVIEW AUTHORITY / 最新迁移Schema测试残留待定向修复；完成后固定新HEAD复核**  
+**状态：CURRENT REVIEW AUTHORITY / 用户报告未提交改动导致无法固定HEAD；先准备候选，再独立复核**  
 **依据：2026-09-08 用户报告“首页和那个删除字段都完成了”**  
 **代码工作树：D:\BattleMap\battle-map / feature/enterprise-battle-map**
 
@@ -18,7 +18,7 @@
 git -C "D:\BattleMap\BattleMapenterprise-authority" pull --ff-only origin enterprise-battle-map-authority
 
 在 Authority 的 docs/enterprise-battle-map 下读取：
-- authority-index.md、本文件；
+- authority-index.md、本文件、integration/enterprise-review-snapshot-preparation-v1.md；
 - enterprise-home-canonical-authority-v4.md；
 - remediation/enterprise-home-route-blocker-repair-v1.md；
 - enterprise-excel-confirmed-delta-v1.md；
@@ -30,13 +30,14 @@ git -C "D:\BattleMap\BattleMapenterprise-authority" pull --ff-only origin enterp
 - docs/enterprise/implementation/enterprise-home-route-repair-v1-plan.md 和 enterprise-home-route-repair-v1-report.md；
 - docs/enterprise/implementation/enterprise-test-expectation-alignment-v1-plan.md、enterprise-test-expectation-alignment-v1-report.md 及其失败矩阵/证据；
 - 最新迁移Schema专项的 docs/enterprise/implementation/enterprise-migration-schema-test-alignment-v1-plan.md、enterprise-migration-schema-test-alignment-v1-report.md 及失败矩阵/证据；
+- docs/enterprise/implementation/enterprise-review-snapshot-preparation-v1-plan.md、enterprise-review-snapshot-preparation-v1-report.md及候选交接信息；
 - Excel 计划/实施报告若已存在则读取作为辅助；缺少单独报告不阻塞，直接读取下面规定的本地根目录工作簿。
 
 报告变更路径时先在本地用 rg 找到真实文件并核对内容/HEAD，不要求用户上传。某报告缺失时先尝试实际代码、文件与测试直接核验；只有无法获取完成具体检查所需的事实时才记录对应 EVIDENCE_GAP。
 用户明确工作簿就在根目录且无需入 Git：先检查 D:\BattleMap\battle-map 根目录，必要时检查已知资料根 D:\BattleMap 的直属 Excel。用文件系统枚举，包括 Git ignored/untracked 文件，不得只执行 git ls-files 后宣称不存在。排除 Excel 锁文件，按名称、版本及真实 sheet/表头识别用户的当前文件，记录绝对路径和 SHA-256。存在多个无法区分的候选时列出具体冲突，不能凭最新修改时间猜测。
 
 记录 AUTHORITY_HEAD、两项 IMPLEMENTATION_HEAD、旧 REVIEWED_HEAD、当前 REVIEWED_HEAD、工作树状态以及运行服务的代码目录/版本。确认两项实现均包含在受审 HEAD 中，识别 docs-only 后续提交。
-受审生产代码/测试须已提交且无并发修改；若未提交，不由审查者提交或清理，完成可做的预检查并标记固定版本证据缺口。
+受审生产代码/测试及可执行依赖须完整进入候选且无并发修改。用户最新报告前轮大量未提交改动导致无法固定HEAD；先由实施者按 `integration/enterprise-review-snapshot-preparation-v1.md` 处理，审查者不提交或清理。重新复核按第9节核实准确候选与实际运行来源。不是要求整个git status为空，也不是要求Excel或本次审查新报告入Git；具体排除文件须不影响运行，不能用“范围外”掩盖脏源码依赖。未满足时完成可做的预检查并记录精确版本缺口，不对当前脏实现宣称固定HEAD已验证。
 工作簿无需 Git 跟踪、Git 历史、单独输出副本或独立 Excel 实施报告。对实际选定的当前文件记录并复核 SHA-256 即可固定核验对象；现有旧输入/备份可补充历史对照，不是当前文件检查前置。Authority 拉取失败不能称最新；记录实际本地版本及缺项，继续有依据的部分。
 
 ## 3. 首页与历史 findings
@@ -110,11 +111,13 @@ TOB/ISP/电力/大企被删除分类身份原为 overallSpaceTier，MOX 精确 k
 
 ## 6. 报告、证据及退出判定
 
-唯一当前联合报告：
+唯一当前联合报告（默认代码主工作树位置）：
 D:\BattleMap\battle-map\docs\enterprise\reviews\enterprise-home-and-excel-delta-independent-review.md
 
 证据：
 D:\BattleMap\battle-map\docs\enterprise\reviews\evidence\enterprise-home-and-excel-delta\<REVIEWED_HEAD>\
+
+若采用隔离review worktree，报告与证据仍使用上述docs/enterprise/reviews相对路径，根目录改为实际REVIEW_WORKTREE，并在回执报告完整绝对路径。该候选的新报告是唯一当前结论；主工作树旧报告作为输入保留，不制造并行竞争结论。
 
 若同名联合报告存在，先保留为：
 docs/enterprise/reviews/history/enterprise-home-and-excel-delta-independent-review-before-<REVIEWED_HEAD>.md
@@ -133,6 +136,8 @@ docs/enterprise/reviews/history/enterprise-home-and-excel-delta-independent-revi
 短回执：
 RESULT=PASS/FAIL/PARTIAL
 REVIEWED_HEAD=
+REVIEW_WORKTREE=
+RUNTIME_SOURCE_MATCHES_REVIEWED_HEAD=YES/NO
 AUTHORITY_HEAD=
 HOME_ROUTE_REPAIR=PASS/FAIL/NOT_RUN
 ORIGINAL_FINDINGS_CLOSURE=
@@ -181,3 +186,12 @@ PASS 后由用户在实际页面与根目录 Excel 做简短人工验收，再�
 5. 电力/大企等DB断言精确比较经版本和持久化契约确认的独立物理列集合，保留适用类型/约束等门禁；业务字段数不等于物理列数，expected不能从实际PRAGMA结果自生成。
 6. 复查三个定向测试、受影响迁移/DB测试和原完整命令的当前证据，按第7节核验断言强度与build。未受影响的首页/Excel可信证据可复用；工作簿仍本地只读且不要求Git/单独报告。
 7. 沿用第6节唯一联合报告和结论规则，不另建竞争结论。行业选项V1保留为独立已授权任务，只有相关改动确已进入受审HEAD时才按其实际影响核验，不推定已完成。
+
+## 9. 未提交改动收口后的固定版本核验
+
+1. 读取快照准备报告和交接的准确REVIEW_CANDIDATE_HEAD，不把会话开始时任意HEAD或Authority的HEAD当成应用版本。确认全部声称完成的实现/测试/必要依赖已包含，独立恢复旧finding与提交映射。
+2. 在交接的REVIEW_WORKTREE检查实际HEAD、暂存/未暂存/未跟踪可执行文件。原树有其他改动时使用已准备的隔离候选，不让原树服务、未提交helper或旧构建参与候选验证；记录真实测试/服务目录及版本。
+3. 受审可执行内容须稳定，已说明且不影响运行的Excel/报告/证据可留本地；Excel以原真实路径和SHA-256只读固定，既不要求Git跟踪也不要求搬入候选目录。
+4. SNAPSHOT_READY只证明版本准备。另核对测试/build证据和已知剩余失败；原工作树的证据仅在实现及相关环境等价可证明时复用，缺失部分按真实影响补跑。
+5. 开始与结束复核核对候选HEAD、受审源码/配置及Excel hash。只有本次报告/证据和明确的隔离临时输出可变化；需要修改实现时结束本次复核，由实施者另行处理并提交新版本。
+6. 纯未提交导致的缺口准确归为无法固定/还原版本，不自动等同生产缺陷；已证实真实失败仍按第6节判定。保留原报告结论和当时证据，新报告独立给出关闭理由。没有完整固定版本证据不能整体PASS。

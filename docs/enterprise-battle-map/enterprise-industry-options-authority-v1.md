@@ -29,7 +29,7 @@ Authority 目录下读取：
 - architecture/enterprise-runtime-field-options-contract-v1.md；
 - 真实行业 fieldDef、options provider/optionSet、Create/Edit、客户级联及校验消费者。
 
-此前测试修复后用户最新又报告三个迁移/DB测试残留，当前优先级按authority-index.md及迁移Schema测试专项V1；本行业任务仍已授权，完成状态待回执，保留已有改动，不因测试修复重复实施或撤回。前轮独立复核尚无通过回执，不据新需求标记其 PASS。如果旧审查仍在读取同一工作树，先保留该次报告并结束读取，再由实施者写入；保留旧 REVIEWED_HEAD，不让新代码混入正在核验的快照。
+此前测试修复后用户最新又报告三个迁移/DB测试残留，当前优先级按authority-index.md：用户又报告未提交改动导致复核版本不稳定，先按快照准备V1盘点和固定实际候选，迁移Schema残留按其专项处理；本行业任务仍已授权，完成状态待回执，保留已有改动，不因测试修复重复实施或撤回。前轮独立复核尚无通过回执，不据新需求标记其 PASS。如果旧审查仍在读取同一工作树，先保留该次报告并结束读取，再由实施者写入；保留旧 REVIEWED_HEAD，不让新代码混入正在核验的快照。
 记录 AUTHORITY_HEAD、BASE_HEAD、工作树状态和真实作用文件，保留既有修改，不 reset/rebase/clean。更新失败记录实际版本，不声称最新。
 
 本地固定产物：
@@ -72,7 +72,7 @@ Authority 目录下读取：
 
 报告记录三模块真实选项定义来源、生产调用链、code/label映射、可编辑/只读行为、受影响消费者、旧数据差异、测试命令/退出码、剩余问题和实现提交。
 仅提交本轮拥有的代码、测试、计划/报告与必要证据，不push/merge。实施者只声明 IMPLEMENTED。
-完成后固定新HEAD独立检查本范围；前轮联合复核已验证且此次未受影响的结果保留其对应版本证据，受影响部分重新证明，不把旧PASS直接扩为新HEAD全量结论。
+完成后按 `integration/enterprise-review-snapshot-preparation-v1.md` 将已授权实现及必要依赖本地提交，准确记录本任务是否包含于候选；独立检查先核对实际候选版本再检查本范围；前轮联合复核已验证且此次未受影响的结果保留其对应版本证据，受影响部分重新证明，不把旧PASS直接扩为新HEAD全量结论。
 
 短回执：
 RESULT=IMPLEMENTED/PARTIAL/BLOCKED
