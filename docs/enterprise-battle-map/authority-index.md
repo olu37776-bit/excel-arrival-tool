@@ -6,12 +6,12 @@
 
 ---
 
-## 0. 当前企业首页展示修正
+## 0. 当前先调查新增/编辑双滚动与作战进展差异
 
-用户新增要求：MOX/TOB/ISP&大企卡内目标与实时横向并列，现有实时金额加M$单位。空间拓展不要太窄：桌面左边缘对齐MOX卡片横向中心，右边缘对齐ISP&大企卡片横向中心，整体在TOB下方居中，高度与上排一致。
-“企业专项”标题还须改为与其他“xx专项”标题一致的蓝色，复用现有颜色来源。已直接同步 `enterprise-home-canonical-authority-v4.md` 第4/5/6/7/8等正文，当前按第18节实施；本次只改布局/金额展示及直接相关测试，不修改实时汇总、空间公式或路由目标。
-字面“（空）”选项任务仍已授权，实际进度待回执：只删显示该文字的选项，真实空值与未命中控件保持，MOX客户类别不据旧空值描述改动。
-恢复未提交改动归属后串行实施，按快照准备V1精确本地提交并固定新候选；旧候选/报告保留，Excel不入Git、历史SQL不改。其他任务状态不因这次展示修正自动关闭。
+用户人工打开页面发现新增/编辑窗口内外两条竖向滚动条，怀疑套了两层；表单中的作战进展与独立新增进展弹窗不同，参照弹窗还有标题和内容。用户明确本轮先指导本地调查。
+当前按 `investigation/enterprise-form-scroll-progress-survey-v1.md` 只读恢复五模块实际入口、组件/DOM/滚动链和进展标题/内容映射。双滚动不直接等于双弹窗；弹窗标题栏与进展业务标题须区分，不预设根因或新增字段。
+仅写调查报告/证据，不改生产代码、CSS、测试、SQL、Excel或业务库，不提交、不自动修复。允许调查当前含未提交改动的运行现场，但记录BASE_HEAD、相关差异/hash和实际服务版本；这不是固定HEAD独立验收，不能借调查结论宣布VERIFIED。
+既有首页展示、字面选项、行业、迁移及快照准备任务保持各自授权和真实进度，本调查会话不混做，也不推定它们已完成。
 
 ## 1. 当前正式 Authority
 
@@ -42,7 +42,7 @@
 | 21 | `isp-canonical-authority-v2.md` | ISP当前字段和3-group业务基线 | 已同步字段删除及行业选项V1 |
 | 22 | `power-canonical-authority-v2.md` | 电力当前字段和3-group业务基线 | 已同步字段删除及行业选项V1 |
 | 23 | `large-enterprise-canonical-authority-v2.md` | 大企当前字段和3-group业务基线 | 已同步字段删除及行业选项V1 |
-| 24 | `enterprise-home-canonical-authority-v4.md` | 首页完整基线；第18节执行目标/实时并列、M$单位、空间拓展边界/高度及专项标题蓝色 | **当前执行：展示修正已授权待本地实施** |
+| 24 | `enterprise-home-canonical-authority-v4.md` | 首页完整基线；第18节执行目标/实时并列、M$单位、空间拓展边界/高度及专项标题蓝色 | 已授权，完成状态待回执；调查中不混做 |
 | 25 | `enterprise-excel-confirmed-delta-v1.md` | 删除指定分类字段、更新大企表名、对应契约和验证 | 用户报告字段删除完成；具体两项与输出待核验 |
 | 26 | `remediation/enterprise-home-route-blocker-repair-v1.md` | 读取本地报告、修复真实点击链路、浏览器导航证据 | 用户报告修复完成；待独立复核 |
 | 27 | `reviews/authority-consistency-audit-2026-09-07.md` | 2026-09-07文档一致性核对快照 | 历史核对；当前状态以本索引为准 |
@@ -52,6 +52,7 @@
 | 31 | `remediation/enterprise-migration-schema-test-alignment-v1.md` | 历史迁移不可改、版本化schema预期、完整链与物理列集合 | 已授权；恢复实际进度并纳入候选，尚无完成回执 |
 | 32 | `integration/enterprise-review-snapshot-preparation-v1.md` | 盘点未提交实现、精确本地提交、隔离候选及交接 | 持续门禁：本次修正提交后固定新候选 |
 | 33 | `remediation/enterprise-empty-option-removal-v1.md` | 仅清理字面“（空）”选项；无值显示请选择，真实空值保留 | 已授权，完成状态待回执；保留实际进度 |
+| 34 | `investigation/enterprise-form-scroll-progress-survey-v1.md` | 双滚动/重复外壳取证，作战进展与独立弹窗标题/内容对照 | **当前执行：只读调查，不修复** |
 
 ---
 
@@ -64,7 +65,10 @@
 ```text
 PREVIOUS_REVIEW = USER_REPORTED_NO_BLOCKERS
 PREVIOUS_MANUAL_CHECK = BASICALLY_ACCEPTABLE_WITH_HOME_ISSUES
-CURRENT_TASK = ENTERPRISE_HOME_CARD_LAYOUT_UNIT_V1
+CURRENT_TASK = ENTERPRISE_FORM_SCROLL_PROGRESS_SURVEY_V1
+FORM_SCROLL_PROGRESS_SURVEY = AUTHORIZED_READ_ONLY
+DOUBLE_SCROLL_ROOT_CAUSE = UNCONFIRMED
+PROGRESS_UI_DIFFERENCE = USER_REPORTED_PENDING_INVESTIGATION
 HOME_CARD_LAYOUT_UNIT = AUTHORIZED_PENDING_IMPLEMENTATION
 ENTERPRISE_SPECIAL_TITLE_COLOR = MATCH_EXISTING_SPECIAL_TITLE_BLUE
 HOME_REALTIME_CALCULATION = USER_REPORTED_PRESENT
@@ -292,11 +296,11 @@ field identity 必须 canonical；中文 label 只展示。
 
 ## 10. 当前推进顺序
 
-1. 更新Authority，读取最近报告，恢复未提交改动归属与已有候选，确认无并发审查/写入，保留选项/行业/迁移任务实际进度。
-2. 按首页V4第18节定位实际卡片、formatter/单位、空间拓展网格与共享样式，写最小计划/WRITE_SCOPE。
-3. 完成卡内目标/实时横向并列、实时金额M$后缀、空间拓展左右边界和等高布局，以及企业专项标题的现有一致蓝色；不更改已有汇总和导航业务。
-4. 通过桌面/窄窗口实际页面证据及受影响测试、必要构建验证，按快照准备V1精确本地提交并固定新候选，不全量add、不push。
-5. 新独立会话按联合复核第9节核对候选、第11节核验本次展示修正，其他既有范围按真实影响和可信证据处理。旧finding与未完成项不得自动关闭。
+1. 更新Authority，读取实际报告、运行来源和工作树差异，停止对同一运行链的并发写入；本次调查不要求先完成本地commit。
+2. 按调查V1核对五模块Create/Edit及独立新增进展入口，记录复现/未复现/未运行，先对真实命中完整取证。
+3. 定位内外滚动节点、组件/DOM及高度/overflow来源，区分重复外壳、双滚容器、背景滚动与合法编辑器内部滚动。
+4. 对照进展标题/内容/样式、editor绑定及History投影，区分业务标题与外壳标题，确认两问题是否同根因；只读检查旧版本/差异和测试缺口。
+5. 写唯一调查报告、证据和建议文件级修复范围，明确事实/假设/缺项后停止。后续再据报告制定定向修复，不现场改代码或自动进入独立验收。
 
 ---
 
