@@ -6,11 +6,12 @@
 
 ---
 
-## 0. 当前修正下拉选项字面文字“（空）”
+## 0. 当前企业首页展示修正
 
-用户最终要求：删除五模块字段下拉中实际显示字面“（空）”的选项，受影响控件未选择时显示不可选“请选择”，已有值正常回显。按 `remediation/enterprise-empty-option-removal-v1.md` 执行。
-本次不是空值清理，null/空字符串/合法未填写及原nullable/required保持。MOX客户类别用户确认没有该选项，记录未命中并保持；其他未命中控件同样不改，不因旧文档提到空值就调整它。
-先盘点实际选项来源和未提交改动归属，再完成本次修正并按快照准备V1精确本地提交，固定新候选后独立复核。旧候选及报告保留，不边审边改；Excel不入Git、历史SQL不改，本地commit无需push。行业及迁移任务保留真实进度，不重做、不自行标通过。
+用户新增要求：MOX/TOB/ISP&大企卡内目标与实时横向并列，现有实时金额加M$单位。空间拓展不要太窄：桌面左边缘对齐MOX卡片横向中心，右边缘对齐ISP&大企卡片横向中心，整体在TOB下方居中，高度与上排一致。
+“企业专项”标题还须改为与其他“xx专项”标题一致的蓝色，复用现有颜色来源。已直接同步 `enterprise-home-canonical-authority-v4.md` 第4/5/6/7/8等正文，当前按第18节实施；本次只改布局/金额展示及直接相关测试，不修改实时汇总、空间公式或路由目标。
+字面“（空）”选项任务仍已授权，实际进度待回执：只删显示该文字的选项，真实空值与未命中控件保持，MOX客户类别不据旧空值描述改动。
+恢复未提交改动归属后串行实施，按快照准备V1精确本地提交并固定新候选；旧候选/报告保留，Excel不入Git、历史SQL不改。其他任务状态不因这次展示修正自动关闭。
 
 ## 1. 当前正式 Authority
 
@@ -41,7 +42,7 @@
 | 21 | `isp-canonical-authority-v2.md` | ISP当前字段和3-group业务基线 | 已同步字段删除及行业选项V1 |
 | 22 | `power-canonical-authority-v2.md` | 电力当前字段和3-group业务基线 | 已同步字段删除及行业选项V1 |
 | 23 | `large-enterprise-canonical-authority-v2.md` | 大企当前字段和3-group业务基线 | 已同步字段删除及行业选项V1 |
-| 24 | `enterprise-home-canonical-authority-v4.md` | 首页间距、全局场景卡样式/数字、已下单金额实时汇总、空间拓展及双层导航；含本地实施步骤/产物 | 业务基线；当前联合独立复核 |
+| 24 | `enterprise-home-canonical-authority-v4.md` | 首页完整基线；第18节执行目标/实时并列、M$单位、空间拓展边界/高度及专项标题蓝色 | **当前执行：展示修正已授权待本地实施** |
 | 25 | `enterprise-excel-confirmed-delta-v1.md` | 删除指定分类字段、更新大企表名、对应契约和验证 | 用户报告字段删除完成；具体两项与输出待核验 |
 | 26 | `remediation/enterprise-home-route-blocker-repair-v1.md` | 读取本地报告、修复真实点击链路、浏览器导航证据 | 用户报告修复完成；待独立复核 |
 | 27 | `reviews/authority-consistency-audit-2026-09-07.md` | 2026-09-07文档一致性核对快照 | 历史核对；当前状态以本索引为准 |
@@ -50,7 +51,7 @@
 | 30 | `enterprise-industry-options-authority-v1.md` | ISP/电力/大企行业选项、共享链路和测试同步 | 已授权，完成状态待回执；与迁移测试修复分开 |
 | 31 | `remediation/enterprise-migration-schema-test-alignment-v1.md` | 历史迁移不可改、版本化schema预期、完整链与物理列集合 | 已授权；恢复实际进度并纳入候选，尚无完成回执 |
 | 32 | `integration/enterprise-review-snapshot-preparation-v1.md` | 盘点未提交实现、精确本地提交、隔离候选及交接 | 持续门禁：本次修正提交后固定新候选 |
-| 33 | `remediation/enterprise-empty-option-removal-v1.md` | 仅清理字面“（空）”选项；无值显示请选择，真实空值保留 | **当前执行：已授权待本地实施** |
+| 33 | `remediation/enterprise-empty-option-removal-v1.md` | 仅清理字面“（空）”选项；无值显示请选择，真实空值保留 | 已授权，完成状态待回执；保留实际进度 |
 
 ---
 
@@ -63,7 +64,11 @@
 ```text
 PREVIOUS_REVIEW = USER_REPORTED_NO_BLOCKERS
 PREVIOUS_MANUAL_CHECK = BASICALLY_ACCEPTABLE_WITH_HOME_ISSUES
-CURRENT_TASK = ENTERPRISE_LITERAL_EMPTY_OPTION_REMOVAL_V1
+CURRENT_TASK = ENTERPRISE_HOME_CARD_LAYOUT_UNIT_V1
+HOME_CARD_LAYOUT_UNIT = AUTHORIZED_PENDING_IMPLEMENTATION
+ENTERPRISE_SPECIAL_TITLE_COLOR = MATCH_EXISTING_SPECIAL_TITLE_BLUE
+HOME_REALTIME_CALCULATION = USER_REPORTED_PRESENT
+EXPANSION_DESKTOP_EDGES = MOX_CENTER_X_TO_ISP_CARD_CENTER_X
 LITERAL_EMPTY_OPTION_REMOVAL = AUTHORIZED_PENDING_IMPLEMENTATION
 AFFECTED_UNSELECTED_PLACEHOLDER = 请选择
 ACTUAL_NULL_VALUES = PRESERVE_EXISTING_CONTRACT
@@ -194,10 +199,10 @@ renderer 必须根据 Contract 自然产生 4-group 或 3-group，不允许通�
 
 当前完整 Authority 为 `enterprise-home-canonical-authority-v4.md`，取代首页 V1/V2/V3。
 本轮：
-- 企业专项、三卡和空间拓展用正常布局流分隔，消除重叠；
+- 企业专项、三卡和空间拓展用正常布局流分隔，消除重叠；企业专项标题使用其他专项相同蓝色来源；
 - 三卡和空间拓展复用全局首页“骨干场景/企业场景/单域自治”卡片和数字样式；
-- 目标保留 xx M$，实时汇总各模块已下单金额；
-- ISP&大企实时包含 ISP、电力、大企；空间拓展维持已冻结公式；
+- 目标在左、实时在右横向并列；目标保留xx M$，实时沿用已下单金额汇总并显示一个M$后缀；
+- ISP&大企实时包含ISP、电力、大企；空间拓展保持已冻结公式，桌面左右边缘分别对齐MOX/ISP&大企卡片横向中心，居中且与上排等高；
 - 全局首页企业场景进入企业首页，MOX/TOB/ISP&大企三卡进入各自约定子页。
 
 本轮用户已明确授权首页工作，旧“首页 DEFERRED/最后建设”的阶段安排不阻塞此任务。Excel V0.2 未授权字段变化继续独立处理。
@@ -287,11 +292,11 @@ field identity 必须 canonical；中文 label 只展示。
 
 ## 10. 当前推进顺序
 
-1. 更新Authority，读取最近报告，恢复未提交改动归属和已有候选，确认无并发审查/写入。
-2. 按字面“（空）”选项修正规范检查五模块真实菜单及来源，形成命中/未命中清单和最小WRITE_SCOPE；MOX客户类别未命中则保持。
-3. 只修命中选项及其直接共享来源，受影响控件无值显示不可选“请选择”，保留真实空值和其他业务行为，同步相关测试并核验实际UI。
-4. 按快照准备V1精确本地提交本次完整实现/测试，固定新REVIEW_CANDIDATE_HEAD及运行目录。既有行业/迁移任务按实际进度保留，旧finding不因提交自动关闭。
-5. 新独立会话按联合复核第9节核对候选、第10节验证本次字面选项修正，其余范围按实际影响及可信证据核验。
+1. 更新Authority，读取最近报告，恢复未提交改动归属与已有候选，确认无并发审查/写入，保留选项/行业/迁移任务实际进度。
+2. 按首页V4第18节定位实际卡片、formatter/单位、空间拓展网格与共享样式，写最小计划/WRITE_SCOPE。
+3. 完成卡内目标/实时横向并列、实时金额M$后缀、空间拓展左右边界和等高布局，以及企业专项标题的现有一致蓝色；不更改已有汇总和导航业务。
+4. 通过桌面/窄窗口实际页面证据及受影响测试、必要构建验证，按快照准备V1精确本地提交并固定新候选，不全量add、不push。
+5. 新独立会话按联合复核第9节核对候选、第11节核验本次展示修正，其他既有范围按真实影响和可信证据处理。旧finding与未完成项不得自动关闭。
 
 ---
 

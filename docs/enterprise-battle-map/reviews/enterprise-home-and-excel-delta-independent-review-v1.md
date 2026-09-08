@@ -1,6 +1,6 @@
 # 首页修复与 Excel 确认增量：联合独立复核 V1
 
-**状态：CURRENT REVIEW AUTHORITY / 字面“（空）”选项新增修正；实施提交并固定新候选后复核**  
+**状态：CURRENT REVIEW AUTHORITY / 首页并列、单位与空间拓展尺寸新增修正；实施提交并固定新候选后复核**  
 **依据：2026-09-08 用户报告“首页和那个删除字段都完成了”**  
 **代码工作树：D:\BattleMap\battle-map / feature/enterprise-battle-map**
 
@@ -33,6 +33,7 @@ git -C "D:\BattleMap\BattleMapenterprise-authority" pull --ff-only origin enterp
 - 最新迁移Schema专项的 docs/enterprise/implementation/enterprise-migration-schema-test-alignment-v1-plan.md、enterprise-migration-schema-test-alignment-v1-report.md 及失败矩阵/证据；
 - docs/enterprise/implementation/enterprise-review-snapshot-preparation-v1-plan.md、enterprise-review-snapshot-preparation-v1-report.md及候选交接信息；
 - docs/enterprise/implementation/enterprise-empty-option-removal-v1-plan.md、enterprise-empty-option-removal-v1-report.md及实际命中/未命中清单；
+- docs/enterprise/implementation/enterprise-home-card-layout-unit-v1-plan.md、enterprise-home-card-layout-unit-v1-report.md及本次布局/单位证据；
 - Excel 计划/实施报告若已存在则读取作为辅助；缺少单独报告不阻塞，直接读取下面规定的本地根目录工作簿。
 
 报告变更路径时先在本地用 rg 找到真实文件并核对内容/HEAD，不要求用户上传。某报告缺失时先尝试实际代码、文件与测试直接核验；只有无法获取完成具体检查所需的事实时才记录对应 EVIDENCE_GAP。
@@ -62,8 +63,9 @@ git -C "D:\BattleMap\BattleMapenterprise-authority" pull --ff-only origin enterp
 检查键盘激活、返回导航、控制台错误和被修改共享卡片的其他入口。无浏览器能力须记 NOT_RUN，不把此次真实跳转必检项判为 PASS。
 
 沿首页 V4 核查实际影响：
-- 企业专项/三卡/空间拓展不重叠，保留全局场景卡及数字的共享样式；
-- 目标可占位，实时由各模块“已下单金额”真实汇总；ISP&大企包含 ISP+电力+大企；
+- 企业专项/三卡/空间拓展不重叠，保留全局场景卡及数字共享样式；三卡内目标/实时左右并列；
+- 空间拓展桌面左/右边缘分别对齐MOX/ISP&大企卡片横向中心，整体居中且与上排等高，窄屏按内容自适应；
+- 目标可占位，实时沿用各模块“已下单金额”真实汇总；ISP&大企包含ISP+电力+大企；目标和实时均显示一个M$后缀，不能重复换算；
 - 可参与总空间继续按已孵化 AND 跟踪的整体空间金额求和，其他空间指标按 V4 原公式；
 - 加载、0、失败可区分，返回首页刷新有效，不因字段删除或表名变化丢模块、错列、倍增或重复换算单位。
 
@@ -207,3 +209,14 @@ PASS 后由用户在实际页面与根目录 Excel 做简短人工验收，再�
 3. 真正null/空字符串、原nullable/required及其他正常候选保持，没有按value真假值/空值全局过滤。MOX客户类别用户确认没有该项，按实际未命中保留，不要求改其合法空值测试。
 4. 静态/动态来源、共享控件及真实菜单均有证据；测试只修要求渲染字面标记的过期预期，保留真实空值fixture和精确集合。客户关系、错误边界及其他共享消费者按实际影响回归。
 5. 无SQL/Excel/历史数据清洗，保留原finding与未完成项。在第6节唯一报告记录新HEAD证据和实际未运行项，不把实施自测视为独立通过，也不重复审查未受影响且证据有效的历史范围。
+
+## 11. 首页目标/实时并列、M$单位、空间拓展边界与专项标题颜色
+
+按首页V4第18节完成实现后，先按本规范第9节固定包含该改动的新候选。旧报告对不同HEAD的结论保留，不由审查者现场修改样式。
+
+1. “企业专项”标题与实际其他“xx专项”标题共用蓝色class/token，同一主题下计算颜色一致，不仍为白色，也不批量改变文案内容及其他文字颜色。真实桌面页面三卡内目标在左、实时在右横向并列，两组标签/金额行对齐；卡片及两组数字仍能普通点击到原目标页面。
+2. 实时沿用原数值并带一个M$后缀，与目标单位风格一致；0、小数、长金额不遗漏/重复单位或再次换算，加载/失败仍明确，不把错误当0。空间拓展金额用M$、项目数量继续用“个”。
+3. 上排三卡并列时，记录实际元素边界：空间拓展left对齐MOX中心x、right对齐ISP&大企中心x，在TOB下方居中，高度与上排一致（允许正常子像素取整差异）。不能只检查CSS类名或以“看起来窄了”代替边界核对。
+4. 窄窗口上排换行后按容器自适应居中，不硬套跨行中线；无金额/单位/三项指标裁切或重叠，企业专项与卡片区仍留间距。
+5. 共享全局场景卡外观/导航无回归；统计公式、API/DB、字段契约和路由目标未被展示改动改变。核验实际受影响测试、必要build和真实截图/视口，既有同一实现可信汇总/DB证据可复用，不机械重跑无关历史任务。
+6. 在第6节唯一联合报告记录本次结论、对应HEAD、图像/尺寸、剩余问题和未运行项；没有真实页面证据不能声称布局已验证，用户最终视觉确认单独记录。
