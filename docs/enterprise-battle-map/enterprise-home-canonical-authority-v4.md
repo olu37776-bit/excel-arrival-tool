@@ -11,7 +11,7 @@
 
 ## 0. 最新执行状态
 
-用户已报告独立审查发现首页未跳转，与人工检查一致。当前为 USER_REPORTED_BLOCKER；详细 finding、失败入口及根因待执行者读取本地报告确认。先执行 `remediation/enterprise-home-route-blocker-repair-v1.md`，修复后再按第17节对固定新 HEAD 独立复核。历史实施自报状态不等于当前验收通过。
+2026-09-08 用户报告首页修复及字段删除完成，当前 IMPLEMENTED_REPORTED / PENDING_INDEPENDENT_REVIEW。按 `reviews/enterprise-home-and-excel-delta-independent-review-v1.md` 对固定新 HEAD 联合复核；旧跳转阻塞逐项重新证明关闭。本文保留业务要求，不能将用户完成回执视为独立或人工验收通过。
 
 ## 1. 当前确认结论
 
@@ -513,7 +513,7 @@ ENTERPRISE_HOME_HEATMAP = DEFERRED
 
 ## 16. 首页 V4 原始实施步骤、边界和产物（保留实施基线）
 
-当前跳转修复的 WRITE_SCOPE、计划、报告和验证要求以第0节链接的定向修复 V1 为准；本节不要求重复已经完成的首页建设。
+原跳转修复的 WRITE_SCOPE、计划和实施报告见 `remediation/enterprise-home-route-blocker-repair-v1.md`；当前执行第0节的联合独立复核，不重复已完成建设，也不沿用实施写入权限。
 
 用户已反馈前轮核对完成并人工检查“基本没什么问题”，本轮进入上述具体首页调整。该反馈不等于本文件的新需求已经实现，也不能把历史审查结果改写为已验证本轮新 HEAD。
 
@@ -593,7 +593,7 @@ NEXT=HOME_V4_INDEPENDENT_REVIEW/CONTINUE_IMPLEMENTATION
 
 ## 17. V4 实施后独立核验与人工验收
 
-用户此前报告首页V4实施完成，现已报告独立审查存在跳转阻塞；按第0节先修复，以下为修复后复核规则。新独立 Agent 负责本节；实施报告的 PASS 不是审查事实。此次只审查本轮首页范围与实际受影响消费者，不机械重跑无关五模块整改。
+用户已报告首页跳转修复完成，当前联合独立复核入口及报告路径以第0节所引 V1 为准；以下为继续适用的首页核验要求，旧单任务报告保留历史。新独立 Agent 负责本节；实施报告的 PASS 不是审查事实。此次只审查本轮首页范围与实际受影响消费者，不机械重跑无关五模块整改。
 
 ### 17.1 输入和固定状态
 
@@ -615,7 +615,7 @@ NEXT=HOME_V4_INDEPENDENT_REVIEW/CONTINUE_IMPLEMENTATION
 
 ### 17.3 报告与判定
 
-唯一最终报告：
+单独进行首页审查时的报告路径（本轮联合复核改用其专属报告，原报告保留）：
 D:\BattleMap\battle-map\docs\enterprise\reviews\enterprise-home-v4-independent-review.md
 证据：
 D:\BattleMap\battle-map\docs\enterprise\reviews\evidence\enterprise-home-v4\<REVIEWED_HEAD>\
