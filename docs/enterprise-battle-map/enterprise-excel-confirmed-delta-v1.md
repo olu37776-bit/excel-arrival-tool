@@ -50,6 +50,8 @@ Excel 从 D:\BattleMap 中按既有调查报告定位用户所说的新版基表
 
 根据实际改动运行必要测试和项目既有构建门禁；测试验证真实生产路径，不以文本搜索代替功能证据。纯 Excel 修改不机械重跑无关代码测试；代码发生修改则使用对应新实现的证据。不得将本轮实现自测称为独立审查通过。
 
+测试维护补充：本轮已报告多项既有测试失败，按 `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` 分类后对齐；旧升级输入保留旧结构，仍有效的金额/数据保留断言不能放宽。正在执行的独立审查不现场修改测试。
+
 本地计划：
 docs/enterprise/implementation/enterprise-excel-confirmed-delta-v1-plan.md
 

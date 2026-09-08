@@ -12,6 +12,8 @@
 审查者从本地恢复两份实施报告、旧首页 findings 和实际输出 Excel，固定包含两项实现的新 HEAD，完成首页真实跳转、字段删除/其他数据保留、大企改名及联合回归。大企改名和每项细节仍须核实，云端未读取本地证据。
 两项变更范围不变：只删除取值为“肥肉/瘦肉/骨头”的“整体空间”分类字段；大企表名增加“交通”。其他字段、数值空间/金额与业务规则保留。
 
+用户补充：联合复核正在执行，已有多项旧测试预期失败。当前先完成只读审查和失败分类；不能据摘要把失败全部认定为过期测试。后续按 `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` 统一维护已确认过期的预期/fixture，并处理范围内真实回归。审查与修改不可同时写同一工作树。
+
 ## 1. 当前正式 Authority
 
 | 顺序 | 文档 | 用途 | 当前门禁 |
@@ -45,7 +47,8 @@
 | 25 | `enterprise-excel-confirmed-delta-v1.md` | 删除指定分类字段、更新大企表名、对应契约和验证 | 用户报告字段删除完成；具体两项与输出待核验 |
 | 26 | `remediation/enterprise-home-route-blocker-repair-v1.md` | 读取本地报告、修复真实点击链路、浏览器导航证据 | 用户报告修复完成；待独立复核 |
 | 27 | `reviews/authority-consistency-audit-2026-09-07.md` | 2026-09-07文档一致性核对快照 | 历史核对；当前状态以本索引为准 |
-| 28 | `reviews/enterprise-home-and-excel-delta-independent-review-v1.md` | 同一新HEAD核验首页修复、Excel增量与联合回归 | **当前执行任务：独立复核** |
+| 28 | `reviews/enterprise-home-and-excel-delta-independent-review-v1.md` | 同一新HEAD核验首页修复、Excel增量与联合回归 | **当前执行任务：独立复核，补充失败分类** |
+| 29 | `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` | 测试失败分类、过期预期/fixture维护及真实回归处理 | 已授权；当前审查保存报告并结束后实施 |
 
 ---
 
@@ -62,7 +65,9 @@ CURRENT_TASK = HOME_AND_EXCEL_DELTA_INDEPENDENT_REVIEW_V1
 EXCEL_CONFIRMED_DELTA_V1 = IMPLEMENTED_REPORTED
 HOME_ROUTE_REPAIR = IMPLEMENTED_REPORTED
 HOME_V4_PREVIOUS_REVIEW = USER_REPORTED_BLOCKER
-CURRENT_INDEPENDENT_REVIEW = PENDING
+CURRENT_INDEPENDENT_REVIEW = RUNNING_REPORTED
+TEST_FAILURES = USER_REPORTED_PENDING_CLASSIFICATION
+TEST_ALIGNMENT = AUTHORIZED_AFTER_REVIEW_FINALIZED
 HOME_V4_IMPLEMENTATION = IMPLEMENTED_REPORTED
 MANUAL_ACCEPTANCE_AFTER_REPAIR = PENDING
 ```
@@ -266,8 +271,9 @@ field identity 必须 canonical；中文 label 只展示。
 1. 新独立审查会话更新 Authority，读取两项实施报告、旧审查 findings 与输出 Excel。
 2. 固定包含两项实现的 REVIEWED_HEAD 和工作簿 hash，按联合独立复核 V1 检查，不现场修改代码。
 3. 完成真实点击、每表差异/数据保留、五模块契约与首页汇总联合回归，保存指定联合报告与证据。
-4. PASS 后用户人工验收；FAIL 进入对应定向修复；PARTIAL 补齐具体缺项。
-5. 两项独立核验与人工确认后恢复其余真实待办，不自动假设整个 V0.2 或企业模块已全部完成。
+4. 本轮测试失败逐项分类并保留审查结论；报告保存且审查结束后，按测试预期对齐 V1 实施。确认生产缺陷不能通过改预期掩盖，修改后新 HEAD 再独立复核。
+5. 联合复核 PASS 后用户人工验收；其他 FAIL 进入对应定向修复，PARTIAL 补齐具体缺项。
+6. 两项独立核验与人工确认后恢复其余真实待办，不自动假设整个 V0.2 或企业模块已全部完成。
 
 ---
 
