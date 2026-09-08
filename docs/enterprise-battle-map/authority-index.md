@@ -6,12 +6,11 @@
 
 ---
 
-## 0. 当前测试残留修复与本地 Excel 直接核验
+## 0. 当前测试修复后的联合独立复核
 
-用户报告联合审查已结束且阻塞，摘要包括测试残留、Excel 实施报告缺失及无法验证工作簿修改。云端未读取具体报告，不虚构 finding ID 或测试明细。
-用户已明确：工作簿不需要进 Git，表就在本地根目录。当前直接读取根目录实际 Excel 核对，独立 Excel 实施报告不是检查前置；不能因文件未跟踪或缺少该报告而直接判定无法验证。
-执行 remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md，读取本地审查报告，修正测试残留，并把实际工作簿路径/hash、sheet/字段核对结果写入本轮已有报告。修复后再按联合独立复核 V1 复核新 HEAD。
-只删除指定分类字段、大企增加交通、其他字段和业务规则保留的范围不变；工作簿未读取前不能称已验证，真实内容不符仍须如实记录。
+用户最新报告“修复好了”。测试预期对齐与根目录工作簿核对任务记为 IMPLEMENTED_REPORTED，具体修复项、测试结果和实物证据须由本地报告恢复，不能据此标 VERIFIED。
+当前执行 `reviews/enterprise-home-and-excel-delta-independent-review-v1.md`，重点按第7节复核本次失败处置和断言强度，覆盖旧 findings、根目录 Excel 实物与实际受影响的首页/五模块行为。不再次启动已报告完成的实施任务。
+工作簿仍不要求入 Git，也不要求单独 Excel 实施报告。直接读取实际文件并固定路径/hash，原审查报告保留历史；本次对新 HEAD 给出独立结论。
 
 ## 1. 当前正式 Authority
 
@@ -46,27 +45,28 @@
 | 25 | `enterprise-excel-confirmed-delta-v1.md` | 删除指定分类字段、更新大企表名、对应契约和验证 | 用户报告字段删除完成；具体两项与输出待核验 |
 | 26 | `remediation/enterprise-home-route-blocker-repair-v1.md` | 读取本地报告、修复真实点击链路、浏览器导航证据 | 用户报告修复完成；待独立复核 |
 | 27 | `reviews/authority-consistency-audit-2026-09-07.md` | 2026-09-07文档一致性核对快照 | 历史核对；当前状态以本索引为准 |
-| 28 | `reviews/enterprise-home-and-excel-delta-independent-review-v1.md` | 同一新HEAD核验首页修复、Excel增量与联合回归 | 修复后复核基线；已按根目录工作簿澄清证据要求 |
-| 29 | `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` | 测试失败分类、过期预期/fixture维护及真实回归处理 | **当前执行：测试残留修复及根目录工作簿直接核对** |
+| 28 | `reviews/enterprise-home-and-excel-delta-independent-review-v1.md` | 同一新HEAD核验首页修复、Excel增量与联合回归 | **当前执行：第7节测试修复后的联合独立复核** |
+| 29 | `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` | 测试失败分类、过期预期/fixture维护及真实回归处理 | 用户报告修复完成；保留修复规则供复核 |
 
 ---
 
 ## 2. 当前阶段判断
 
-此前用户人工检查后提出首页布局、样式、真实金额和导航调整；后续独立审查发现跳转阻塞。2026-09-08 用户报告首页与删除字段两项均完成；后续联合审查已报告阻塞，现进入测试残留修复与根目录工作簿实物核对。
+此前用户人工检查后提出首页布局、样式、真实金额和导航调整；后续独立审查发现跳转阻塞。2026-09-08 用户报告首页与删除字段两项均完成；后续联合审查曾报告阻塞，用户现已报告修复完成，进入新 HEAD 的独立复核。
 这是人工检查反馈，不是云端重新核验本地代码/测试的声明。前轮报告继续作为原 HEAD 的历史证据，本轮新 HEAD 的验证另行记录。
 
 当前：
 ```text
 PREVIOUS_REVIEW = USER_REPORTED_NO_BLOCKERS
 PREVIOUS_MANUAL_CHECK = BASICALLY_ACCEPTABLE_WITH_HOME_ISSUES
-CURRENT_TASK = TEST_ALIGNMENT_AND_LOCAL_WORKBOOK_VERIFICATION
+CURRENT_TASK = POST_TEST_ALIGNMENT_JOINT_INDEPENDENT_REVIEW
 EXCEL_CONFIRMED_DELTA_V1 = IMPLEMENTED_REPORTED
 HOME_ROUTE_REPAIR = IMPLEMENTED_REPORTED
 HOME_V4_PREVIOUS_REVIEW = USER_REPORTED_BLOCKER
-CURRENT_INDEPENDENT_REVIEW = USER_REPORTED_BLOCKED
-TEST_FAILURES = USER_REPORTED_RESIDUALS_PENDING_LOCAL_DETAIL
-TEST_ALIGNMENT = CURRENT_AUTHORIZED_IMPLEMENTATION
+PREVIOUS_JOINT_REVIEW = USER_REPORTED_BLOCKED
+CURRENT_INDEPENDENT_REVIEW = PENDING_REREVIEW
+TEST_FAILURES = FIX_REPORTED_CLOSURE_UNVERIFIED
+TEST_ALIGNMENT = IMPLEMENTED_REPORTED
 EXCEL_SOURCE = USER_CONFIRMED_LOCAL_ROOT_FILE
 EXCEL_GIT_TRACKING_REQUIRED = NO
 SEPARATE_EXCEL_IMPLEMENTATION_REPORT_REQUIRED = NO
@@ -74,7 +74,7 @@ HOME_V4_IMPLEMENTATION = IMPLEMENTED_REPORTED
 MANUAL_ACCEPTANCE_AFTER_REPAIR = PENDING
 ```
 
-旧首页报告与人工检查曾发现跳转阻塞，现用户报告首页和字段删除均已完成。本轮先按测试预期对齐 V1 处理报告残留，再以新 HEAD 和本地实物确认旧 findings 的处置；其他检查不因用户简短回执自动 PASS。既有机制保持受影响范围回归。
+旧首页报告与人工检查曾发现跳转阻塞，现用户报告首页和字段删除均已完成。用户现又报告测试残留修复完成，本轮以新 HEAD、修复差异和本地实物独立确认旧 findings 的处置；其他检查不因用户简短回执自动 PASS。既有机制保持受影响范围回归。
 
 ---
 
@@ -186,7 +186,7 @@ renderer 必须根据 Contract 自然产生 4-group 或 3-group，不允许通�
 - 全局首页企业场景进入企业首页，MOX/TOB/ISP&大企三卡进入各自约定子页。
 
 本轮用户已明确授权首页工作，旧“首页 DEFERRED/最后建设”的阶段安排不阻塞此任务。Excel V0.2 未授权字段变化继续独立处理。
-当前先处理联合报告中的测试残留并核对本地 Excel，再按联合独立复核 V1 复核新 HEAD；旧首页 findings 和实施基线保留。
+当前按联合独立复核 V1 第7节检查修复后新 HEAD，旧首页 findings 和实施基线保留；具体执行的回归以实际代码/测试变化及有效证据为准。
 
 ---
 
@@ -270,11 +270,11 @@ field identity 必须 canonical；中文 label 只展示。
 
 ## 10. 当前推进顺序
 
-1. 更新 Authority，读取已完成的联合审查报告与测试日志，恢复实际 findings。
-2. 直接定位根目录 Excel，读取实际内容；未入 Git、缺少独立 Excel 实施报告均不是自动阻塞。
-3. 按测试预期对齐 V1 修正真实过期测试/fixture；有效断言失败则修复真实回归，不放宽测试掩盖问题。
-4. 在指定实施报告记录失败处置、工作簿实物核对及验证结果，保留旧独立报告。
-5. 固定新 HEAD 独立复核，基于实物和新证据重新评估旧 finding；通过后人工验收。
+1. 新独立审查会话更新 Authority，读取联合旧报告、测试预期对齐计划/实施报告、失败矩阵和实际代码差异。
+2. 固定新 REVIEWED_HEAD 与根目录 workbook hash，确认本次修复已包含在受审版本中。
+3. 按联合复核 V1 第7节检查失败处置、断言强度与旧 findings，执行必要测试及首页/字段/数据保留回归。
+4. 归档旧联合报告，在既定路径写入新结论和证据；不现场修改代码、测试或 Excel。
+5. PASS 后人工验收，FAIL 进入明确的定向修复，PARTIAL 补齐具体缺项；不因同一实现重复建设已完成部分。
 
 ---
 

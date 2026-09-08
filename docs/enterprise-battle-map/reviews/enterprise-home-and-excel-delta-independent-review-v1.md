@@ -1,6 +1,6 @@
 # 首页修复与 Excel 确认增量：联合独立复核 V1
 
-**状态：CURRENT REVIEW RULES / 用户报告前轮阻塞，修复后按本规则复核**  
+**状态：CURRENT INDEPENDENT REVIEW / 用户已报告测试修复完成，待新 HEAD 独立复核**  
 **依据：2026-09-08 用户报告“首页和那个删除字段都完成了”**  
 **代码工作树：D:\BattleMap\battle-map / feature/enterprise-battle-map**
 
@@ -28,6 +28,7 @@ git -C "D:\BattleMap\BattleMapenterprise-authority" pull --ff-only origin enterp
 - docs/enterprise/reviews/enterprise-home-v4-independent-review.md 及历史 findings/证据；
 - docs/enterprise/implementation/enterprise-home-polish-v4-plan.md 和 enterprise-home-polish-v4-report.md；
 - docs/enterprise/implementation/enterprise-home-route-repair-v1-plan.md 和 enterprise-home-route-repair-v1-report.md；
+- docs/enterprise/implementation/enterprise-test-expectation-alignment-v1-plan.md、enterprise-test-expectation-alignment-v1-report.md 及其失败矩阵/证据；
 - Excel 计划/实施报告若已存在则读取作为辅助；缺少单独报告不阻塞，直接读取下面规定的本地根目录工作簿。
 
 报告变更路径时先在本地用 rg 找到真实文件并核对内容/HEAD，不要求用户上传。某报告缺失时先尝试实际代码、文件与测试直接核验；只有无法获取完成具体检查所需的事实时才记录对应 EVIDENCE_GAP。
@@ -101,10 +102,10 @@ TOB/ISP/电力/大企被删除分类身份原为 overallSpaceTier，MOX 精确 k
 
 ## 5.1 本轮出现的既有测试失败
 
-用户报告前轮审查已结束且存在测试残留，尚未由云端读取日志。审查者按 `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` 第3节记录逐项分类：过期预期、真实生产回归、测试/fixture缺陷、环境/证据缺口或未分类。
+前轮用户报告测试残留，现已报告修复完成；云端尚未读取本地日志。当前复核按第7节检查实际修复，下面分类规则继续有效。审查者按 `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` 第3节记录逐项分类：过期预期、真实生产回归、测试/fixture缺陷、环境/证据缺口或未分类。
 先完成可执行独立检查并保存报告，不现场改测试。旧数、旧名称或旧字段字样并不天然错误，例如升级前 fixture 应保持旧结构；反之，已确认过期的活动门禁也不能仅标“预期失败”就当作通过。
 已证实必需测试资产与当前契约不一致、阻碍有效验证时，记录阻塞的测试问题；保持 FAIL 的事实归属，不能称为生产缺陷或忽略失败给整体 PASS。只有必要执行条件/证据不足而未确认缺陷时才使用 PARTIAL。
-本轮审查只分类；保存报告并结束后由实施者维护测试。修改后新 HEAD 需复核断言强度与联合功能，具体任务见该规范。
+审查者复核实施者的分类及每项修改，不现场维护测试。若还有残留，则保留新 finding 和证据，审查结束后由实施者按该规范处理；本轮未完成项不能自动 PASS。
 
 ## 6. 报告、证据及退出判定
 
@@ -141,6 +142,8 @@ LARGE_SHEET_NAME=PASS/FAIL/NOT_RUN
 FIVE_MODULE_CONTRACT_AND_CONSUMERS=PASS/FAIL/NOT_RUN
 HOME_SUMMARY_REGRESSION=PASS/FAIL/NOT_RUN
 MIGRATION_AND_DATA_SAFETY=PASS/FAIL/NOT_APPLICABLE/NOT_RUN
+TEST_FAILURE_CLOSURE=PASS/FAIL/NOT_RUN
+TEST_ASSERTION_STRENGTH=PASS/FAIL/NOT_RUN
 TEST_BUILD_EVIDENCE=VALID/INVALID/MISSING
 HEAD_AND_WORKBOOK_STABLE=YES/NO
 BLOCKING_FINDINGS=
@@ -150,3 +153,18 @@ MANUAL_ACCEPTANCE=PENDING
 NEXT=USER_MANUAL_ACCEPTANCE/TARGETED_REMEDIATION/COMPLETE_REVIEW
 
 PASS 后由用户在实际页面与根目录 Excel 做简短人工验收，再更新联合报告中的人工结果并按当前 Authority 恢复其他待办；不自动启动新业务建设。
+
+## 7. 测试残留修复完成后的本轮复核
+
+用户报告“修复好了”，当前只记录 IMPLEMENTED_REPORTED，不预判修改仅涉及测试，也不预判所有旧失败已经消失。
+
+1. 读取第2节新增的测试预期对齐计划、实施报告与实际差异，关联原联合报告、失败用例和旧/新 HEAD。本轮继续使用第6节唯一联合报告及证据目录，先归档旧结论，不另建竞争的最终报告。
+2. 逐项核对旧失败分类和修改依据：过期预期须确实违反已确认的新契约；仍有效断言失败须通过真实实现修正。不能把未分类失败写成已解决，不能只依据实施报告的总通过数。
+3. 审查测试 diff：确认字段精确集合/顺序/分组、数值字段保留、sheet 名和路由要求仍有有效验证；没有为本轮通过而新增 skip/only、吞异常、宽松替代精确断言或无审查刷新快照。废止用例的替代覆盖需可追溯。
+4. 检查预期独立性，不能把被测结果重新当成 expected；原升级 fixture 保留旧结构/旧字段，迁移测试仍真正验证从旧到新及其他数据保留。既有负向用例和实际生产路径验证不能被空输入或全零样例架空。
+5. 重新执行原失败用例和修改测试对应的受影响回归；核验原完整测试命令、build及现有必要门禁在同一最终代码/测试快照上的有效日志。已有完整、可信、对应同一实现的证据可以复用；缺失、失败、版本不符或修改影响未覆盖时补跑必要范围，不因重复审查而机械重跑所有历史任务。
+6. 根目录 workbook 按第4节直接只读核对，包括 ignored/untracked 文件，记录真实路径/hash。无需入Git、单独Excel实施报告或重建历史编辑过程；实际内容不能仅靠修复报告自报。
+7. 首页真实点击、五模块字段消费者、金额/空间汇总及迁移按第3—5节与实际差异核验。既有证据必须能对应当前实现及实物，不能用旧失败版本的 PASS 覆盖新 HEAD；若本次仅测试变化，明确哪些已有功能证据仍有效，避免无关重复工作。
+8. 结束确认代码 HEAD、受审代码/测试及 workbook hash 稳定。逐项给出旧 finding 的关闭、仍失败或经用户澄清不适用的理由；不改写旧报告的事实，不把未读取文件标为通过。
+
+结论仍按第6节 PASS/FAIL/PARTIAL。PASS 后才交用户简短人工验收：首页入口跳转与金额显示、五模块页面无被删分类字段、根目录大企表名含交通；本轮完成后再恢复其余真实待办。
