@@ -1,11 +1,15 @@
 # 企业表单两处重新调查 V2：底栏按钮、作战进展及其存储
 
-**状态：CURRENT / 重新只读调查，不现场修复**
+**状态：调查结果已由用户报告 / 本文件保留调查任务与边界；当前修复后审查入口为 `reviews/enterprise-progress-single-source-independent-review-v1.md`**
 **代码根：D:\BattleMap\battle-map / feature/enterprise-battle-map**
 **参照：本地BattleMap主分支MOX、TOB页面**
 **本版已撤销“新增与编辑的进展结构不同”的错误前提；旧报告保留历史**
 
-## 1. 最新准确要求
+用户报告TOB、ISP、电力、大企仍有作战进展双写，已让本地Agent按调查报告的最小修复建议实施。当前沿用该建议，不另开实施方案；修复完成后按 `reviews/enterprise-progress-single-source-independent-review-v1.md` 独立审查。云端未读取本地报告/代码/实库，不声明已完成或已验证。
+
+以下为已执行调查的任务约束，不作为撤回用户后续修复授权的依据；历史报告保持原事实。
+
+## 1. 调查时确认的准确要求
 
 调查范围只有两块：
 1. 底部固定栏的“取消／保存”按钮及样式。

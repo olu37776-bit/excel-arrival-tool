@@ -6,14 +6,11 @@
 
 ---
 
-## 0. 当前重新调查：两块范围、Create/Edit同一进展结构及数据库映射
+## 0. 当前：按报告最小建议修复，完成后独立审查进展单一存储
 
-新增页、编辑页和独立“新增进展”弹窗必须纳入同一对照：四处原有名称（最新进展、新增进展、进展主题、进展内容）只做“作战”命名调整，其他原有功能、样式和交互不随改名变化。三入口的主题/内容语义、校验、payload、存储归属、父记录关联与保存后回显应一致；新增业务记录尚无ID等必要生命周期差异单独说明，不强行统一提交时机，也不把独立弹窗外壳套进表单。当前仅调查并报告差异，不执行改名或修复。
-
-用户最新纠正：新增与编辑的进展UI都一样——只读最新进展、可点开展开的新增按钮、主题和内容两个可编辑输入。此前“新增/编辑进展结构不同”的前提撤销，不得继续用它解释缺少按钮或编辑区。
-调查仍只有底部固定取消/保存按钮样式、作战进展区域两块；后者必须追到主题/内容的真实model、API、表/列、父记录关联、保存及latest读取。相同UI不等于Create/Edit的ID与保存生命周期必须相同，分别查实，不重新设计。
-准确参照仍是本地BattleMap应用主分支MOX/TOB；仅给进展可见文案加“作战”，保留限定词与原行为，双滚动及其他表单区域不动。
-当前按 `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` 重写后的规范重新只读调查，旧报告/证据先归档，不修改代码、CSS、测试、SQL或数据，不commit/push、不自动修复。其他任务保持实际进度。
+用户报告TOB、ISP、电力、大企仍有作战进展双写，已让本地Agent按调查报告的最小修复建议实施。当前沿用该建议，不另开实施方案；修复完成后按 `reviews/enterprise-progress-single-source-independent-review-v1.md` 独立审查。云端未读取本地报告/代码/实库，不声明已完成或已验证。
+新增页、编辑页与独立新增进展弹窗统一核查真实写入、主题/内容、父记录关联、历史保留与最新回显。新增/编辑均保留只读摘要、展开新增按钮和主题/内容两个可编辑输入，命名调整不改变原交互。
+本地调查报告保留原观察事实，后续修复不重写历史。MOX无双写是用户转述，仍须回归；底栏是否已按最小建议修复需独立核实，双滚动继续保留。其他任务保持实际进度。
 
 ## 1. 当前正式 Authority
 
@@ -55,7 +52,9 @@
 | 32 | `integration/enterprise-review-snapshot-preparation-v1.md` | 盘点未提交实现、精确本地提交、隔离候选及交接 | 持续门禁：本次修正提交后固定新候选 |
 | 33 | `remediation/enterprise-empty-option-removal-v1.md` | 仅清理字面“（空）”选项；无值显示请选择，真实空值保留 | 已授权，完成状态待回执；保留实际进度 |
 | 34 | `investigation/enterprise-form-scroll-progress-survey-v1.md` | 前轮调查任务及证据背景 | SUPERSEDED；用户报告结果已出，口径由V2纠正 |
-| 35 | `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` | 底栏按钮、Create/Edit同一进展结构及主题/内容数据库映射 | **当前执行：重新只读调查，不修复** |
+| 35 | `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` | 底栏按钮、Create/Edit同一进展结构及主题/内容数据库映射 | 用户报告已完成；本地结果为修复与审查输入 |
+
+| 36 | `reviews/enterprise-progress-single-source-independent-review-v1.md` | 按报告最小修复建议复核双写、数据保留、三入口与UI | **当前下一步：实施完成、固定候选后独立审查** |
 
 ---
 
@@ -68,13 +67,17 @@
 ```text
 PREVIOUS_REVIEW = USER_REPORTED_NO_BLOCKERS
 PREVIOUS_MANUAL_CHECK = BASICALLY_ACCEPTABLE_WITH_HOME_ISSUES
-CURRENT_TASK = ENTERPRISE_FORM_PROGRESS_LEGACY_PARITY_SURVEY_V2
+CURRENT_TASK = ENTERPRISE_PROGRESS_SINGLE_SOURCE_REVIEW_PREPARATION
 FORM_SCROLL_PROGRESS_SURVEY = REPORT_REPORTED_SCOPE_SUPERSEDED
-FORM_PROGRESS_LEGACY_PARITY_SURVEY = REINVESTIGATION_AUTHORIZED_READ_ONLY
+FORM_PROGRESS_LEGACY_PARITY_SURVEY = COMPLETED_USER_REPORTED
+NON_MOX_PROGRESS_DOUBLE_WRITE = USER_REPORTED_TOB_ISP_POWER_LARGE
+PROGRESS_REPAIR = USER_ASSIGNED_LOCAL_REPORT_MINIMAL_REPAIR
+PROGRESS_IMPLEMENTATION_COMPLETION = NOT_YET_REPORTED
+PROGRESS_INDEPENDENT_REVIEW = AUTHORIZED_AFTER_STABLE_IMPLEMENTATION
 SURVEY_SCOPE = FOOTER_BUTTON_STYLE_AND_PROGRESS_AREA_WITH_DB_MAPPING
 CREATE_EDIT_PROGRESS_UI = SAME_READONLY_LATEST_AND_EXPANDABLE_SUBJECT_CONTENT
 CREATE_EDIT_SAVE_LIFECYCLE = INVESTIGATE_SEPARATELY
-PROGRESS_STORAGE_MAPPING = PENDING_LOCAL_READ_ONLY_INVESTIGATION
+PROGRESS_STORAGE_MAPPING = LOCAL_REPORT_TO_BE_READ_BY_REVIEWER
 LEGACY_UI_REFERENCE = LOCAL_BATTLEMAP_MAIN_MOX_AND_TOB
 DOUBLE_SCROLL = USER_CONFIRMED_ACCEPTABLE
 PROGRESS_UI_DIFFERENCE = USER_REPORTED_INLINE_CONTROLS_MISSING
@@ -307,11 +310,10 @@ field identity 必须 canonical；中文 label 只展示。
 
 ## 10. 当前推进顺序
 
-1. 更新Authority，归档已有本次报告并纠正旧前提，记录本地应用main/feature版本、实际服务、相关未提交diff和数据库身份；不以先commit为调查前置。
-2. 对照主分支MOX/TOB与当前Create/Edit，只查底栏取消/保存按钮样式和进展区域；两种模式都核验只读最新摘要、展开按钮及两个可编辑输入。
-3. 追踪主题/内容的model、API payload、handler、实际表列、父记录关联及最新读取规则，分别核实Create/Edit提交/取消/刷新生命周期和存储归属。
-4. 只读检查实库schema/迁移登记与必要最小证据，区分实库观察、源码路径和未执行的保存往返，不用“History”概念代替具体映射。
-5. 在指定报告/唯一新证据目录记录根因、缺项和最小建议范围后停止。不清除双滚动，不改其他区域，不现场修复。
+1. 本地实施者按调查报告最小建议完成修复、数据保留与必要验证；本轮不另开竞争方案。
+2. 修复完成后固定包含全部相关代码/测试的候选与实际运行版本；按快照准备V1处理版本缺口，审查者不代提交。
+3. 独立审查按 `reviews/enterprise-progress-single-source-independent-review-v1.md` 逐项闭环四模块双写、三入口数据/交互、迁移与MOX回归，检查本地实际数据库状态。
+4. 写唯一专项报告，区分PASS/FAIL/PARTIAL、代码与真实库状态及底栏等剩余事项。失败交回定向修复；不现场修复，不推定整个企业模块通过。
 
 ---
 

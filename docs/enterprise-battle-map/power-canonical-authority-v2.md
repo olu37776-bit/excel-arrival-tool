@@ -176,6 +176,8 @@ Authority 优先级：用户最新明确要求 → authority-index.md 指定的�
 
 ## 7. 数据库与清理
 
+`battleProgress`是保留的canonical业务身份及History读取投影/特殊editor入口，不表示业务表必须保留同名物理文本列。Progress History是唯一持久化事实源；主题/内容、父记录关联与三入口读写按共享架构V5第7节统一。用户报告本模块仍双写，当前按本地调查最小建议修复，完成后按 `reviews/enterprise-progress-single-source-independent-review-v1.md` 独立核验；未核验不得标记已收敛。
+
 最终电力表只保留目标业务列、`customer_id`、主键和必要技术列。
 
 - 同义旧字段通过一次性 Migration 搬迁后删除；
