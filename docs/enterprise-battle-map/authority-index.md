@@ -6,11 +6,11 @@
 
 ---
 
-## 0. 当前新增行业选项调整
+## 0. 当前迁移 Schema 测试残留修复
 
-用户新增要求：ISP行业只有“ISP”，电力行业只有“电力”，大企行业为“油气矿、广电、交通”。当前执行 `enterprise-industry-options-authority-v1.md`，三份模块规范已同步选项，字段总数/身份和其他字段规则不变。
-前轮测试残留修复已报告完成，独立复核尚无新回执，不能标记通过；旧报告和证据保留。若旧审查仍运行，保存其报告并结束读取后再写入行业选项改动，避免同一工作树并发改变受审快照。
-本轮按新规范完成契约/共享选项链、实际直接消费者及测试预期同步。Excel继续留在本地；旧表验证列表不覆盖这次用户明确选项，也不阻塞应用调整。
+用户最新报告：此前测试已修复，但三个迁移/DB测试仍有残留失败；已执行历史SQL不能修改，应更新相关测试。当前优先按 `remediation/enterprise-migration-schema-test-alignment-v1.md` 做定向测试修复，云端未核验本地日志，不预判全部属于旧预期。
+历史版本测试验证对应版本，完整生产迁移链验证最终结构；业务字段数不等于DB物理列数。若真实完整链仍保留已删除分类列，保持有效失败并报告生产迁移缺口，不修改历史SQL，也不通过改预期接受错误终态。
+行业选项V1仍已授权，ISP=ISP、电力=电力、大企=油气矿/广电/交通；尚未收到完成回执，保留已有修改和规范，本轮不混入选项实施。旧审查/报告按原HEAD保存，不并发改变受审快照。
 
 ## 1. 当前正式 Authority
 
@@ -46,21 +46,22 @@
 | 26 | `remediation/enterprise-home-route-blocker-repair-v1.md` | 读取本地报告、修复真实点击链路、浏览器导航证据 | 用户报告修复完成；待独立复核 |
 | 27 | `reviews/authority-consistency-audit-2026-09-07.md` | 2026-09-07文档一致性核对快照 | 历史核对；当前状态以本索引为准 |
 | 28 | `reviews/enterprise-home-and-excel-delta-independent-review-v1.md` | 同一新HEAD核验首页修复、Excel增量与联合回归 | 前轮复核仍待结果；保留对应HEAD证据 |
-| 29 | `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` | 测试失败分类、过期预期/fixture维护及真实回归处理 | 用户报告修复完成；保留修复规则供复核 |
-| 30 | `enterprise-industry-options-authority-v1.md` | ISP/电力/大企行业选项、共享链路和测试同步 | **当前执行：已授权待实施** |
+| 29 | `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` | 测试失败分类、过期预期/fixture维护及真实回归处理 | 此前修复已报告；最新迁移残留按专项V1 |
+| 30 | `enterprise-industry-options-authority-v1.md` | ISP/电力/大企行业选项、共享链路和测试同步 | 已授权，完成状态待回执；与迁移测试修复分开 |
+| 31 | `remediation/enterprise-migration-schema-test-alignment-v1.md` | 历史迁移不可改、版本化schema预期、完整链与物理列集合 | **当前执行：用户报告剩余失败，定向测试修复** |
 
 ---
 
 ## 2. 当前阶段判断
 
-此前用户人工检查后提出首页布局、样式、真实金额和导航调整；后续独立审查发现跳转阻塞。2026-09-08 用户报告首页与删除字段两项均完成；后续联合审查曾报告阻塞，用户现已报告修复完成，进入新 HEAD 的独立复核。
+此前用户人工检查后提出首页布局、样式、真实金额和导航调整；后续独立审查发现跳转阻塞。2026-09-08 用户报告首页与删除字段两项均完成；后续联合审查曾报告阻塞，用户随后报告此前修复完成，但最新仍有三个迁移/DB测试失败，先处理本轮定向残留。
 这是人工检查反馈，不是云端重新核验本地代码/测试的声明。前轮报告继续作为原 HEAD 的历史证据，本轮新 HEAD 的验证另行记录。
 
 当前：
 ```text
 PREVIOUS_REVIEW = USER_REPORTED_NO_BLOCKERS
 PREVIOUS_MANUAL_CHECK = BASICALLY_ACCEPTABLE_WITH_HOME_ISSUES
-CURRENT_TASK = ENTERPRISE_INDUSTRY_OPTIONS_V1
+CURRENT_TASK = ENTERPRISE_MIGRATION_SCHEMA_TEST_ALIGNMENT_V1
 INDUSTRY_OPTIONS = AUTHORIZED_PENDING_IMPLEMENTATION
 EXCEL_CONFIRMED_DELTA_V1 = IMPLEMENTED_REPORTED
 HOME_ROUTE_REPAIR = IMPLEMENTED_REPORTED
@@ -68,8 +69,11 @@ HOME_V4_PREVIOUS_REVIEW = USER_REPORTED_BLOCKER
 PREVIOUS_JOINT_REVIEW = USER_REPORTED_BLOCKED
 PREVIOUS_POST_TEST_ALIGNMENT_REVIEW = PENDING_RESULT
 INDUSTRY_OPTIONS_REVIEW = NOT_STARTED
-TEST_FAILURES = FIX_REPORTED_CLOSURE_UNVERIFIED
-TEST_ALIGNMENT = IMPLEMENTED_REPORTED
+TEST_FAILURES = USER_REPORTED_MIGRATION_SCHEMA_RESIDUALS
+TEST_ALIGNMENT = PREVIOUS_FIX_REPORTED_WITH_RESIDUALS
+MIGRATION_SCHEMA_TEST_ALIGNMENT = AUTHORIZED_PENDING_IMPLEMENTATION
+EXECUTED_HISTORICAL_SQL = IMMUTABLE
+PRODUCTION_MIGRATION_GAP = NOT_YET_ASSESSED
 EXCEL_SOURCE = USER_CONFIRMED_LOCAL_ROOT_FILE
 EXCEL_GIT_TRACKING_REQUIRED = NO
 SEPARATE_EXCEL_IMPLEMENTATION_REPORT_REQUIRED = NO
@@ -77,7 +81,7 @@ HOME_V4_IMPLEMENTATION = IMPLEMENTED_REPORTED
 MANUAL_ACCEPTANCE_AFTER_REPAIR = PENDING
 ```
 
-旧首页报告与人工检查曾发现跳转阻塞，现用户报告首页和字段删除均已完成。用户现又报告测试残留修复完成，其独立复核结果尚待回执；本轮新增行业选项任务不意味着旧 findings 已关闭，具体历史结论按对应 HEAD 保存。既有机制保持受影响范围回归。
+旧首页报告与人工检查曾发现跳转阻塞，现用户报告首页和字段删除均已完成。此前测试修复回执后又报告迁移Schema残留，尚不能关闭测试finding；行业选项完成状态与旧复核结果均未获新回执，具体历史结论按对应HEAD保存。既有机制保持受影响范围回归。
 
 ---
 
@@ -189,7 +193,7 @@ renderer 必须根据 Contract 自然产生 4-group 或 3-group，不允许通�
 - 全局首页企业场景进入企业首页，MOX/TOB/ISP&大企三卡进入各自约定子页。
 
 本轮用户已明确授权首页工作，旧“首页 DEFERRED/最后建设”的阶段安排不阻塞此任务。Excel V0.2 未授权字段变化继续独立处理。
-首页业务规则不变；前轮复核待结果，本次行业选项变更后仅按实际影响回归首页与共享消费者，旧报告不改写。
+首页业务规则不变；前轮复核待结果，本次迁移测试修复仅按实际影响核验首页与共享消费者，后续行业选项同样按影响回归；旧报告不改写。
 
 ---
 
@@ -266,7 +270,7 @@ field identity 必须 canonical；中文 label 只展示。
 行业选项另有用户已确认增量 `enterprise-industry-options-authority-v1.md`，已同步三模块规范；不受下面“未确认差异”冻结限制，不改变字段总数。
 
 两项确认增量已正式进入当前字段 Authority：仅删除“整体空间（肥肉/瘦肉/骨头）”分类字段，大企表名为“大企（油气矿、广电、交通）”。其他字段、金额、跳数及业务规则保持不变。
-当前目标字段总数：MOX 40、TOB 33、ISP 24、电力27、大企25。视图字段按各 Contract 的 visibility/mode 派生；这些数字不表示 Excel、代码或数据库已经完成迁移。
+当前目标字段总数：MOX 40、TOB 33、ISP 24、电力27、大企25。视图字段按各 Contract 的 visibility/mode 派生；这些数字不是DB物理列数，也不表示Excel、代码或数据库已经完成迁移。历史SQL不可改与最终结构必须收敛并不矛盾，迁移测试按专项V1区分历史阶段与真实生产终态。
 
 其他尚未确认的 V0.2 差异继续只读调查，只有这些未确认差异使用 BLOCKED_BY_V0_2_AUTHORITY。已确认两项不得再以旧冻结说明阻塞。
 首页路由任务与 Excel 字段任务分别恢复本地进度、记录实现提交和证据；首页修复不因新的字段目标而被迫混入尚未实施的 Excel 改动。若 Excel 已实施，其实际受影响消费者按新契约回归。
@@ -275,11 +279,11 @@ field identity 必须 canonical；中文 label 只展示。
 
 ## 10. 当前推进顺序
 
-1. 更新 Authority，保留前轮审查状态，核实同一工作树不再被并发审查。
-2. 按行业选项 V1恢复真实industry字段、选项、客户关联和实际消费者，写最小计划/WRITE_SCOPE。
-3. 实施三模块选项调整，同时维护相关测试预期；其他字段与历史数据保持。
-4. 完成针对性回归和必要构建，保存行业选项实施报告，提交本轮拥有的改动，只声明IMPLEMENTED。
-5. 新HEAD独立核验本范围及受影响功能，结合前轮复核实际结果再人工验收。
+1. 更新Authority，恢复真实三个测试文件、失败日志及迁移版本，保留既有行业任务改动，确认无并发审查。
+2. 按迁移Schema测试专项V1建立最小失败矩阵和测试文件级WRITE_SCOPE；不修改SQL或生产迁移接线。
+3. 对齐历史版本预期、修正截断测试搭建、用独立物理列集合替代错误硬编码；保留终态及数据升级覆盖。
+4. 运行定向及原完整测试，报告真实生产迁移缺口与其他剩余失败，保存本轮报告并提交拥有的测试改动，只声明IMPLEMENTED/PARTIAL/BLOCKED。
+5. 终态有生产缺口则先取得明确后续修复范围；测试修复完成后固定新HEAD按联合复核V1第8节核验。行业选项V1保留为已授权独立任务，先恢复其实际进度，不假定完成或重做。
 
 ---
 

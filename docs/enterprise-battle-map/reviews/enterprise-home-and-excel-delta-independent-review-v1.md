@@ -1,6 +1,6 @@
 # 首页修复与 Excel 确认增量：联合独立复核 V1
 
-**状态：CURRENT INDEPENDENT REVIEW / 用户已报告测试修复完成，待新 HEAD 独立复核**  
+**状态：CURRENT REVIEW AUTHORITY / 最新迁移Schema测试残留待定向修复；完成后固定新HEAD复核**  
 **依据：2026-09-08 用户报告“首页和那个删除字段都完成了”**  
 **代码工作树：D:\BattleMap\battle-map / feature/enterprise-battle-map**
 
@@ -29,6 +29,7 @@ git -C "D:\BattleMap\BattleMapenterprise-authority" pull --ff-only origin enterp
 - docs/enterprise/implementation/enterprise-home-polish-v4-plan.md 和 enterprise-home-polish-v4-report.md；
 - docs/enterprise/implementation/enterprise-home-route-repair-v1-plan.md 和 enterprise-home-route-repair-v1-report.md；
 - docs/enterprise/implementation/enterprise-test-expectation-alignment-v1-plan.md、enterprise-test-expectation-alignment-v1-report.md 及其失败矩阵/证据；
+- 最新迁移Schema专项的 docs/enterprise/implementation/enterprise-migration-schema-test-alignment-v1-plan.md、enterprise-migration-schema-test-alignment-v1-report.md 及失败矩阵/证据；
 - Excel 计划/实施报告若已存在则读取作为辅助；缺少单独报告不阻塞，直接读取下面规定的本地根目录工作簿。
 
 报告变更路径时先在本地用 rg 找到真实文件并核对内容/HEAD，不要求用户上传。某报告缺失时先尝试实际代码、文件与测试直接核验；只有无法获取完成具体检查所需的事实时才记录对应 EVIDENCE_GAP。
@@ -86,7 +87,7 @@ git -C "D:\BattleMap\BattleMapenterprise-authority" pull --ff-only origin enterp
 |---:|---:|---:|---:|---:|
 | 40 | 33 | 24 | 27 | 25 |
 
-这只是总业务身份数；Create/Edit 可见或可编辑字段仍由 Contract visibility/mode 派生。不能靠数量正确掩盖错删、遗漏或替换字段。
+这只是总业务身份数，不是DB物理列数；Create/Edit 可见或可编辑字段仍由 Contract visibility/mode 派生。不能靠数量正确掩盖错删、遗漏或替换字段。
 TOB/ISP/电力/大企被删除分类身份原为 overallSpaceTier，MOX 精确 key 以本地真实契约映射确认。
 
 核验：
@@ -102,7 +103,7 @@ TOB/ISP/电力/大企被删除分类身份原为 overallSpaceTier，MOX 精确 k
 
 ## 5.1 本轮出现的既有测试失败
 
-前轮用户报告测试残留，现已报告修复完成；云端尚未读取本地日志。当前复核按第7节检查实际修复，下面分类规则继续有效。审查者按 `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` 第3节记录逐项分类：过期预期、真实生产回归、测试/fixture缺陷、环境/证据缺口或未分类。
+此前用户报告测试修复完成，最新又报告三个迁移/DB测试残留，云端尚未读取本地日志。先按迁移Schema专项V1定向实施，之后按第8节复核；第7节与下面分类规则继续有效。审查者按 `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` 第3节记录逐项分类：过期预期、真实生产回归、测试/fixture缺陷、环境/证据缺口或未分类。
 先完成可执行独立检查并保存报告，不现场改测试。旧数、旧名称或旧字段字样并不天然错误，例如升级前 fixture 应保持旧结构；反之，已确认过期的活动门禁也不能仅标“预期失败”就当作通过。
 已证实必需测试资产与当前契约不一致、阻碍有效验证时，记录阻塞的测试问题；保持 FAIL 的事实归属，不能称为生产缺陷或忽略失败给整体 PASS。只有必要执行条件/证据不足而未确认缺陷时才使用 PARTIAL。
 审查者复核实施者的分类及每项修改，不现场维护测试。若还有残留，则保留新 finding 和证据，审查结束后由实施者按该规范处理；本轮未完成项不能自动 PASS。
@@ -168,3 +169,15 @@ PASS 后由用户在实际页面与根目录 Excel 做简短人工验收，再�
 8. 结束确认代码 HEAD、受审代码/测试及 workbook hash 稳定。逐项给出旧 finding 的关闭、仍失败或经用户澄清不适用的理由；不改写旧报告的事实，不把未读取文件标为通过。
 
 结论仍按第6节 PASS/FAIL/PARTIAL。PASS 后才交用户简短人工验收：首页入口跳转与金额显示、五模块页面无被删分类字段、根目录大企表名含交通；本轮完成后再恢复其余真实待办。
+
+## 8. 最新历史迁移与Schema测试修复后的复核
+
+本节对应 `remediation/enterprise-migration-schema-test-alignment-v1.md`，实施者完成专项后再开始。只读核验，不修改测试、SQL或生产代码。
+
+1. 用实际文件路径关联用户报告的ISP迁移、完整链、电力/大企DB三个失败，核对起始/截止迁移版本及分类。用户拼写不是重命名测试的依据。
+2. 确认本轮历史SQL内容、排序/版本、生产runner/登记均未改变，没有伪造迁移账本/测试专属删列；既有其他任务差异单独归属。
+3. 历史单步/前缀用对应版本schema预期，保留旧输入字段和数据；不能拿最新schema要求每个历史阶段，也不能通过改用例名删掉原有完整升级覆盖。
+4. 全链真实调用当前生产迁移路径并达到最新登记版本；空库与真实旧结构升级的最终schema一致、旧分类列删除、其他数据/金额/跳数/关联保留。若生产完整终态仍残留旧列，保持PRODUCTION_MIGRATION_GAP finding，不能接受错误终态让测试通过。
+5. 电力/大企等DB断言精确比较经版本和持久化契约确认的独立物理列集合，保留适用类型/约束等门禁；业务字段数不等于物理列数，expected不能从实际PRAGMA结果自生成。
+6. 复查三个定向测试、受影响迁移/DB测试和原完整命令的当前证据，按第7节核验断言强度与build。未受影响的首页/Excel可信证据可复用；工作簿仍本地只读且不要求Git/单独报告。
+7. 沿用第6节唯一联合报告和结论规则，不另建竞争结论。行业选项V1保留为独立已授权任务，只有相关改动确已进入受审HEAD时才按其实际影响核验，不推定已完成。

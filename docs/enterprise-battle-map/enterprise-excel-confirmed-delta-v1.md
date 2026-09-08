@@ -30,10 +30,10 @@ Authority checkout：D:\BattleMap\BattleMapenterprise-authority
 
 先以实际 Excel 和代码建立“整体空间”字段 → canonical key → DB 列 → 消费者映射。既有 TOB/ISP/电力/大企 Authority 的该分类字段均为 overallSpaceTier；MOX 的精确 canonical key 仍需从真实契约核实。此 key 仅作为一次性删除映射，不再属于最终有效字段。删除字段的当前定义及有效消费者，包括实际存在的表格、Create/Edit、校验、筛选、Heatmap、导入导出及 API 投影。最终不能通过隐藏 UI 或保留空选项冒充字段删除。
 
-- 五份当前模块 Authority 已同步最终字段集合：MOX 40、TOB 33、ISP 24、电力27、大企25。仅删除一个分类字段，其后 order 前移一位，其他身份不变；Create/Edit 可见项仍按 visibility/mode 派生，不能把业务总数字段等同于视图可编辑数量。数量描述目标契约，实际完成情况按本地证据记录。
+- 五份当前模块 Authority 已同步最终字段集合：MOX 40、TOB 33、ISP 24、电力27、大企25。仅删除一个分类字段，其后 order 前移一位，其他身份不变；Create/Edit 可见项仍按 visibility/mode 派生，不能把业务总数字段等同于视图可编辑数量或DB物理列数。数量描述目标契约，实际完成情况按本地证据记录。
 - 继续由共享表单渲染器消费模块契约；不为删字段引入模块本地表单构建器或兼容分支。
 - 大企工作表名及直接对应的完整表名展示同步更新，不顺带改写其他页面文案；内部稳定模块 ID、客户主键及路由 identity 不因中文标题变化重建。
-- 持久化结构如需调整，按现有迁移机制编写可验证迁移；在隔离的新库和升级副本中验证，不直接操作真实业务库。保留历史迁移文件，旧分类数据不得转换为其他字段数据。
+- 持久化结构如需调整，按现有迁移机制编写可验证迁移；在隔离的新库和升级副本中验证，不直接操作真实业务库。已执行历史SQL保持原样，不修改/重排/重编号；历史阶段保留旧分类列不代表活动残留，真正完整生产迁移链最终仍须删除该列，旧分类数据不得转换为其他字段数据。后续生产结构修复须通过明确授权的增量迁移或接线修复完成，不能追改历史。
 - 检查首页金额/空间指标是否引用被删字段；按实际 canonical identity 确认影响，不因名称相近误改其他指标或金额列。发现真实依赖且缺少替代业务规则时，报告具体依赖，不能自行发明计算规则。
 
 本轮不要求重新实现已有共享机制；仅修改上述两项涉及的真实链路。
@@ -49,7 +49,7 @@ Authority checkout：D:\BattleMap\BattleMapenterprise-authority
 
 根据实际改动运行必要测试和项目既有构建门禁；测试验证真实生产路径，不以文本搜索代替功能证据。纯 Excel 修改不机械重跑无关代码测试；代码发生修改则使用对应新实现的证据。不得将本轮实现自测称为独立审查通过。
 
-测试维护补充：本轮已报告多项既有测试失败，按 `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` 分类后对齐；旧升级输入保留旧结构，仍有效的金额/数据保留断言不能放宽。正在执行的独立审查不现场修改测试。
+测试维护补充：本轮已报告多项既有测试失败，按 `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` 分类后对齐；旧升级输入保留旧结构，仍有效的金额/数据保留断言不能放宽。最新三个迁移/DB残留按 `remediation/enterprise-migration-schema-test-alignment-v1.md` 处理：区分历史版本、完整终态和物理列集合，本次专项不授予SQL/生产修复权限。正在执行的独立审查不现场修改测试。
 
 原实施计划路径（如存在则参考，不是实物核验前置）：
 docs/enterprise/implementation/enterprise-excel-confirmed-delta-v1-plan.md
