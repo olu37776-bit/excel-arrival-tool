@@ -152,7 +152,8 @@ class EmptySheetInputTest(unittest.TestCase):
                     self.assertEqual(0, row['最终收入预测'])
                     self.assertEqual('2026-09', row['最终收入年月（按RPD）'])
                     self.assertEqual('2026-10', row['最终收入年月（按CPD）'])
-                    self.assertEqual({'RegionalRevenueRPD', 'RegionalRevenueCPD'}, {p.name for s in workbook for p in s._pivots})
+                    self.assertFalse(any(sheet._pivots for sheet in workbook.worksheets))
+                    self.assertNotIn('_summary_source', workbook.sheetnames)
                 finally:
                     workbook.close()
 
