@@ -36,11 +36,6 @@ class PreviousUpgradeTest(unittest.TestCase):
                 _set_manual_inputs(old, 'C001', 'SC-A', segment_flag=False,
                                    rpd='2026-9', cpd='2026-10', amount=0)
                 _remove_fields_from_result(old, removed)
-                wb = load_workbook(old)
-                for name in ('RPD地区收入汇总', 'CPD地区收入汇总', '_summary_source'):
-                    del wb[name]
-                wb.save(old)
-                wb.close()
                 _run(sources, new, previous=old)
                 wb = load_workbook(new, data_only=True)
                 try:
@@ -56,8 +51,8 @@ class PreviousUpgradeTest(unittest.TestCase):
                         self.assertEqual('2026-10', row['最终收入年月（按CPD）'])
                     self.assertEqual(0, row['最终收入预测'])
                     self.assertEqual(0, row['调整金额'])
-                    for name in ('RPD地区收入汇总', 'CPD地区收入汇总'):
-                        self.assertEqual(1, len(wb[name]._pivots))
+                    self.assertFalse(any(sheet._pivots for sheet in wb.worksheets))
+                    self.assertNotIn('_summary_source', wb.sheetnames)
                 finally:
                     wb.close()
 
@@ -82,8 +77,10 @@ class PreviousUpgradeTest(unittest.TestCase):
                         if isinstance(expected, bool):
                             self.assertIs(expected, actual)
                         self.assertEqual('f', live['基表'].cell(number, indexes[field]).data_type)
-                self.assertTrue(live.calculation.fullCalcOnLoad)
                 self.assertEqual('auto', live.calculation.calcMode)
+                self.assertFalse(live.calculation.fullCalcOnLoad)
+                self.assertFalse(live.calculation.forceFullCalc)
+                self.assertFalse(live.calculation.calcOnSave)
             finally:
                 cached.close()
                 live.close()
