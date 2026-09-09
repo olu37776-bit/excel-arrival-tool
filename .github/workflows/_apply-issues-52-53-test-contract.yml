@@ -24,44 +24,26 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           pipeline = Path('tests/test_pipeline.py')
           text = pipeline.read_text(encoding='utf-8')
-          old = '''                    [
-                        "基表",
-                        "RPD跨月变化",
-                        "CPD跨月变化",
-                        "供应需要提拉诉求清单粗表",
-                        "异常清单",
-                        "_tool_meta",
-                        "RPD地区收入汇总",
-                        "CPD地区收入汇总",
-                        "_summary_source",
-                    ],'''
-          new = '''                    [
-                        "基表",
-                        "RPD跨月变化",
-                        "CPD跨月变化",
-                        "供应需要提拉诉求清单粗表",
-                        "异常清单",
-                        "_tool_meta",
-                    ],'''
-          if old not in text:
-              raise SystemExit('pipeline sheet-name contract not found')
-          pipeline.write_text(text.replace(old, new, 1), encoding='utf-8')
+          for value in ('RPD地区收入汇总', 'CPD地区收入汇总', '_summary_source'):
+              text, count = re.subn(r'^\s*"' + re.escape(value) + r'",\s*\n', '', text, count=1, flags=re.MULTILINE)
+              if count != 1:
+                  raise SystemExit(f'pipeline contract entry not found: {value}')
+          pipeline.write_text(text, encoding='utf-8')
 
           final_test = Path('tests/test_final_revenue.py')
           text = final_test.read_text(encoding='utf-8')
-          old = '''                self.assertEqual("auto", wb.calculation.calcMode)
-                self.assertTrue(wb.calculation.fullCalcOnLoad)
-                self.assertTrue(wb.calculation.forceFullCalc)'''
-          new = '''                self.assertEqual("auto", wb.calculation.calcMode)
-                self.assertFalse(wb.calculation.fullCalcOnLoad)
-                self.assertFalse(wb.calculation.forceFullCalc)
-                self.assertFalse(wb.calculation.calcOnSave)'''
-          if old not in text:
-              raise SystemExit('calculation-property contract not found')
-          final_test.write_text(text.replace(old, new, 1), encoding='utf-8')
+          for old, new in (
+              ('self.assertTrue(wb.calculation.fullCalcOnLoad)', 'self.assertFalse(wb.calculation.fullCalcOnLoad)'),
+              ('self.assertTrue(wb.calculation.forceFullCalc)', 'self.assertFalse(wb.calculation.forceFullCalc)\n                self.assertFalse(wb.calculation.calcOnSave)'),
+          ):
+              if old not in text:
+                  raise SystemExit(f'calculation-property assertion not found: {old}')
+              text = text.replace(old, new, 1)
+          final_test.write_text(text, encoding='utf-8')
 
           readme = Path('README.md')
           text = readme.read_text(encoding='utf-8')
