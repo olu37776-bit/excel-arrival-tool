@@ -4,15 +4,15 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from openpyxl import load_workbook
-from openpyxl.utils.cell import range_boundaries
+
 from revenue_tool.adapters.excel_reader import ExcelInputAdapter, _open_workbook
 from revenue_tool.adapters.pivot_input_view import business_sheet
 from revenue_tool.adapters.pivot_smoke_fixture import add_pivot_fixture
 from revenue_tool.config import load_config
 from revenue_tool.domain.models import IssueLog, WorkbookReadError
 from tests.test_grouped_pivot_input import add_discrete_group, rewrite_package
-from tests.test_pipeline import CONFIG, _run, _write_sources, _base_rows
 from tests.test_manual_revenue_forecast import _set_manual_inputs
+from tests.test_pipeline import CONFIG, _base_rows, _run, _write_sources
 
 
 def add_user_pivots(path, metadata=True):
@@ -23,11 +23,12 @@ def add_user_pivots(path, metadata=True):
         fake = [c.value for c in base[2]]
         fake[headers.index('合同号')] = 'PIVOT-ONLY'
         template = add_pivot_fixture(
-            wb, base, location_ref='AS1:CF3', name='UserRight'
+            wb, base, location_ref='AS3:CF5', name='UserRight'
         )
+        base['AS1'], base['AT1'] = '透视筛选', 'USER'
         for offset, value in enumerate(headers):
-            base.cell(1, 45 + offset, value)
-            base.cell(2, 45 + offset, fake[offset])
+            base.cell(3, 45 + offset, value)
+            base.cell(4, 45 + offset, fake[offset])
         lower = deepcopy(template)
         lower.name = 'UserBelow'
         lower.location.ref = 'A12:AN14'
@@ -117,7 +118,7 @@ class UserPivotRegionsTest(unittest.TestCase):
             add_user_pivots(path)
             def break_layout(name, data):
                 if name.startswith('xl/pivotTables/') and name.endswith('.xml') and b'UserRight' in data:
-                    return data.replace(b'AS1:CF3', b'not-a-range')
+                    return data.replace(b'AS3:CF5', b'not-a-range')
                 return data
             rewrite_package(path, break_layout)
             with self.assertRaisesRegex(WorkbookReadError, '透视区域无法识别'):
