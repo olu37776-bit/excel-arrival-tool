@@ -4,38 +4,43 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from openpyxl import load_workbook
-from openpyxl.utils.cell import range_boundaries
+
 from revenue_tool.adapters.excel_reader import ExcelInputAdapter, _open_workbook
 from revenue_tool.adapters.pivot_input_view import business_sheet
+from revenue_tool.adapters.pivot_smoke_fixture import add_pivot_fixture
 from revenue_tool.config import load_config
 from revenue_tool.domain.models import IssueLog, WorkbookReadError
 from tests.test_grouped_pivot_input import add_discrete_group, rewrite_package
-from tests.test_pipeline import CONFIG, _run, _write_sources, _base_rows
 from tests.test_manual_revenue_forecast import _set_manual_inputs
+from tests.test_pipeline import CONFIG, _base_rows, _run, _write_sources
 
 
 def add_user_pivots(path, metadata=True):
     wb = load_workbook(path)
     try:
         base = wb['基表']
-        template = wb['RPD地区收入汇总']._pivots[0]
         headers = [c.value for c in base[1]]
         fake = [c.value for c in base[2]]
         fake[headers.index('合同号')] = 'PIVOT-ONLY'
-        for name, ref in [('UserRight', 'AS1:CF3'), ('UserBelow', 'A12:AN14')]:
-            pivot = deepcopy(template)
-            pivot.name = name
-            pivot.location.ref = ref
-            pivot.location.firstHeaderRow = 0
-            pivot.location.firstDataRow = 1
-            pivot.location.rowPageCount = 0
-            pivot.location.colPageCount = 0
-            pivot.pageFields = []
-            base.add_pivot(pivot)
-            left, top, _, _ = range_boundaries(ref)
-            for offset, value in enumerate(headers):
-                base.cell(top, left + offset, value)
-                base.cell(top + 1, left + offset, fake[offset])
+        template = add_pivot_fixture(
+            wb, base, location_ref='AS3:CF5', name='UserRight'
+        )
+        base['AS1'], base['AT1'] = '透视筛选', 'USER'
+        for offset, value in enumerate(headers):
+            base.cell(3, 45 + offset, value)
+            base.cell(4, 45 + offset, fake[offset])
+        lower = deepcopy(template)
+        lower.name = 'UserBelow'
+        lower.location.ref = 'A12:AN14'
+        lower.location.firstHeaderRow = 0
+        lower.location.firstDataRow = 1
+        lower.location.rowPageCount = 0
+        lower.location.colPageCount = 0
+        lower.pageFields = []
+        base.add_pivot(lower)
+        for offset, value in enumerate(headers):
+            base.cell(12, 1 + offset, value)
+            base.cell(13, 1 + offset, fake[offset])
         # Real business row after the lower pivot, including a manual 0.
         real = [c.value for c in base[2]]
         real[headers.index('合同号')] = 'REAL-AFTER-PIVOT'
@@ -80,7 +85,7 @@ class UserPivotRegionsTest(unittest.TestCase):
                     self.assertEqual('2026-09', actual['最终收入年月（按RPD）'])
                     self.assertEqual('2026-10', actual['最终收入年月（按CPD）'])
                     self.assertEqual(0, actual['最终收入预测'])
-                    self.assertEqual({'RegionalRevenueRPD', 'RegionalRevenueCPD'}, {p.name for s in wb for p in s._pivots})
+                    self.assertFalse(any(s._pivots for s in wb))
                 finally:
                     wb.close()
                 self.assertEqual(before, old.read_bytes())
@@ -90,9 +95,8 @@ class UserPivotRegionsTest(unittest.TestCase):
             root = Path(tmp); path = root / 'old.xlsx'
             _run(_write_sources(root, 'src', variant='first'), path)
             wb = load_workbook(path)
-            sheet = wb['基表']; pivot = deepcopy(wb['RPD地区收入汇总']._pivots[0])
-            pivot.name = 'UserWithFilter';pivot.location.ref = 'AS3:AX8'
-            sheet.add_pivot(pivot)
+            sheet = wb['基表']
+            add_pivot_fixture(wb, sheet, location_ref='AS3:AX8', name='UserWithFilter')
             sheet['AS1'] = '合同号';sheet['AT1'] = 'C001'
             sheet['AR1'] = '左侧真实备注';sheet['AU1'] = '右侧真实备注';sheet['AS2'] = '间隔行真实备注'
             wb.save(path);wb.close()
@@ -114,7 +118,7 @@ class UserPivotRegionsTest(unittest.TestCase):
             add_user_pivots(path)
             def break_layout(name, data):
                 if name.startswith('xl/pivotTables/') and name.endswith('.xml') and b'UserRight' in data:
-                    return data.replace(b'AS1:CF3', b'not-a-range')
+                    return data.replace(b'AS3:CF5', b'not-a-range')
                 return data
             rewrite_package(path, break_layout)
             with self.assertRaisesRegex(WorkbookReadError, '透视区域无法识别'):

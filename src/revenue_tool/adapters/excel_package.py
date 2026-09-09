@@ -1,10 +1,8 @@
 """Normalize generated parts to Microsoft's SpreadsheetML constraints.
 
-openpyxl's pivot serializer emits an undeclared r:id on pivotTableDefinition;
-the cache is linked via cacheId and the relationship part instead. Its font
-serializer also uses an order rejected by the Microsoft Open XML validator.
-Only those exact generated structures are changed, without reserializing the
-entire package or dropping unrelated attributes/relationships.
+openpyxl's font serializer can emit an element order rejected by the Microsoft
+Open XML validator. Normalize only that generated structure without
+reserializing unrelated workbook parts.
 """
 import re
 from xml.etree import ElementTree as ET
@@ -18,9 +16,6 @@ _FONT_ORDER = {name: i for i, name in enumerate((
 
 
 def normalize_excel_part(name: str, data: bytes) -> bytes:
-    if name.startswith('xl/pivotTables/pivotTable') and name.endswith('.xml'):
-        return re.sub(rb'<pivotTableDefinition\b[^>]*>',
-                      lambda m: re.sub(rb'\s+r:id="[^"]*"', b'', m.group(0)), data, count=1)
     if name == 'xl/styles.xml':
         def sort_font(match):
             font = ET.fromstring(match.group(0))

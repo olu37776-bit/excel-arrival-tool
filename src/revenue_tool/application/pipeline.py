@@ -12,7 +12,6 @@ from revenue_tool.domain.models import (
     SourceFiles,
 )
 from revenue_tool.services.calculation import RevenueEngine
-from revenue_tool.services.regional_summary import discover_months
 from revenue_tool.services.comparison import (
     build_supply_pull_rows,
     compare_revenue_months,
@@ -113,5 +112,4 @@ def run_pipeline(
         cpd_change_count=len(cpd_changes),
         supply_pull_count=len(supply_pull_rows),
         issue_count=len(issues.items),
-        report_months=discover_months(base_rows),
     )

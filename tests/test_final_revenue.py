@@ -109,8 +109,9 @@ class FinalRevenueTest(unittest.TestCase):
                 ids = [c["id"] for c in config.base_columns]
                 self.assertEqual(40, sheet.max_column)
                 self.assertEqual("auto", wb.calculation.calcMode)
-                self.assertTrue(wb.calculation.fullCalcOnLoad)
-                self.assertTrue(wb.calculation.forceFullCalc)
+                self.assertFalse(wb.calculation.fullCalcOnLoad)
+                self.assertFalse(wb.calculation.forceFullCalc)
+                self.assertFalse(wb.calculation.calcOnSave)
                 self.assertFalse(sheet.protection.sheet)
                 for manual, _ in FINAL_FIELD_SOURCES.values():
                     self.assertFalse(sheet.cell(2, ids.index(manual) + 1).protection.locked)

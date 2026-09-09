@@ -33,7 +33,7 @@ def main(argv: list[str] | None = None) -> int:
         from tempfile import TemporaryDirectory
         from openpyxl import load_workbook
         from revenue_tool.adapters.excel_writer import ExcelOutputAdapter
-        from revenue_tool.adapters.regional_pivot import SUMMARY_SHEETS
+        from revenue_tool.adapters.pivot_smoke_fixture import add_pivot_fixture
         from revenue_tool.domain.models import BaseRow, IssueLog
         from revenue_tool.services.final_revenue import calculate_final_values
 
@@ -48,10 +48,12 @@ def main(argv: list[str] | None = None) -> int:
             ExcelOutputAdapter().write(path, [BaseRow(values)], [], [], [], IssueLog(), config)
             workbook = load_workbook(path)
             try:
-                for name in SUMMARY_SHEETS.values():
-                    sheet = workbook[name]
-                    if len(sheet._pivots) != 1 or sheet["F10"].value != 0:
-                        raise RuntimeError("Windows EXE透视工作簿自检失败")
+                if any(sheet._pivots for sheet in workbook.worksheets):
+                    raise RuntimeError("Windows EXE正常输出不应包含系统透视表")
+                if "_summary_source" in workbook.sheetnames:
+                    raise RuntimeError("Windows EXE正常输出不应包含透视辅助源")
+                if workbook.calculation.forceFullCalc or workbook.calculation.fullCalcOnLoad:
+                    raise RuntimeError("Windows EXE正常输出不应启用强制全量重算")
             finally:
                 workbook.close()
             workbook = load_workbook(path, data_only=True)
@@ -63,22 +65,20 @@ def main(argv: list[str] | None = None) -> int:
                         raise RuntimeError("Windows EXE最终字段计算值自检失败")
             finally:
                 workbook.close()
-            # Simulate a user pivot beside the base with a duplicate header.
-            from copy import deepcopy
+            # Input compatibility still needs a real native user PivotTable even
+            # though normal output no longer generates any system pivots.
             workbook = load_workbook(path)
             try:
-                user_pivot = deepcopy(workbook[SUMMARY_SHEETS['rpd']]._pivots[0])
-                user_pivot.name = 'UserPivotSmoke'
-                user_pivot.location.ref = 'AS1:AT3'
-                user_pivot.location.firstHeaderRow = 0
-                user_pivot.location.firstDataRow = 1
-                user_pivot.location.rowPageCount = 0
-                user_pivot.location.colPageCount = 0
-                user_pivot.pageFields = []
                 base = workbook[config.output['sheets']['base']]
-                base.add_pivot(user_pivot)
-                base['AS1'], base['AT1'] = '合同号', '金额'
-                base['AS2'], base['AT2'] = 'PIVOT-ONLY', 999
+                add_pivot_fixture(
+                    workbook,
+                    base,
+                    location_ref='AS3:AT5',
+                    name='UserPivotSmoke',
+                )
+                base['AS1'], base['AT1'] = '透视筛选', 'USER'
+                base['AS3'], base['AT3'] = '合同号', '金额'
+                base['AS4'], base['AT4'] = 'PIVOT-ONLY', 999
                 # Empty user sheets must not break dimension recovery/import.
                 for state in ('visible', 'hidden', 'veryHidden'):
                     workbook.create_sheet('Empty-' + state).sheet_state = state

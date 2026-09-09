@@ -161,7 +161,7 @@ class RevenueApp:
                     demand_detail_path=values['demand_detail'], transit_path=values['transit'],
                     output_path=values['output'], config_path=self.config_path,
                     previous_path=values['previous'] or None)
-                self.events.put(('success', result, len(result.report_months)))
+                self.events.put(('success', result, 0))
             except Exception as exc:
                 self.events.put(('error', exc, 0))
         Thread(target=work, daemon=True, name='revenue-generation').start()
@@ -180,7 +180,7 @@ class RevenueApp:
                 control.state(['!disabled'])
             if kind == 'success':
                 self.last_output = result.output_path
-                self.status.set(f'生成完成 · 基表 {result.base_count} 行 · 2 张汇总表 · {count} 个实际月份 · 异常记录 {result.issue_count} 条')
+                self.status.set(f'生成完成 · 基表 {result.base_count} 行 · 异常记录 {result.issue_count} 条')
                 self.open_button.state(['!disabled'])
                 self.folder_button.state(['!disabled'])
             else:

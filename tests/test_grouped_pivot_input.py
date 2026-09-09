@@ -8,6 +8,7 @@ from xml.etree import ElementTree as ET
 
 from openpyxl import load_workbook
 from revenue_tool.adapters.excel_reader import ExcelInputAdapter, _open_workbook
+from revenue_tool.adapters.pivot_smoke_fixture import add_pivot_fixture
 from revenue_tool.config import load_config
 from revenue_tool.domain.models import IssueLog, WorkbookReadError
 from tests.test_pipeline import CONFIG, _run, _write_sources, _base_rows
@@ -45,6 +46,12 @@ class GroupedPivotInputTest(unittest.TestCase):
             previous, output = root / 'previous.xlsx', root / 'next.xlsx'
             _run(sources, previous)
             _set_manual_inputs(previous, 'C001', 'SC-A', segment_flag=False, rpd='2026-9', cpd='2026-10', amount=0)
+            workbook = load_workbook(previous)
+            try:
+                add_pivot_fixture(workbook, workbook['基表'])
+                workbook.save(previous)
+            finally:
+                workbook.close()
             add_discrete_group(previous)
             # This exact package triggers the reported exception in the old reader.
             with self.assertRaisesRegex(TypeError, "Nested.from_tree.*node"):
@@ -68,26 +75,18 @@ class GroupedPivotInputTest(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             sources = _write_sources(root, 'sources', variant='first')
-            donor_path = root / 'donor.xlsx'
-            _run(sources, donor_path)
-            # Add an unrelated grouped pivot to a source. Data import must not
-            # depend on its cache being deserializable by openpyxl.
-            donor = load_workbook(donor_path)
             source_path = sources[3]
             source = load_workbook(source_path)
             try:
-                pivot = donor['RPD地区收入汇总']._pivots[0]
-                # Keep the unrelated pivot outside the source business cells.
-                pivot.location.ref = 'AS6:BX20'
-                source.active.add_pivot(pivot)
-                auxiliary = source.create_sheet('_summary_source')
-                for row in donor['_summary_source'].iter_rows():
-                    auxiliary.append([c.value for c in row])
-                auxiliary.sheet_state = 'hidden'
+                add_pivot_fixture(
+                    source,
+                    source.active,
+                    location_ref='AS6:AT20',
+                    name='SourceUserPivot',
+                )
                 source.save(source_path)
             finally:
                 source.close()
-                donor.close()
             add_discrete_group(source_path)
             with self.assertRaisesRegex(TypeError, "Nested.from_tree.*node"):
                 load_workbook(source_path, data_only=True)
