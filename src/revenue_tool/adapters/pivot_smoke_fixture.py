@@ -1,6 +1,6 @@
 """Minimal PivotTable fixture used only by compatibility/self-test paths.
 
-Normal revenue output never calls this module.  It exists so Windows EXE smoke
+Normal revenue output never calls this module. It exists so Windows EXE smoke
 and input-compatibility tests can still prove that user-created PivotTables and
 grouped caches are ignored safely after the system-generated regional pivots
 were removed from production output.
@@ -20,6 +20,7 @@ from openpyxl.pivot.table import (
     DataField,
     FieldItem,
     Location,
+    PageField,
     PivotField,
     RowColField,
     RowColItem,
@@ -31,10 +32,10 @@ def add_pivot_fixture(
     workbook,
     target_sheet,
     *,
-    location_ref: str = "AS1:AT3",
+    location_ref: str = "AS3:AT5",
     name: str = "UserPivotSmoke",
 ):
-    """Add one small, valid native PivotTable and return its definition."""
+    """Add one small native PivotTable with a report filter."""
     base_name = "_pivot_smoke_source"
     source_name = base_name
     suffix = 2
@@ -42,8 +43,8 @@ def add_pivot_fixture(
         source_name = f"{base_name}_{suffix}"
         suffix += 1
     source = workbook.create_sheet(source_name)
-    source.append(["合同号", "金额"])
-    source.append(["SMOKE", 1])
+    source.append(["合同号", "金额", "口径"])
+    source.append(["SMOKE", 1, "USER"])
     source.sheet_state = "hidden"
 
     cache_fields = [
@@ -61,12 +62,19 @@ def add_pivot_fixture(
                 containsNumber=True,
             ),
         ),
+        CacheField(
+            name="口径",
+            sharedItems=SharedItems(
+                _fields=[Text(v="USER")],
+                containsString=True,
+            ),
+        ),
     ]
     cache = CacheDefinition(
         cacheSource=CacheSource(
             type="worksheet",
             worksheetSource=WorksheetSource(
-                ref="A1:B2",
+                ref="A1:C2",
                 sheet=source.title,
             ),
         ),
@@ -83,7 +91,7 @@ def add_pivot_fixture(
     cache.records = RecordList()
     cache.records._id = 1
     cache.records.r.append(
-        Record(_fields=[Index(v=0), Number(v=1)])
+        Record(_fields=[Index(v=0), Number(v=1), Index(v=0)])
     )
 
     pivot_fields = [
@@ -94,6 +102,12 @@ def add_pivot_fixture(
             items=[FieldItem(x=0)],
         ),
         PivotField(defaultSubtotal=False, showAll=True),
+        PivotField(
+            axis="axisPage",
+            defaultSubtotal=False,
+            showAll=True,
+            items=[FieldItem(x=0)],
+        ),
     ]
     pivot_fields[1].dataField = True
     pivot = TableDefinition(
@@ -107,8 +121,8 @@ def add_pivot_fixture(
             firstHeaderRow=1,
             firstDataRow=1,
             firstDataCol=1,
-            rowPageCount=0,
-            colPageCount=0,
+            rowPageCount=1,
+            colPageCount=1,
         ),
         pivotFields=pivot_fields,
         rowFields=[RowColField(x=0)],
@@ -116,6 +130,7 @@ def add_pivot_fixture(
             RowColItem(x=[Index(v=0)]),
             RowColItem(t="grand", x=[Index(v=0)]),
         ],
+        pageFields=[PageField(fld=2, item=0)],
         dataFields=[
             DataField(name="金额汇总", fld=1, subtotal="sum", numFmtId=4)
         ],
