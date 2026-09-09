@@ -73,11 +73,12 @@ def main(argv: list[str] | None = None) -> int:
                 add_pivot_fixture(
                     workbook,
                     base,
-                    location_ref='AS1:AT3',
+                    location_ref='AS3:AT5',
                     name='UserPivotSmoke',
                 )
-                base['AS1'], base['AT1'] = '合同号', '金额'
-                base['AS2'], base['AT2'] = 'PIVOT-ONLY', 999
+                base['AS1'], base['AT1'] = '透视筛选', 'USER'
+                base['AS3'], base['AT3'] = '合同号', '金额'
+                base['AS4'], base['AT4'] = 'PIVOT-ONLY', 999
                 # Empty user sheets must not break dimension recovery/import.
                 for state in ('visible', 'hidden', 'veryHidden'):
                     workbook.create_sheet('Empty-' + state).sheet_state = state
