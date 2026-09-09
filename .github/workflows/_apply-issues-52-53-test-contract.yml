@@ -1,0 +1,94 @@
+name: Apply Issue 52-53 Test Contract
+
+on:
+  push:
+    branches: [fix/issues-52-53-vba-pivot-removal]
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: ${{ !contains(github.event.head_commit.message, '[issue-52-53-contract-done]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issues-52-53-vba-pivot-removal
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Update tests and user docs to the simplified output contract
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          pipeline = Path('tests/test_pipeline.py')
+          text = pipeline.read_text(encoding='utf-8')
+          old = '''                    [
+                        "基表",
+                        "RPD跨月变化",
+                        "CPD跨月变化",
+                        "供应需要提拉诉求清单粗表",
+                        "异常清单",
+                        "_tool_meta",
+                        "RPD地区收入汇总",
+                        "CPD地区收入汇总",
+                        "_summary_source",
+                    ],'''
+          new = '''                    [
+                        "基表",
+                        "RPD跨月变化",
+                        "CPD跨月变化",
+                        "供应需要提拉诉求清单粗表",
+                        "异常清单",
+                        "_tool_meta",
+                    ],'''
+          if old not in text:
+              raise SystemExit('pipeline sheet-name contract not found')
+          pipeline.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          final_test = Path('tests/test_final_revenue.py')
+          text = final_test.read_text(encoding='utf-8')
+          old = '''                self.assertEqual("auto", wb.calculation.calcMode)
+                self.assertTrue(wb.calculation.fullCalcOnLoad)
+                self.assertTrue(wb.calculation.forceFullCalc)'''
+          new = '''                self.assertEqual("auto", wb.calculation.calcMode)
+                self.assertFalse(wb.calculation.fullCalcOnLoad)
+                self.assertFalse(wb.calculation.forceFullCalc)
+                self.assertFalse(wb.calculation.calcOnSave)'''
+          if old not in text:
+              raise SystemExit('calculation-property contract not found')
+          final_test.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          readme = Path('README.md')
+          text = readme.read_text(encoding='utf-8')
+          start = text.index('## 地区收入汇总')
+          end = text.index('## Python 方式（备用）')
+          replacement = '''## 基表透视与最终字段\n\n新版不再自动生成“RPD地区收入汇总”“CPD地区收入汇总”及隐藏 `_summary_source`。基表继续作为用户筛选、运算和自行创建 Excel 透视表的唯一主入口。\n\n- 基表不加工作表保护，可编辑、筛选、排序并自行创建透视表。\n- 黄色字段为人工输入；四个最终字段保留实时公式。填写人工字段后，最终字段在 Excel 自动计算模式下立即更新。\n- 请填写“调整收入分段类别”“调整月份（按RPD）”“调整月份（按CPD）”“调整金额”，不要覆盖相邻最终公式列；明确金额 0 也有效，清空人工字段恢复自动结果。\n- 用户自行创建的透视表由用户自行刷新；工具读取上期时仍会隔离原生透视显示区域和分组缓存，不继承透视对象。\n- 结果工作簿保持普通自动计算，但不再启用强制全量重算，以降低与同一 Excel 会话中其他工作簿/VBA 脚本的计算竞争。\n\n'''
+          readme.write_text(text[:start] + replacement + text[end:], encoding='utf-8')
+
+          regression = Path('tests/test_output_simplification.py')
+          regression.write_text('''from pathlib import Path\nfrom tempfile import TemporaryDirectory\nimport unittest\nfrom zipfile import ZipFile\n\nfrom openpyxl import load_workbook\n\nfrom tests.test_pipeline import _run, _write_sources\n\n\nclass OutputSimplificationTest(unittest.TestCase):\n    def test_output_has_no_system_pivots_and_no_forced_full_calculation(self):\n        with TemporaryDirectory() as temporary:\n            directory = Path(temporary)\n            output = directory / "result.xlsx"\n            _run(_write_sources(directory, "simple", variant="first"), output)\n\n            workbook = load_workbook(output)\n            try:\n                self.assertEqual([\n                    "基表",\n                    "RPD跨月变化",\n                    "CPD跨月变化",\n                    "供应需要提拉诉求清单粗表",\n                    "异常清单",\n                    "_tool_meta",\n                ], workbook.sheetnames)\n                self.assertNotIn("_summary_source", workbook.sheetnames)\n                self.assertFalse(any(sheet._pivots for sheet in workbook.worksheets))\n                self.assertEqual("auto", workbook.calculation.calcMode)\n                self.assertFalse(workbook.calculation.forceFullCalc)\n                self.assertFalse(workbook.calculation.fullCalcOnLoad)\n                self.assertFalse(workbook.calculation.calcOnSave)\n                base = workbook["基表"]\n                formula_cells = [cell for row in base.iter_rows(min_row=2) for cell in row if cell.data_type == "f"]\n                self.assertEqual(4 * (base.max_row - 1), len(formula_cells))\n            finally:\n                workbook.close()\n\n            with ZipFile(output) as archive:\n                names = archive.namelist()\n                self.assertFalse(any(name.startswith("xl/pivotTables/") for name in names))\n                self.assertFalse(any(name.startswith("xl/pivotCache/") for name in names))\n\n\nif __name__ == "__main__":\n    unittest.main()\n''', encoding='utf-8')
+
+          for name in (
+              'docs/implementation/regional-revenue-summary.md',
+              'docs/reviews/regional-revenue-summary-verification.md',
+              'docs/reviews/all-months-horizontal-summary.md',
+              'docs/reviews/excel-compatibility-multi-month.md',
+          ):
+              path = Path(name)
+              if path.exists():
+                  path.unlink()
+
+          Path('.github/workflows/_apply-issues-52-53-test-contract.yml').unlink()
+          PY
+      - name: Commit migrated contract
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "test: align output contract with issues 52 and 53 [issue-52-53-contract-done]"
+          git push origin HEAD:fix/issues-52-53-vba-pivot-removal
