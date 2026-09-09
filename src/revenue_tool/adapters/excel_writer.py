@@ -15,7 +15,6 @@ from openpyxl.workbook.properties import CalcProperties
 from revenue_tool.adapters.final_revenue_formulas import final_formulas
 from revenue_tool.services.final_revenue import FINAL_FIELD_SOURCES, calculate_final_values
 from revenue_tool.adapters.formula_cache import save_with_formula_cache
-from revenue_tool.adapters.regional_pivot import write_regional_pivots
 
 from revenue_tool.config import ToolConfig
 from revenue_tool.domain.models import (
@@ -44,8 +43,15 @@ class ExcelOutputAdapter:
         config: ToolConfig,
     ) -> Path:
         workbook = Workbook()
+        # Keep ordinary automatic recalculation for the four live final-value
+        # formulas, but do not opt the workbook into Excel's expensive
+        # force-full-calculation mode. Cached initial values make a full
+        # calculation on open/save unnecessary.
         workbook.calculation = CalcProperties(
-            calcMode="auto", fullCalcOnLoad=True, forceFullCalc=True, calcOnSave=True,
+            calcMode="auto",
+            fullCalcOnLoad=False,
+            forceFullCalc=False,
+            calcOnSave=False,
         )
         workbook.remove(workbook.active)
         sheets = config.output["sheets"]
@@ -107,7 +113,7 @@ class ExcelOutputAdapter:
             base_sheet.cell(1, indexes[field]).comment = Comment(
                 "系统公式列，请勿编辑。对应黄色人工字段有值即生效，"
                 "不受是否手工调整预测门控。若编辑后不更新，请检查“公式→计算选项→自动”及本格公式是否被覆盖。月份支持9月/10/2026-9等；"
-                "待修正提示请改填完整YYYY-MM。透视表需手动刷新。",
+                "待修正提示请改填完整YYYY-MM。如用户自行创建透视表，透视结果需自行刷新。",
                 "ExcelRevenueTool",
             )
         # Users must be able to create their own PivotTables and change layout.
@@ -155,7 +161,6 @@ class ExcelOutputAdapter:
             "IssuesTable",
         )
         self._write_metadata_sheet(workbook, config, base_rows)
-        write_regional_pivots(workbook, base_rows, config)
 
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
