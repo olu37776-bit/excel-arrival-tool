@@ -5,76 +5,70 @@
 **业务代码：D:\BattleMap\battle-map；目标主线：master**  
 **Authority镜像：D:\BattleMap\BattleMapenterprise-authority**
 
-## 0. 当前任务：全项目Review继续，优先深入字段/API/SQL与启动事务
+## 0. 当前任务：字段、API与持久化单源重构计划，先执行P0调查
 
-用户此前决定手动处理集成并要求全项目Review；最新报告多轮字段变更后SQL查询和API字段仍不一致、难维护，同时启动出现protected migrations和cannot start a transaction within a transaction，描述初始化顺序为建表→JSON导入→migration。当前需要先恢复实际定义归属与事务链，不能继续把文档已规定映射唯一当作实现已收敛。
+用户最新要求由云端制定抽象架构和重构计划，本地Agent结合真实实现先调查、提出落地方案，随后按获授权的文件级范围实施。用户进一步明确：版本SQL用于对已有数据库执行一次变更；真正的维护问题是改字段需要手工同步CREATE TABLE、INSERT、SELECT/API、config、UPDATE函数、Metric Contract六处。
 
-**当前专项调查入口：`investigation/field-api-sql-and-startup-ownership-survey-v1.md`**
-
-本地绝对路径：
-```text
-D:\BattleMap\BattleMapenterprise-authority\docs\enterprise-battle-map\investigation\field-api-sql-and-startup-ownership-survey-v1.md
-```
-
-本专项是只读调查与隔离复现，承接此前尚未落实文档的事务调查要求，并纳入最新API/SQL字段反馈。输出每个字段/操作的真实定义、重复维护点、合法差异、查询映射、最早启动失败与两次BEGIN的拥有者，提出可复用/可删除入口。不能在本轮改API、SQL、Schema、历史迁移、账本或真实数据库；专项第8节仅是待证据确认的方案方向，不是新实施授权。
-
-**全项目审查入口仍有效：`../project-review/battle-map-full-project-independent-review-v1.md`**
-
-本地路径：
-```text
-D:\BattleMap\BattleMapenterprise-authority\docs\project-review\battle-map-full-project-independent-review-v1.md
-```
-
-全项目范围不因本专项缩小。已有同一受查版本的全项目Review证据可供专项复用，专项产物可回接API/DB/启动领域；并行只读时保持同一SHA/明确快照和独立测试库，不重复造报告或竞争写入。
-
-前轮用户报告的三类问题继续作为全项目必查回归：
-- server.js及server/db/database.js的候选提交曾残留原始冲突标记；
-- docs/enterprise/的50+文件可能违反本地docs不提交、不上传规则；
-- build报告通过但测试报告47个失败，涉及MOX Schema。
-
-上述以及最新字段/事务问题均为用户报告，不证明当前所有旧问题仍存在，也不证明已经关闭。云端未访问本地最新源码、完整日志和真实数据库，不声明PASS，不提前认定JSON导入或某个SQL是事务报错根因。
+**当前主计划：`refactoring/field-api-persistence-single-source-refactor-plan-v1.md`**
 
 ```text
-CURRENT_PRIORITY=FIELD_API_SQL_AND_STARTUP_OWNERSHIP_SURVEY_V1
-FULL_PROJECT_REVIEW=BATTLEMAP_FULL_PROJECT_INDEPENDENT_REVIEW_V1_REMAINS_IN_SCOPE
-API_SQL_FIELD_DRIFT=USER_REPORTED_ACTUAL_PATHS_TO_VERIFY
-STARTUP_TRANSACTION_FAILURE=USER_REPORTED_ROOT_CAUSE_NOT_PROVEN
-STARTUP_ORDER=USER_REPORTED_CREATE_TABLES_JSON_MIGRATIONS
-PROTECTED_MIGRATIONS_MEANING=LOCATE_REAL_LOG_CALLER
-PREVIOUS_CANDIDATE_FINDINGS=MANDATORY_REGRESSION_NOT_ASSUMED_OPEN_OR_CLOSED
-CURRENT_MASTER_OR_SNAPSHOT=LOCAL_VERIFICATION_REQUIRED
-CODE_REPAIR_OR_GIT_MUTATION=NOT_AUTHORIZED_IN_CURRENT_INVESTIGATION
-LOCAL_REPORTS=OUTSIDE_CODE_REPOSITORY
-NEXT=EVIDENCE_BASED_CONVERGENCE_DESIGN_WITH_FULL_REVIEW_FINDINGS
+D:\BattleMap\BattleMapenterprise-authority\docs\enterprise-battle-map\refactoring\field-api-persistence-single-source-refactor-plan-v1.md
 ```
 
-独立审查与专项调查只读代码；允许按规范建立隔离核验worktree/输入快照、运行测试与自建测试库、写仓库外证据。不得提交、修复、push、处理rebase、移动master或操作tag。发现问题只给最小建议，不现场修改。
+当前只执行主计划P0，技术调查复用 `investigation/field-api-sql-and-startup-ownership-survey-v1.md`，不重复创建泛化调查。主计划第16节为当前短回执；旧专项第12节是兼容的历史调查回执，不替代主计划新增的六点矩阵和landing-plan。
 
-## 1. 文档治理与业务交付分离
-
-GitHub指导文档继续由云端维护在独立Authority分支，本地Agent先拉取再执行。指导文档仓库不是待交付的BattleMap业务源码仓库。
-业务代码库本次本地docs、实施/审查报告、Excel与真实DB不提交、不上传；master原有文档保留，不误删。用户此前关闭的文档合并请求不重开。
-
-本地输出分别为：
 ```text
-全项目Review：D:\BattleMap\local-reports\battle-map-full-review-v1\<版本>\run-001\
-字段/API/SQL/启动专项：D:\BattleMap\local-reports\field-api-sql-startup-survey-v1\<版本>\run-001\
+CURRENT_PLAN=FIELD_API_PERSISTENCE_SINGLE_SOURCE_REFACTOR_V1
+CURRENT_PHASE=P0_SURVEY_AND_LOCAL_DESIGN
+PRODUCTION_WRITE_SCOPE=EMPTY
+LOCAL_LANDING_PLAN=PROPOSED_NOT_AUTHORIZED
+VERSION_SQL=RETAIN_VERSIONED_ONCE_SUCCESSFULLY_APPLIED_MIGRATIONS
+MAIN_GOAL=REMOVE_DUPLICATE_MANUAL_FIELD_DEFINITIONS_NOT_REMOVE_MIGRATIONS
+SIX_MAINTENANCE_ROLES=CREATE_TABLE/INSERT/SELECT_API/CONFIG/UPDATE/METRIC
+STARTUP_FAILURE=USER_REPORTED_ROOT_CAUSE_NOT_PROVEN
+FULL_PROJECT_REVIEW=REMAINS_IN_SCOPE
+NEXT_GATE=P1_ARCHITECTURE_AND_WRITE_SCOPE_FREEZE
+CODE_PUSH_MERGE_TAG_OR_REBASE_CHANGES=NO
 ```
-目录重复则增加run编号，旧证据保留。专项同时生成不含业务数据的handoff.txt供用户转交关键事实，完整证据保留本地。旧文档中的docs/enterprise/...是历史证据入口，允许读取；其“新报告加入代码提交”条款在本轮不适用。不复制整个Authority镜像到业务代码库。
 
-docs最终tree与新增可达历史分别核验；归档标签不是排除或验收证据。若用户手动操作已经改变拓扑，记录实际结果，不沿用此前普通merge/净增量候选的假设，不替用户重写历史。旧失败候选/rebase/备份只读保留；本轮不再自动新建纯代码交付分支。
+本轮已发布抽象目标及后续P1—P5阶段计划，但本地当前只收集真实代码事实、复现/归因、列出保留/派生/删除入口、提出文件级WRITE_SCOPE、Bootstrap/事务方案与VerificationPlan。不能仅凭计划存在就开始重构；不能把所有六处搬到一个shared文件后仍各维护一遍。
+
+版本SQL仍保留：成功应用并可靠登记后不重复执行，失败不能假登记。要消除的是CREATE最新版清单、INSERT/SELECT/UPDATE/API重复字段映射；Metric只在实际统计业务或字段引用语义变化时修改，显示名/物理列变化不能迫使改公式。
+
+此前用户报告protected migrations与cannot start a transaction within a transaction，描述启动顺序建表→JSON→migration。P0继续追首个原始错误、第一/第二BEGIN拥有者、结构版本/账本和落盘；不预判JSON导入是根因，不直接调顺序或删历史事务语句。前轮冲突标记、docs混入和47测试失败是历史线索，不能推定当前已关闭或仍存在。
+
+云端未访问本地最新完整代码、日志和实际数据库，不声称实现已收敛。当前master、分支、手动修改、Git操作和实际服务版本由本地核实；原rebase或失败候选仅按真实状态保留，不继续旧合并任务。
+
+## 1. 分工与产物边界
+
+云端负责架构、业务边界、阶段/验证门禁、根据本地证据冻结正式WRITE_SCOPE并维护GitHub文档。本地负责真实文件/函数/SQL/API调查、方案与后续获授权实施；独立Review负责验证实际生产路径与维护成本，不接受自报PASS。
+
+GitHub Authority继续存指导文档，本地拉取。业务代码库的本次docs、报告、Excel与真实DB不提交、不上传；master原有文档保留，不重开用户已关闭的文档合并请求。应用必须的可执行Contract属于源码，不因为名字含配置就当docs排除。
+
+P0复用以下专项产物根，历史run保留：
+```text
+D:\BattleMap\local-reports\field-api-sql-startup-survey-v1\<SURVEY_SHORT_SHA或SNAPSHOT_ID>\run-001\
+```
+已有同一版本调查先引用，再补主计划要求，不重新造一套相同Evidence。关键新增产物为 `six-point-maintenance-matrix.csv`、`landing-plan.md`、`field-change-rehearsal.md`，以及可转交云端的脱敏 `handoff.txt`。详细结构按主计划第14节。
+
+独立全项目Review仍使用：
+```text
+D:\BattleMap\local-reports\battle-map-full-review-v1\<版本>\run-001\
+```
+双方可引用同一版本证据；并行只读时独立测试DB/报告，不能竞争写入或缩减全项目范围。旧docs报告可读取但不新增提交，旧要求“报告一起入库”在本轮不适用。
 
 ## 2. 正式 Authority 与执行入口
 
-表内除当前专项调查和全项目Review外的实施规范仅提供适用业务目标、历史事实和验证规则；阅读它们不授权在只读任务中执行修改步骤。
+阅读旧实施文档只提供业务目标和历史线索，不授权在P0中修改。主计划定义新重构目标，现行模块Contract继续定义业务语义；结构目标不等于已经实现。
 
 | 文档 | 用途与状态 |
 |---|---|
-| `investigation/field-api-sql-and-startup-ownership-survey-v1.md` | **CURRENT专项调查**：字段/操作/API/SQL真实归属、重复维护点、查询映射、初始化版本与事务first/second BEGIN；不实施重构 |
-| `../project-review/battle-map-full-project-independent-review-v1.md` | **CURRENT全项目Review**：完整18类范围继续有效，专项作为API/数据/启动深入证据，不缩减其他模块覆盖 |
+| `refactoring/field-api-persistence-single-source-refactor-plan-v1.md` | **CURRENT主计划**：抽象架构、六处处理、保留版本SQL、P0调查/本地方案、P1冻结及后续实施、维护演练与验收 |
+| `investigation/field-api-sql-and-startup-ownership-survey-v1.md` | **P0技术清单**：字段/API/SQL真实归属、重复定义、操作差异、启动事务/版本；复用原证据，不独立开竞争任务 |
+| `../project-review/battle-map-full-project-independent-review-v1.md` | **CURRENT全项目Review**：18类范围继续有效，专项提供深入证据，不缩减非企业覆盖 |
 | `integration/enterprise-master-candidate-failure-remediation-v1.md` | 前轮候选修复规范，用户改为手动处理；非当前执行任务，仅历史/回归依据 |
-| `integration/enterprise-master-candidate-independent-review-v1.md` | 原候选审查范围，由全项目Review扩大覆盖；集成/文档/Schema规则继续参考，不限审查边界 |
-| `enterprise-contract-architecture-v5.md` | 企业端到端canonical、共享机制、API/DB、Progress单一事实源的现行架构；具体派生机制缺口按专项调查，不假设已实现 |
+| `integration/enterprise-master-candidate-independent-review-v1.md` | 原候选审查范围；集成/文档/Schema规则参考，不限完整Review边界 |
+| `enterprise-contract-architecture-v5.md` | 企业canonical、共享机制、API/DB、Progress单一事实源；后端单源派生的具体重构按新主计划补齐 |
 | `architecture/enterprise-runtime-field-options-contract-v1.md` | fieldDef静态metadata与动态options唯一来源、错误边界 |
 | `mox-canonical-authority-v6.md` | 当前MOX业务目标，已同步确认增量；40个业务身份，不是物理列数 |
 | `tob-canonical-authority-v2.md` | 当前TOB业务目标，已同步确认增量；33个业务身份 |
@@ -82,107 +76,106 @@ docs最终tree与新增可达历史分别核验；归档标签不是排除或验
 | `power-canonical-authority-v2.md` | 当前电力业务目标，已同步删除分类与行业选项；27个业务身份 |
 | `large-enterprise-canonical-authority-v2.md` | 当前大企业务目标，已同步确认增量；25个业务身份 |
 | `enterprise-excel-confirmed-delta-v1.md` | 仅删除指定分类字段、更新大企名称；用户此前报告完成，当前核对实际代码 |
-| `enterprise-industry-options-authority-v1.md` | ISP/电力/大企已确认行业选项，保持既有授权与实际进度 |
-| `enterprise-home-canonical-authority-v4.md` | 当前完整首页目标，第18节展示/布局/单位/标题；旧DEFERRED阶段不再覆盖已授权首页目标 |
-| `remediation/enterprise-migration-schema-test-alignment-v1.md` | 历史SQL不可改、按版本测试、真实完整链和物理列集合；本轮仅按其规则调查，不实施 |
-| `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` | 区分过期预期、fixture、真实回归；禁止削弱测试 |
-| `integration/enterprise-review-snapshot-preparation-v1.md` | 固定可运行版本与证据的既有规则；本轮版本/只读/报告边界按新调查，不代用户提交 |
-| `reviews/non-mox-modules-mox-reference-independent-review-v1.md` | 原完整企业机制审查基线，整体纳入企业范围，不只看已知finding |
+| `enterprise-industry-options-authority-v1.md` | ISP/电力/大企已确认行业选项，保持既有目标 |
+| `enterprise-home-canonical-authority-v4.md` | 当前完整首页目标，第18节展示/布局/单位/标题；不受旧DEFERRED约束 |
+| `remediation/enterprise-migration-schema-test-alignment-v1.md` | 历史SQL不改、按版本测试、真实完整链与物理列集合；本轮读其规则不执行修复 |
+| `remediation/enterprise-confirmed-delta-test-expectation-alignment-v1.md` | 过期预期、fixture、真实回归分类；不削弱测试 |
+| `integration/enterprise-review-snapshot-preparation-v1.md` | 可运行版本与证据规则；P0版本/报告按新计划，不代用户提交 |
+| `reviews/non-mox-modules-mox-reference-independent-review-v1.md` | 原完整企业机制审查基线，不只看已知finding |
 | `reviews/non-mox-full-independent-review-rerun-v3.md` | 新HEAD完整范围重审，历史finding额外回归，主动发现新问题 |
 | `reviews/enterprise-progress-single-source-independent-review-v1.md` | 五模块Progress三入口、主题/内容、父记录、历史保留、最新投影、无双写 |
-| `reviews/enterprise-home-and-excel-delta-independent-review-v1.md` | 首页/确认字段增量联合核验；旧证据不能代替当前SHA |
-| `reviews/mox-end-to-end-canonical-independent-review-v1.md` | MOX既有审查规范；旧PASS不延伸到当前版本 |
-| `remediation/five-module-shared-form-renderer-convergence-v3.md` | 五模块实际共享渲染目标，历史实施/回归基线，不重新复制表单 |
+| `reviews/enterprise-home-and-excel-delta-independent-review-v1.md` | 首页/确认字段增量联合核验，旧证据不代新SHA |
+| `reviews/mox-end-to-end-canonical-independent-review-v1.md` | MOX既有审查，旧PASS不延伸当前版本 |
+| `remediation/five-module-shared-form-renderer-convergence-v3.md` | 五模块真实共享渲染目标，历史实施/回归基线，不重造表单 |
 | `remediation/five-module-shared-operation-convergence-v1.md` | 共享操作生产路径基线 |
-| `remediation/tob-shared-form-production-path-repair-v1.md` | TOB残留本地builder修复基线，用户此前报告完成 |
-| `remediation/enterprise-form-options-root-cause-remediation-v2.md` | f.options根因修复；用户此前确认Create/Edit可打开，保留回归 |
-| `remediation/enterprise-customer-data-fetch-unification-v2.md` | customer_id查询/标准化/保存关系链；保留回归 |
-| `remediation/enterprise-empty-option-removal-v1.md` | 仅移除字面“（空）”选项，placeholder为请选择，真实空值规则保留 |
-| `remediation/enterprise-home-route-blocker-repair-v1.md` | 首页真实点击导航修复基线，用户此前报告完成 |
-| `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` | 用户此前报告已完成，底栏、进展结构及主题/内容映射的本地事实输入 |
-| `investigation/enterprise-form-scroll-progress-survey-v1.md` | SUPERSEDED；仅历史调查背景 |
-| `investigation/enterprise-runtime-implementation-survey-v1.md` | 历史运行链调查规范；当前代码状态仍需核实 |
-| `investigation/enterprise-excel-v0.1-v0.2-diff-survey-v1.md` | 未确认差异只读；两项确认增量与行业选项按专属Authority生效 |
-| `remediation/mox-4-group-render-chain-repair-v1.md` | 历史MOX四组断链修复及回归基线 |
-| `remediation/mox-end-to-end-canonical-convergence-v1.md` | 历史canonical收敛背景；旧数量依当前业务Authority更新 |
-| `remediation/non-mox-modules-mox-reference-alignment-v1.md` | 历史四模块对齐；实施报告PASS曾被审查推翻 |
-| `remediation/non-mox-alignment-independent-review-findings-remediation-v2.md` | 历史7个阻塞修复基线，不限制完整审查范围 |
+| `remediation/tob-shared-form-production-path-repair-v1.md` | TOB残留本地builder修复，用户此前报告完成，当前仍核验 |
+| `remediation/enterprise-form-options-root-cause-remediation-v2.md` | f.options根因修复回归；用户此前确认Create/Edit可打开 |
+| `remediation/enterprise-customer-data-fetch-unification-v2.md` | customer_id查询/标准化/保存关系链回归 |
+| `remediation/enterprise-empty-option-removal-v1.md` | 仅移除字面“（空）”选项，placeholder请选择，真实空值规则保留 |
+| `remediation/enterprise-home-route-blocker-repair-v1.md` | 首页真实点击导航修复基线 |
+| `investigation/enterprise-form-progress-legacy-parity-survey-v2.md` | 底栏、同一进展结构与主题/内容映射的历史本地输入 |
+| `investigation/enterprise-form-scroll-progress-survey-v1.md` | SUPERSEDED，历史背景 |
+| `investigation/enterprise-runtime-implementation-survey-v1.md` | 历史运行链规范；当前需真实代码证据 |
+| `investigation/enterprise-excel-v0.1-v0.2-diff-survey-v1.md` | 未确认差异只读；两项增量及行业选项按专属Authority |
+| `remediation/mox-4-group-render-chain-repair-v1.md` | 历史MOX四组断链修复回归 |
+| `remediation/mox-end-to-end-canonical-convergence-v1.md` | 历史canonical收敛，旧数量以当前业务目标更新 |
+| `remediation/non-mox-modules-mox-reference-alignment-v1.md` | 历史四模块对齐；实施PASS曾被独立审查推翻 |
+| `remediation/non-mox-alignment-independent-review-findings-remediation-v2.md` | 历史7个阻塞回归，不限制完整范围 |
 | `remediation/non-mox-shared-form-renderer-convergence-v1.md` | SUPERSEDED BY FIVE-MODULE V3 |
-| `reviews/non-mox-alignment-independent-rereview-v2.md` | SUPERSEDED BY FULL RERUN V3；不得仅复核7项 |
-| `integration/parallel-module-integration-plan-v1.md` | 历史模块worktree集成规则，不授权当前继续合并 |
-| `integration/local-worktree-layout-v1.md` | 历史worktree布局；当前路径以实际Git和本轮报告为准 |
-| `reviews/authority-consistency-audit-2026-09-07.md` | 历史文档对账快照，不是当前版本验收结论 |
+| `reviews/non-mox-alignment-independent-rereview-v2.md` | SUPERSEDED BY FULL RERUN V3，不仅复核7项 |
+| `integration/parallel-module-integration-plan-v1.md` | 历史worktree集成，不授权当前合并 |
+| `integration/local-worktree-layout-v1.md` | 历史布局，当前实际Git与报告优先 |
+| `reviews/authority-consistency-audit-2026-09-07.md` | 历史文档对账，不是当前验收 |
 
-## 3. 已确认企业业务规则继续有效
+## 3. 重构不得改变的已确认业务与架构边界
 
 ### 3.1 字段与分组
 
-模块字段分别由自己的当前Canonical Authority定义，不因master旧实现而恢复已废弃字段，也不把MOX字段复制到其他模块。
-MOX新增/编辑四组：客户信息 / 无线格局 / 微波格局 / 作战情况；其余四模块三组：客户信息 / 业务格局 / 作战情况。全部由Contract驱动共享实际renderer，不接受只共享外壳、私有完整HTML builder或本地第二套schema。
+各模块自己的Field Contract定义业务集合，不因master旧实现恢复已废弃字段，也不复制MOX业务字段。MOX四组“客户信息/无线格局/微波格局/作战情况”，其他四模块三组“客户信息/业务格局/作战情况”，真实共享Renderer消费它们。
 
-确认Excel增量仅删除“整体空间（肥肉/瘦肉/骨头）”分类，整体空间金额/跳数及其他未删除字段保留；大企名称为“大企（油气矿、广电、交通）”。当前40/33/24/27/25是业务身份总数，mode字段按visibility派生，不能直接当SQLite列数。
-未确认V0.2差异不在审查中实施；已确认增量不能以旧冻结说明阻塞。非企业模块按各自需求与实际Contract审查，不把本节变成全项目业务字段清单。
+已确认Excel增量只删除“整体空间（肥肉/瘦肉/骨头）”分类，金额/跳数保留；大企名称“大企（油气矿、广电、交通）”。40/33/24/27/25是业务身份数，按mode/visibility产生UI/API投影，不能直接作为物理列数。未确认V0.2变化不实施。
 
-### 3.2 Customer与options
+业务语义/config与后端绑定可以按职责拆文件，但不得新建完整重复schema。src/config契约归属和既有有效结构优先保留；跨端纯模块拆分须在P1依据代码冻结，不能未经许可重新铺目录。
 
-Field Contract/fieldDef是type/control/editor等静态metadata唯一Authority；runtime model只承载动态值、options和状态。不能恢复以不存在的f.type判断select而让options缺失的路径。
-Customer真实ID必须贯穿query、API、normalization、候选选择与业务customer_id；不以名称关联，不恢复私有重复查询或吞异常空数组。
+### 3.2 API与CRUD
 
-### 3.3 Progress
+同一字段的身份、逻辑类型、单位与基础规则只定义一次；API的Create/Update/Read按操作引用，不要求字段集合全相等。服务端允许写入策略/对象权限不能由UI readonly/hidden代替。
 
-Progress History为唯一持久化事实源，battleProgress为最新/当前投影。新增页、编辑页、独立进展弹窗都须验证实际写链。
-新增/编辑保留相同的只读最新摘要、可展开新增入口、主题和内容两个可编辑输入；只读摘要不意味着整个进展区域只读。命名调整不改变行为，不能恢复业务表text双写/fallback。双滚动为用户此前确认可接受，不按审查者偏好重构。
-此前双写与最小修复建议的具体完成状态，以本地当前代码/提交和报告核实，不能继承旧索引的待报告或旧PASS。
+常规SQL列/alias/参数/读回来自唯一后端持久化绑定与操作投影，取消重复完整清单。服务端不接受任意客户端表/列，也不能把整个req.body自动UPDATE。关系、最新投影、复杂业务JOIN保留必要专属语义，不生成普通列双写。
 
-### 3.4 Heatmap、Metric与首页
+新字段需要明确声明参与哪些操作，不能为“只改config”自动扩大接口暴露。字段变更演练检验减少的是机械重复维护，不要求业务决策、迁移和测试也全部消失。
 
-企业Heatmap/Metric字段身份使用canonical key，label仅展示；统计与点击筛选使用同一条件，既有业务口径不因集成重写。
-首页按V4及第18节：目标/实时并列，实时单一M$后缀，三卡与空间拓展布局不重叠，指定桌面对齐/等高、企业专项标题蓝色，ISP&大企实时汇总ISP/电力/大企，导航按已确认子页。不得恢复旧首页占位实时金额或错误跳转。
-全局首页及非企业模块的统计/图表同样纳入全项目清单，但按它们自己的业务依据核验。
+### 3.3 Customer、Options与Progress
 
-### 3.5 数据库与测试
+fieldDef/Contract是静态type/control/editor来源；runtime model不创建第二份schema。Customer真实ID贯穿查询、normalization、options、payload与持久化，不以同名首条关联。
+Progress History是唯一持久化事实源，battleProgress是最新/当前投影。新增/编辑都有只读最新摘要、可展开新增按钮、主题/内容两个可编辑输入；独立进展弹窗是另一入口，不替代表单内能力。不能恢复业务text双写/fallback。跨模块与父记录关系、取消/失败、历史保留须回归。
+用户认可的双滚动/既有视觉不为重构而改。旧报告的“已修”或“待报告”均不代当前代码事实。
 
-已执行历史SQL不可编辑、删改、重编号、重排，不可改账本/checksum掩盖失败。历史阶段用历史预期，完整生产链按当前最终结构；新库与旧库升级验证数据保留、物理结构与CRUD。
-前轮47个失败须从原日志逐项追溯并核验当前结果，不全当过期schema断言；不以build通过代替后端语法/启动，不拿业务字段数替代物理列集合。当前新增失败另行登记，原日志缺失不得编造关闭数。
-本轮Review/调查只诊断，任何有证据的生产接线/测试修复也不在其中实施。
+### 3.4 Metric、Heatmap与首页
 
-### 3.6 API/SQL与启动专项边界
+企业Metric/Heatmap以canonical key引用，label仅展示。Metric维护统计公式与条件，不重复DB列/基础类型；label/物理列名变化且语义不变不应修改Metric。字段删除/单位含义/统计规则改变则必须明确处理真实业务影响。
+首页仍按V4及第18节：目标/实时并列、单一M$后缀、三卡/空间拓展布局与指定对齐等高、企业专项蓝色、ISP&大企汇总三个模块和正确导航。重构不重新设计这些需求；非企业模块按各自Authority回归，不强套企业规则。
 
-API读、新增、更新的字段集合不要求全相等；当前专项必须区分字段身份漂移与合法操作投影。customerId等关系、battleProgress等读投影不可盲目当普通可写列；前端readonly不能替代后端允许写入范围与权限。
-字段事实、操作策略和物理映射可以按职责拆分，但同一事实的独立手写副本要有真实位置证据。后续收敛以减少重复维护点为目标，不再只增加更多校验报告；具体要复用/删除的文件由专项输出支撑，未经设计冻结不改运行时。
-启动顺序、建表schema、JSON格式、migration版本及事务拥有者必须一起调查。SQLite嵌套BEGIN错误的具体来源尚未核实；不得直接调顺序、删历史事务语句、强制登记版本或在真实库COMMIT/ROLLBACK清场。
+### 3.5 版本SQL、建库与事务
 
-## 4. 当前路径与版本边界
+版本SQL保留，已执行历史不得编辑/删改/重编号/重排，不改账本/checksum消除失败。成功应用且可靠登记后才跳过，失败不假登记。
+当前CREATE最新版字段清单不再独立手写：P0对比完整版本链建库A与受验证生成快照B，提出一项推荐；P1只冻结一种实际路线。旧库仍走批准的版本转换；最新字段定义不动态改变旧SQL。快照方式不允许伪造历史数据迁移成功。
+建表、JSON输入格式/生命周期、迁移起始/目标版本、事务拥有者及export/写盘必须一致。先证实首个错误和重复BEGIN，再设计，不直接调顺序、删BEGIN、套SAVEPOINT或在真实库COMMIT/ROLLBACK清场。
+新库与旧库升级必须以实际物理结构、索引/约束、数据关系和重启持久化证明终态一致，不能拿业务字段数当列数。后端语法/启动与前端build分别验证。
+
+## 4. 当前路径、只读许可与输出
 
 ```text
-业务根：D:\BattleMap\battle-map
+代码：D:\BattleMap\battle-map
 目标主线：master
 指导文档镜像：D:\BattleMap\BattleMapenterprise-authority
-全项目Review：docs\project-review\battle-map-full-project-independent-review-v1.md（相对Authority镜像）
-专项调查：docs\enterprise-battle-map\investigation\field-api-sql-and-startup-ownership-survey-v1.md（相对Authority镜像）
+主计划：docs\enterprise-battle-map\refactoring\field-api-persistence-single-source-refactor-plan-v1.md
+P0技术清单：docs\enterprise-battle-map\investigation\field-api-sql-and-startup-ownership-survey-v1.md
+P0产物：D:\BattleMap\local-reports\field-api-sql-startup-survey-v1\
+全项目Review：docs\project-review\battle-map-full-project-independent-review-v1.md
 全项目产物：D:\BattleMap\local-reports\battle-map-full-review-v1\
-专项产物：D:\BattleMap\local-reports\field-api-sql-startup-survey-v1\
 前轮合并报告：D:\BattleMap\local-reports\enterprise-master-merge-report.md
 前轮候选审查：D:\BattleMap\local-reports\enterprise-master-merge-candidate-review.md
-前轮修复产物：D:\BattleMap\local-reports\enterprise-master-remediation-v1\（若实际存在，仅历史证据）
+前轮修复产物：D:\BattleMap\local-reports\enterprise-master-remediation-v1\（若存在，仅历史）
 ```
 
-当前真实手动结果以Git状态、差异和用户实际运行目录核实，不默认旧候选目录就是目标。已提交用固定SHA隔离审查；手动修改未提交时，不代提交、不忽略修改去审旧HEAD，可按全项目Review建立hash固定快照继续诊断，但不能宣称master提交已验证。
-原rebase/merge状态若仍存在则保留，具体完整性缺口如实报告。隔离测试不操作真实业务DB，不连旧服务冒充新版本，不将源码/报告上传。
+已提交实现固定SHA隔离核验；未提交手动成果按全项目Review hash快照规则做诊断，不代提交、不忽略修改去审旧HEAD。实际正在执行的Git操作只记录，不处理。禁止真实库写入、修改生产源码/SQL/现有测试/锁文件、提交或推送；允许自建隔离测试环境与仓库外证据。
 
-## 5. 当前推进顺序
+不能把本地landing-plan自动当正式实施许可；P0结束等待云端据事实冻结与用户后续实施授权。此处不要求上传业务仓库，本地只交可复制的脱敏handoff。
 
-1. 更新Authority，保持全项目Review范围，同时优先执行字段/API/SQL与启动事务专项，不重复旧合并修复。
-2. 核实当前master、手动结果和操作状态，固定正式SHA或明确诊断快照，引用同一版本的现有调查证据。
-3. 全项目Review继续覆盖所有模块；专项完成企业全部字段、实际API操作/SQL入口的归属对账及共享启动事务/版本调查。
-4. 专项给出首个错误与两次BEGIN的真实拥有者、重复字段定义热点、合法操作差异、建议保留/派生/删除入口；不直接改代码。
-5. 已知finding回归，主动发现新问题；真实代码事实和文档/设计缺口分别登记，不能把所有API差异当成同一bug。
-6. 仓库外保存完整报告及简短handoff，后续依据具体位置发布收敛设计和文件级WRITE_SCOPE，而不是再发笼统“全量对齐”任务。
-7. 本轮不合并、不提交、不push、不操作tag或原rebase；后续修复需要独立实施授权与验证。
+## 5. 推进顺序
 
-## 6. 状态与历史维护
+1. 云端发布本计划与索引；本地更新Authority，开始P0，不继续旧合并修复。
+2. 固定当前真实版本，复用已有调查，完成六点矩阵、API/SQL链、版本/事务和A/B建库对比。
+3. 本地给出REUSE/MODIFY/DERIVE/DELETE/SPECIAL真实文件清单、拟议WRITE_SCOPE、VerificationPlan、MOX试点与推广顺序、变更演练和未决项；返回后停止。
+4. P1云端结合handoff冻结职责、文件范围、迁移/Bootstrap/事务与API边界；取得实施授权。
+5. P2处理有证据的必需启动止血与共享基础；P3做MOX完整读写试点；P4逐模块接入且回归共享消费者。
+6. P5独立完整Review验证新版本、真实维护点下降和业务/数据保留，再交用户验收。旧finding仅回归集，不限制完整范围。
 
-当前状态集中在本索引第0节；模块规范定义目标，本地报告记录对应HEAD/快照事实，三者不能互相替代。
-历史已授权建设及其证据保留，不因为扩大调查而重新实施。旧PASS不自动延伸到当前代码；没有新证据也不把历史已关闭问题直接标当前OPEN。
-全项目Review不等于把企业规则推广为所有模块强制架构。专项的新方向是待证据方案，不替代当前业务Contract；V3历史分层映射与V5 canonical规则可用来查文档缺口，不恢复旧版本。
-指导文档继续在独立GitHub分支维护；本地docs不提交/上传是业务代码交付限制，不是停用Authority流程。旧规范中继续合并、提交报告、执行修复的安排在本轮不适用。
+## 6. 状态维护规则
+
+CURRENT阶段在本索引和主计划第0节一致。业务Contract定义目标，本地报告描述对应SHA/快照，实施/Review状态不能互相替代。P0调查COMPLETE不等于应用PASS；Implementation之后也不能自行VERIFIED。
+
+六处维护成本是当前重构的关键验收，不能用增加更多报告/gate替代移除重复定义，不能承诺所有改字段只改一个文件。版本迁移与独立语义测试保留，合法专属业务差异不强行共享。
+
+旧已授权成果和历史证据保留，不因本计划重做所有页面。当前专项技术清单继续适用，不新开竞争调查；全项目Review继续覆盖整个应用。业务语义/数据处置或跨职责改动不明确时给事实和候选方案，不猜测执行。
