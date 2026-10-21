@@ -35,17 +35,24 @@ def main(argv: list[str] | None = None) -> int:
         from revenue_tool.adapters.excel_writer import ExcelOutputAdapter
         from revenue_tool.adapters.pivot_smoke_fixture import add_pivot_fixture
         from revenue_tool.domain.models import BaseRow, IssueLog
+        from revenue_tool.services.comparison import compare_revenue_months, build_supply_pull_rows
+        from revenue_tool.domain.models import PreviousData
         from revenue_tool.services.final_revenue import calculate_final_values
 
         config = load_config(args.config)
         values = dict(contract_no="SMOKE", region="测试地区", supply_center="深供",
-                      revenue_month_rpd="2026-09", revenue_month_cpd="2026-09",
-                      revenue_segment="订未发", revenue_forecast=1,
+                      revenue_month_rpd="2026-09", revenue_month_cpd="2026-10",
+                      legacy_amount=1, monthly_new_order=2,
+                      revenue_segment="订未发", revenue_forecast=3,
                       manual_revenue_segment=False, manual_revenue_month=0)
         values.update(calculate_final_values(values))
         with TemporaryDirectory() as temporary:
             path = Path(temporary) / "smoke.xlsx"
-            ExcelOutputAdapter().write(path, [BaseRow(values)], [], [], [], IssueLog(), config)
+            rows, issues = [BaseRow(values)], IssueLog()
+            rpd = compare_revenue_months(rows, PreviousData({}), 'rpd', 'smoke.xlsx', issues)
+            cpd = compare_revenue_months(rows, PreviousData({}), 'cpd', 'smoke.xlsx', issues)
+            supply = build_supply_pull_rows(rows, 'smoke.xlsx', issues)
+            ExcelOutputAdapter().write(path, rows, rpd, cpd, supply, issues, config)
             workbook = load_workbook(path)
             try:
                 if any(sheet._pivots for sheet in workbook.worksheets):
@@ -54,6 +61,18 @@ def main(argv: list[str] | None = None) -> int:
                     raise RuntimeError("Windows EXE正常输出不应包含透视辅助源")
                 if workbook.calculation.forceFullCalc or workbook.calculation.fullCalcOnLoad:
                     raise RuntimeError("Windows EXE正常输出不应启用强制全量重算")
+                for sheet in workbook:
+                    if sheet.sheet_format.defaultRowHeight != 22 or not sheet.sheet_format.customHeight:
+                        raise RuntimeError('Windows EXE固定行高自检失败')
+                    for number in range(1, sheet.max_row + 1):
+                        expected = 32 if number == 1 and sheet.sheet_state == 'visible' else 22
+                        if sheet.row_dimensions[number].height != expected:
+                            raise RuntimeError('Windows EXE数据行高自检失败')
+                base = workbook[config.output['sheets']['base']]
+                if (base['D1'].value, base['AN1'].value, base['AO1'].value) != ('收入空间', '收入空间差额', '调整备注'):
+                    raise RuntimeError('Windows EXE收入空间列布局自检失败')
+                if base['AN2'].data_type != 'f':
+                    raise RuntimeError('Windows EXE收入空间差额公式自检失败')
             finally:
                 workbook.close()
             workbook = load_workbook(path, data_only=True)
@@ -63,6 +82,12 @@ def main(argv: list[str] | None = None) -> int:
                 for field, expected in calculate_final_values(values).items():
                     if base.cell(2, indexes[field]).value != expected:
                         raise RuntimeError("Windows EXE最终字段计算值自检失败")
+                if base['AN2'].value != 3:
+                    raise RuntimeError('Windows EXE收入空间差额缓存自检失败')
+                for key in ('rpd_changes', 'cpd_changes', 'supply_pull'):
+                    sheet = workbook[config.output['sheets'][key]]
+                    if sheet['D1'].value != '收入空间' or sheet['D2'].value != 3:
+                        raise RuntimeError('Windows EXE辅助清单收入空间自检失败')
             finally:
                 workbook.close()
             # Input compatibility still needs a real native user PivotTable even

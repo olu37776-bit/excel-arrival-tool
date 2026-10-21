@@ -25,7 +25,7 @@ from revenue_tool.domain.models import (
     WorkbookReadError,
 )
 from revenue_tool.services.field_matching import resolve_name
-from revenue_tool.services.final_revenue import FINAL_FIELD_SOURCES
+from revenue_tool.services.final_revenue import DERIVED_FIELD_IDS
 from revenue_tool.services.normalization import (
     business_key_identity,
     is_business_blank,
@@ -55,6 +55,7 @@ _LEGACY_MANUAL_REVENUE_SEGMENT_NAME = "是否修改收入分段类别"
 # stable field ID; these aliases keep older workbooks without usable metadata
 # readable after Issue #27's display-only rename.
 _PREVIOUS_OUTPUT_NAME_ALIASES = {
+    "revenue_forecast": ("收入预测",),
     "manual_revenue_segment": (_LEGACY_MANUAL_REVENUE_SEGMENT_NAME,),
     "manual_adjust_flag": ("是否手工调整收入月份",),
     "manual_revenue_forecast_rpd": ("手工调整收入预测（按RPD）",),
@@ -196,7 +197,7 @@ class ExcelInputAdapter:
             ]
             indexes: dict[str, int | None] = {}
             for column in config.base_columns:
-                if column["id"] in FINAL_FIELD_SOURCES:
+                if column["id"] in DERIVED_FIELD_IDS:
                     indexes[column["id"]] = None
                     continue
                 previous_name = previous_names.get(
@@ -340,7 +341,7 @@ class ExcelInputAdapter:
                         )
 
                 already_parsed = {
-                    *FINAL_FIELD_SOURCES,
+                    *DERIVED_FIELD_IDS,
                     "contract_no",
                     "supply_center",
                     "revenue_month_rpd",

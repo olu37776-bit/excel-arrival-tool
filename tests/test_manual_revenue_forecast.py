@@ -56,14 +56,14 @@ class ManualRevenueForecastTest(unittest.TestCase):
             try:
                 base = workbook["基表"]
                 headers = [cell.value for cell in base[1]]
-                self.assertEqual(40, len(headers))
+                self.assertEqual(41, len(headers))
                 self.assertEqual(EXPECTED_BASE_HEADERS, headers)
                 self.assertEqual(0, len(base.data_validations.dataValidation))
                 indexes = {cell.value: cell.column for cell in base[1]}
                 for row_number in range(2, base.max_row + 1):
                     forecast_cell = base.cell(
                         row_number,
-                        indexes["收入预测"],
+                        indexes["收入空间"],
                     )
                     self.assertEqual("#,##0.00", forecast_cell.number_format)
                     self.assertNotEqual("f", forecast_cell.data_type)
@@ -105,7 +105,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
                 rows = _base_rows(base)
                 self.assertEqual(100, rows[("C001", "SC-A")]["遗留量"])
                 self.assertEqual(50, rows[("C001", "SC-A")]["当月新订货"])
-                self.assertEqual(150, rows[("C001", "SC-A")]["收入预测"])
+                self.assertEqual(150, rows[("C001", "SC-A")]["收入空间"])
 
                 metadata = workbook["_tool_meta"]
                 field_ids = []
@@ -114,7 +114,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
                     if value is None:
                         break
                     field_ids.append(value)
-                self.assertEqual(40, len(field_ids))
+                self.assertEqual(41, len(field_ids))
                 for field in POST_32_FIELD_IDS:
                     self.assertIn(field, field_ids)
                 self.assertNotIn("manual_revenue_segment_flag", field_ids)
@@ -254,13 +254,13 @@ class ManualRevenueForecastTest(unittest.TestCase):
             try:
                 rows = _base_rows(workbook["基表"])
                 inherited = rows[("C001", "SC-A")]
-                self.assertEqual(150, inherited["收入预测"])
+                self.assertEqual(150, inherited["收入空间"])
                 self.assertEqual("N", inherited["调整收入分段类别"])
                 self.assertEqual("2026-09", inherited["调整月份（按RPD）"])
                 self.assertEqual("2026-10", inherited["调整月份（按CPD）"])
                 self.assertEqual(0, inherited["调整金额"])
                 positive = rows[("C001", "SC-B")]
-                self.assertEqual(150, positive["收入预测"])
+                self.assertEqual(150, positive["收入空间"])
                 self.assertEqual(
                     "2026-11",
                     positive["调整月份（按RPD）"],
@@ -293,7 +293,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
             workbook = load_workbook(output, data_only=True)
             try:
                 row = _base_rows(workbook["基表"])[("C001", "SC-A")]
-                self.assertEqual(150, row["收入预测"])
+                self.assertEqual(150, row["收入空间"])
                 matching = [
                     values
                     for values in workbook["异常清单"].iter_rows(
@@ -689,7 +689,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
                 self.assertEqual("业务确认", inherited["调整备注"])
                 self.assertEqual(
                     inherited["遗留量"] + inherited["当月新订货"],
-                    inherited["收入预测"],
+                    inherited["收入空间"],
                 )
                 self.assertIsNone(inherited["调整收入分段类别"])
                 for header in MANUAL_MONTH_HEADERS:
@@ -784,18 +784,18 @@ class ManualRevenueForecastTest(unittest.TestCase):
                 other = rows[("C001", "SC-B")]
                 self.assertEqual(100, deep["遗留量"])
                 self.assertEqual(50, deep["当月新订货"])
-                self.assertEqual(150, deep["收入预测"])
+                self.assertEqual(150, deep["收入空间"])
                 self.assertEqual(0, other["遗留量"])
                 self.assertEqual(0, other["当月新订货"])
-                self.assertEqual(0, other["收入预测"])
+                self.assertEqual(0, other["收入空间"])
                 self.assertEqual("订未发", other["收入分段类别"])
                 self.assertEqual(300, rows[("C003", "SC-C")]["遗留量"])
                 self.assertEqual(22, rows[("C002", None)]["当月新订货"])
-                self.assertEqual(22, rows[("C002", None)]["收入预测"])
+                self.assertEqual(22, rows[("C002", None)]["收入空间"])
                 self.assertEqual(
                     150,
                     sum(
-                        row["收入预测"]
+                        row["收入空间"]
                         for key, row in rows.items()
                         if key[0] == "C001"
                     ),
@@ -838,7 +838,7 @@ class ManualRevenueForecastTest(unittest.TestCase):
                 for center in ("SC-A", "SC-B"):
                     self.assertEqual(100, rows[("C001", center)]["遗留量"])
                     self.assertEqual(50, rows[("C001", center)]["当月新订货"])
-                    self.assertEqual(150, rows[("C001", center)]["收入预测"])
+                    self.assertEqual(150, rows[("C001", center)]["收入空间"])
                 matching = [
                     values
                     for values in workbook["异常清单"].iter_rows(
@@ -955,7 +955,7 @@ def _set_manual_inputs(
                 sheet.cell(row_number, headers["合同号"]).value == contract
                 and sheet.cell(row_number, headers["履行供应中心"]).value == center
             ):
-                sheet.cell(row_number, headers["收入预测"]).value = revenue_forecast
+                sheet.cell(row_number, headers["收入空间"]).value = revenue_forecast
                 sheet.cell(
                     row_number,
                     headers["调整收入分段类别"],

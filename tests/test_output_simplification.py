@@ -33,7 +33,7 @@ class OutputSimplificationTest(unittest.TestCase):
                 self.assertFalse(workbook.calculation.calcOnSave)
                 base = workbook["基表"]
                 formula_cells = [cell for row in base.iter_rows(min_row=2) for cell in row if cell.data_type == "f"]
-                self.assertEqual(4 * (base.max_row - 1), len(formula_cells))
+                self.assertEqual(5 * (base.max_row - 1), len(formula_cells))
             finally:
                 workbook.close()
 

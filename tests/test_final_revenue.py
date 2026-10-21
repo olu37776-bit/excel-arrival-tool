@@ -22,6 +22,7 @@ from revenue_tool.domain.models import BaseRow, IssueLog
 from revenue_tool.services.final_revenue import (
     calculate_final_values, FINAL_FIELD_SOURCES, YEAR_REQUIRED_HINT,
     INVALID_MONTH_HINT,
+    calculate_revenue_space_gap,
 )
 from tests.test_pipeline import CONFIG, _run, _write_sources, _base_rows
 from tests.test_manual_revenue_forecast import (
@@ -107,7 +108,7 @@ class FinalRevenueTest(unittest.TestCase):
                 sheet = wb["基表"]
                 config = load_config(CONFIG)
                 ids = [c["id"] for c in config.base_columns]
-                self.assertEqual(40, sheet.max_column)
+                self.assertEqual(41, sheet.max_column)
                 self.assertEqual("auto", wb.calculation.calcMode)
                 self.assertFalse(wb.calculation.fullCalcOnLoad)
                 self.assertFalse(wb.calculation.forceFullCalc)
@@ -143,7 +144,7 @@ class FinalRevenueTest(unittest.TestCase):
             with ZipFile(path) as archive:
                 ns = {"x": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
                 tree = ET.fromstring(archive.read("xl/worksheets/sheet1.xml"))
-                self.assertEqual(4 * (sheet.max_row - 1), len(tree.findall(".//x:f", ns)))
+                self.assertEqual(5 * (sheet.max_row - 1), len(tree.findall(".//x:f", ns)))
                 self.assertIsNotNone(tree.find("x:autoFilter", ns))
 
     def test_previous_without_final_columns_and_new_without_caches(self):
@@ -256,6 +257,13 @@ class FormulaRecalculationTest(unittest.TestCase):
                             self.assertEqual(expected, actual, (stage, number, field, values))
                             if isinstance(expected, bool):
                                 self.assertIs(expected, actual)
+                        expected_gap = calculate_revenue_space_gap(
+                            values.get('revenue_forecast'),
+                            calculate_final_values(values)['final_revenue_forecast'],
+                        )
+                        actual_gap = wb['基表'].cell(number, indexes['revenue_space_gap']).value
+                        self.assertEqual(float(expected_gap) if isinstance(expected_gap, Decimal)
+                                         else expected_gap, actual_gap, (stage, number, 'gap'))
                 finally:
                     wb.close()
 

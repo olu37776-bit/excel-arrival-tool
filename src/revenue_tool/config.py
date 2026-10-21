@@ -227,14 +227,16 @@ def _validate(raw: dict[str, Any]) -> None:
         "final_revenue_month_cpd",
         "manual_revenue_month",
         "final_revenue_forecast",
+        "revenue_space_gap",
         "adjustment_note",
     ]
     if not _valid_columns(columns, expected_base_ids):
-        raise ValueError("基表 40 个稳定字段 ID、顺序和显示名必须符合契约")
+        raise ValueError("基表 41 个稳定字段 ID、顺序和显示名必须符合契约")
     expected_change_common = [
         "contract_no",
         "legacy_amount",
         "monthly_new_order",
+        "revenue_forecast",
         "region",
         "country",
         "carryover_type",
