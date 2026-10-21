@@ -17,4 +17,11 @@
 5. 独立LibreOffice引擎实际打开后编辑/清空人工金额，检查无需手动重算即更新差额；输入多行长备注、保存并重新打开验证固定行高。
 6. Windows打包EXE smoke检查全部Sheet行高、新列布局、差额缓存及三个辅助页收入空间，并保留已有上期兼容检查。
 
-本地及CI结果、正式发布信息完成后补充。没有用户真实工作簿或桌面Excel环境，独立引擎和文件结构校验不能替代用户实机确认。
+本地143项测试通过（3项环境测试跳过）。PR #56 head为784c98a3585f7bbf0b01d387e55f16f1b532a8c6，工作流39570731118：Linux任务119123940117共143项通过、无跳过，22.734秒，包含实际UNO编辑/清空/换行备注与保存重开检查；Microsoft SDK任务119123940721对edge-cases/empty/pipeline三个输出均0错误。Windows任务119124370438共143项通过（2项Linux引擎专用测试跳过），21.114秒；EXE构建、实际EXE smoke及GUI检查成功。合并commit为782abd3e423f76545512ed9f90c4fbbce4b79ea6。
+
+正式工作流39571196027成功：Linux任务119125514592共143项通过、无跳过，20.708秒；Microsoft SDK任务119125515190三个输出均0错误；Windows任务119125986830共143项通过（2项Linux引擎专用测试跳过），22.661秒，EXE构建及实际EXE/GUI自检通过。
+
+v0.11.5于北京时间2026-10-21 16:44:10发布。EXE为12,865,765字节，SHA256：3e7bd8c2d481fdc2484f5bb9eccc5d932f08e4d05474873c5bc1dd9e2dffec39。
+[下载EXE](https://github.com/olu37776-bit/excel-arrival-tool/releases/download/v0.11.5/ExcelRevenueTool-v0.11.5.exe)。
+
+没有用户真实工作簿或桌面Excel环境，独立引擎和文件结构校验不能替代用户实机确认。
