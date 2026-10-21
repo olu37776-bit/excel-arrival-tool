@@ -44,7 +44,7 @@ class PreviousUpgradeTest(unittest.TestCase):
                         self.assertEqual(row['收入分段类别'], row['最终收入分段类别'])
                         self.assertEqual(row['收入年月（按RPD）'], row['最终收入年月（按RPD）'])
                         self.assertEqual(row['收入年月（按CPD）'], row['最终收入年月（按CPD）'])
-                        self.assertEqual(row['遗留量'] + row['当月新订货'], row['收入预测'])
+                        self.assertEqual(row['遗留量'] + row['当月新订货'], row['收入空间'])
                     else:
                         self.assertIs(False, row['最终收入分段类别'])
                         self.assertEqual('2026-09', row['最终收入年月（按RPD）'])

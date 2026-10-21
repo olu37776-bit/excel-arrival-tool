@@ -1,6 +1,7 @@
 """Final views never overwrite automatic values or become historical inputs."""
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Any
 
 from revenue_tool.services.normalization import (
@@ -21,6 +22,20 @@ FINAL_FIELD_SOURCES = {
 YEAR_REQUIRED_HINT = "待修正：请填写完整年月 YYYY-MM"
 INVALID_MONTH_HINT = "待修正：月份无法识别，请填写 YYYY-MM"
 INVALID_AMOUNT_HINT = "待修正：请填写有效金额"
+INVALID_GAP_HINT = "待修正：请检查收入空间或最终收入预测"
+DERIVED_FIELD_IDS = frozenset(FINAL_FIELD_SOURCES) | {"revenue_space_gap"}
+
+
+def calculate_revenue_space_gap(space: Any, final: Any) -> Decimal | str:
+    """Match the numeric guard and two-decimal rounding in the live formula."""
+    if any(isinstance(value, bool) or not isinstance(value, (int, float, Decimal))
+           for value in (space, final)):
+        return INVALID_GAP_HINT
+    space_amount, final_amount = Decimal(str(space)), Decimal(str(final))
+    if not space_amount.is_finite() or not final_amount.is_finite():
+        return INVALID_GAP_HINT
+    result = normalize_amount(space_amount - final_amount)
+    return result if result is not None else INVALID_GAP_HINT
 
 
 def calculate_final_values(values: dict[str, Any]) -> dict[str, Any]:

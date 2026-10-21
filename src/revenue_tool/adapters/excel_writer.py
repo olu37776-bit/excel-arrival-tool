@@ -13,7 +13,10 @@ from openpyxl.styles import Protection
 from openpyxl.workbook.properties import CalcProperties
 
 from revenue_tool.adapters.final_revenue_formulas import final_formulas
-from revenue_tool.services.final_revenue import FINAL_FIELD_SOURCES, calculate_final_values
+from revenue_tool.services.final_revenue import (
+    FINAL_FIELD_SOURCES, INVALID_GAP_HINT, calculate_final_values,
+    calculate_revenue_space_gap,
+)
 from revenue_tool.adapters.formula_cache import save_with_formula_cache
 
 from revenue_tool.config import ToolConfig
@@ -29,6 +32,8 @@ _HEADER_FONT = Font(color="FFFFFF", bold=True)
 _EDITABLE_FILL = PatternFill("solid", fgColor="FFF2CC")
 _BANDED_FILL = PatternFill("solid", fgColor="D9EAF7")
 _THIN_BLUE = Side(style="thin", color="9EADBF")
+_DATA_ROW_HEIGHT = 22
+_HEADER_ROW_HEIGHT = 32
 
 
 class ExcelOutputAdapter:
@@ -79,6 +84,7 @@ class ExcelOutputAdapter:
                 "revenue_forecast",
                 "manual_revenue_month",
                 "final_revenue_forecast",
+                "revenue_space_gap",
             },
             text_fields={
                 "revenue_month_rpd",
@@ -107,8 +113,23 @@ class ExcelOutputAdapter:
             }
             for field, formula in final_formulas(refs).items():
                 base_sheet.cell(row_number, indexes[field]).value = formula
-            for field, value in calculate_final_values(base_rows[row_number - 2].values).items():
+            values = base_rows[row_number - 2].values
+            final_values = calculate_final_values(values)
+            for field, value in final_values.items():
                 cached_values[refs[field]] = value
+            space, final = refs["revenue_forecast"], refs["final_revenue_forecast"]
+            base_sheet.cell(row_number, indexes["revenue_space_gap"]).value = (
+                f'=IF(AND(ISNUMBER({space}),ISNUMBER({final})),'
+                f'ROUND({space}-{final},2),"{INVALID_GAP_HINT}")'
+            )
+            cached_values[refs["revenue_space_gap"]] = calculate_revenue_space_gap(
+                values.get("revenue_forecast"), final_values["final_revenue_forecast"],
+            )
+        base_sheet.cell(1, indexes["revenue_space_gap"]).comment = Comment(
+            "收入空间－最终收入预测。正数表示收入空间较大，负数表示最终预测较大；"
+            "可筛选非零差额快速核对。人工调整金额或清空后，差额随最终预测自动更新。",
+            "ExcelRevenueTool",
+        )
         for field in FINAL_FIELD_SOURCES:
             base_sheet.cell(1, indexes[field]).comment = Comment(
                 "系统公式列，请勿编辑。对应黄色人工字段有值即生效，"
@@ -151,7 +172,7 @@ class ExcelOutputAdapter:
             config.output["supply_pull_columns"],
             [row.values for row in supply_pull_rows],
             "SupplyPullTable",
-            amount_fields={"legacy_amount", "monthly_new_order"},
+            amount_fields={"legacy_amount", "monthly_new_order", "revenue_forecast"},
         )
         self._write_table_sheet(
             workbook,
@@ -161,6 +182,14 @@ class ExcelOutputAdapter:
             "IssuesTable",
         )
         self._write_metadata_sheet(workbook, config, base_rows)
+        for sheet in workbook.worksheets:
+            sheet.sheet_format.defaultRowHeight = _DATA_ROW_HEIGHT
+            sheet.sheet_format.customHeight = True
+            for number in range(1, sheet.max_row + 1):
+                sheet.row_dimensions[number].height = (
+                    _HEADER_ROW_HEIGHT if number == 1 and sheet.sheet_state == "visible"
+                    else _DATA_ROW_HEIGHT
+                )
 
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -219,7 +248,7 @@ class ExcelOutputAdapter:
             columns,
             [row.values for row in rows],
             table_name,
-            amount_fields={"legacy_amount", "monthly_new_order"},
+            amount_fields={"legacy_amount", "monthly_new_order", "revenue_forecast"},
         )
 
     def _write_table_sheet(
@@ -260,7 +289,7 @@ class ExcelOutputAdapter:
                 wrap_text=True,
             )
             cell.border = Border(bottom=_THIN_BLUE)
-        sheet.row_dimensions[1].height = 32
+        sheet.row_dimensions[1].height = _HEADER_ROW_HEIGHT
 
         for index, field in enumerate(field_ids, start=1):
             letter = get_column_letter(index)

@@ -20,6 +20,8 @@ from revenue_tool.services.normalization import (
     nonblank,
     normalize_lookup,
     normalize_text,
+    normalize_amount,
+    ZERO_AMOUNT,
 )
 
 
@@ -172,6 +174,7 @@ def compare_revenue_months(
                 "supply_center",
             )
         }
+        values["revenue_forecast"] = _revenue_space(values)
         values.update(
             {
                 "previous_month": previous_month,
@@ -270,6 +273,7 @@ def _state_change_row(
         )
     }
     values["supply_center"] = supply_center
+    values["revenue_forecast"] = _revenue_space(values)
     values.update(
         {
             "previous_month": previous_month,
@@ -290,6 +294,13 @@ def _preferred_value(
     if nonblank(value):
         return value
     return fallback.values.get(field) if fallback is not None else value
+
+
+def _revenue_space(values: dict[str, Any]):
+    # Use the displayed amounts, including historical cancellation rows and
+    # current no-demand placeholders. Never carry a stale forecast forward.
+    return sum((normalize_amount(values.get(field)) or ZERO_AMOUNT
+                for field in ("legacy_amount", "monthly_new_order")), ZERO_AMOUNT)
 
 
 def _report_state_conflict_once(
@@ -363,6 +374,7 @@ def build_supply_pull_rows(
                 "supply_center",
             )
         }
+        values["revenue_forecast"] = _revenue_space(values)
         values.update(
             {
                 "revenue_month_rpd": rpd_month,

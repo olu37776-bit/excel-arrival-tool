@@ -31,7 +31,7 @@ def add_user_pivots(path, metadata=True):
             base.cell(4, 45 + offset, fake[offset])
         lower = deepcopy(template)
         lower.name = 'UserBelow'
-        lower.location.ref = 'A12:AN14'
+        lower.location.ref = 'A12:AO14'
         lower.location.firstHeaderRow = 0
         lower.location.firstDataRow = 1
         lower.location.rowPageCount = 0
