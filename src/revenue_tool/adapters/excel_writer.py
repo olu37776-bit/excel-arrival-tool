@@ -296,20 +296,20 @@ class ExcelOutputAdapter:
             if field in date_fields:
                 for cell in sheet[letter][1:]:
                     cell.number_format = "yyyy-mm-dd"
-                    cell.alignment = Alignment(horizontal="center")
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
             elif field in amount_fields:
                 for cell in sheet[letter][1:]:
                     cell.number_format = "#,##0.00"
-                    cell.alignment = Alignment(horizontal="right")
+                    cell.alignment = Alignment(horizontal="right", vertical="center")
             elif field in text_fields:
                 for cell in sheet[letter][1:]:
                     cell.number_format = "@"
-                    cell.alignment = Alignment(horizontal="left")
+                    cell.alignment = Alignment(horizontal="left", vertical="center")
             else:
                 for cell in sheet[letter][1:]:
                     cell.alignment = Alignment(
                         horizontal="left",
-                        vertical="top",
+                        vertical="center",
                         wrap_text=False,
                     )
             if field in editable_fields and sheet.max_row >= 2:
