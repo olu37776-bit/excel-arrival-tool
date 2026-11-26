@@ -269,9 +269,12 @@ class ExcelInputAdapter:
                     "revenue_month_cpd",
                 ):
                     cell = field_cells[field]
+                    raw_value = cell.value if cell is not None else None
+                    if cell is not None and field in {"contract_no", "supply_center"}:
+                        raw_value = _text_from_cell(cell)
                     values[field] = _parse_previous_value(
                         field,
-                        cell.value if cell is not None else None,
+                        raw_value,
                         workbook.epoch,
                     )
 
@@ -379,7 +382,11 @@ class ExcelInputAdapter:
                             workbook.epoch,
                         )
                 key = business_key_identity(*display_key)
-                if previous_row_kinds is None:
+                row_kind = (
+                    previous_row_kinds.get(key)
+                    if previous_row_kinds is not None else None
+                )
+                if row_kind is None:
                     row_kind = (
                         CONTRACT_ONLY_NO_DEMAND
                         if bool(display_key[0])
@@ -388,19 +395,16 @@ class ExcelInputAdapter:
                         == "不要货"
                         else DEMAND_CENTER
                     )
-                else:
-                    row_kind = previous_row_kinds.get(key)
-                    if row_kind is None:
+                    if previous_row_kinds is not None:
                         issues.add(
-                            "PREVIOUS_ROW_KIND_UNAVAILABLE",
-                            "上期结果缺少该业务键的显式行状态，已排除该行",
+                            "PREVIOUS_ROW_KIND_RECOVERED",
+                            "上期隐藏行状态未匹配，已按基表字段重新识别；有效业务键继续继承人工填写",
                             workbook=workbook_path.name,
                             sheet="_tool_meta",
                             row_number=row_number,
                             business_key=" | ".join(display_key),
                             field="row_kind",
                         )
-                        continue
                 valid_key = bool(display_key[0]) and (
                     (
                         row_kind == CONTRACT_ONLY_NO_DEMAND
